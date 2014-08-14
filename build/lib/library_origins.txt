@@ -1,0 +1,26 @@
+Mozilla Rhino
+* js-14.jar
+
+ANTLR
+* antlr-3.3-complete.jar
+
+Apache Ant Contrib Tasks (Apache Software License) 
+* ant-contrib-1.0b3.jar
+
+Commons SCXML JS (discontinued Apache Project; Apache Software License)
+* commons-scxml-js/*
+  (NOTE: this is not the complete source of the SCXML-JS project; only a part)
+
+Apache Batik (Apache License 2.0)
+* batik/*
+  (NOTE: this contains only the SVG rasterizer tool from Batik)
+  
+requirejs (MIT and/or BSD license: cf. comment/license notice in file)
+* r.js
+
+jquery-deferred for NodeJS (MIT license: cf. Readme.md file)
+* nodejs-jquery-deferred/*
+
+jsonlint (MIT license: cf. comments in *.js files)
+* jsonlint.parser.js
+* jsonlint.parser.min.js

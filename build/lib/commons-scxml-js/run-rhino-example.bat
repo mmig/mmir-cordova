@@ -1,0 +1,1 @@
+java -cp ..\js-14.jar;lib\java\commons-cli-1.2.jar;lib\java\maven-ant-tasks-2.1.1.jar;lib\java\xalan-2.7.0.jar;lib\java\xercesImpl-2.9.1.jar;lib\java\xml-apis-2.0.2.jar org.mozilla.javascript.tools.shell.Main -opt -1 runner.js %~dp0 src/javascript/scxml/cgf/main --backend state --beautify --ie ..\..\..\assets\www\config\statedef\dialogDescriptionSCXML.xml
