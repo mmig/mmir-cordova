@@ -1,0 +1,13 @@
+{
+	"language": "en-GB",
+	
+	"plugins": {
+		"maryTextToSpeech": {
+			"voice": "dfki-spike"
+		},
+		"nuanceAudioInput": {
+			"language": "eng-GBR"
+		}
+	}
+	
+}
