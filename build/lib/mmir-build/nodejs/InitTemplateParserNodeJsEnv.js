@@ -31,7 +31,7 @@
  */
 
 
-//disable console-output during "initializtion"
+//disable console-output during "initialization"
 // -> re-enable before actually running the parser
 consoleLogImpl = console.log; 
 console.log = function(){};
@@ -43,20 +43,5 @@ var theBasePath = theArguments[2] + 'www/';
 
 forBrowser = theBasePath;
 
-//require(['constants'], function(constants){
-//	constants.init(theBasePath);
-//});
-//var constants = require('constants');
-
-
 IS_DEBUG_ENABLED = false;
 isDebugOutput = false;
-
-mmir = {};
-window.mmir = mmir;
-
-mmir.LanguageManager = {};
-mmir.LanguageManager.getInstance = function dummyLangMang (){ return mmir.LanguageManager; };
-mmir.LanguageManager.getText = function dummyGetText (id) {return 'dummy-text-'+id;};
-mmir.LanguageManager.getLanguage = function dummyGetLang () {return 'NA';};
-
