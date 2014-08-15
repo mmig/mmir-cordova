@@ -1,0 +1,4 @@
+
+@contentFor('content'){
+	<div>Hello World!</div>
+}@

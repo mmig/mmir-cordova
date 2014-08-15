@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+    
+        <div id="pageContainer" data-role="page" class="type-interior" data-url="pageContainer" data-cache="false" >
+            
+            <div id="pageHeader" data-role="header">
+              @yield("header")
+            </div>
+            
+            <div id="pageContent" role="main" class="ui-content" >
+              @yield("content")	
+            </div>
+            
+            <div id="pageFooter" data-role="footer">
+		      @yield('footer')
+            </div>
+            
+        </div>
+        
+    </body>
+    
+    <dialogs>
+    	@yield('dialogs')
+    </dialogs>
+</html>

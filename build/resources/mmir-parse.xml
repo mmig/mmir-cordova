@@ -1,0 +1,232 @@
+<?xml version="1.0"?>
+<!-- 
+	This Ant-Build-File is for the generation of the directory structure in json format.generate
+	It generates - for the directories specified in the property 'directoriesToParse' - a file (property 'outputDirectoryParseFileJson') with a json string.
+-->
+<project name="Mobile DialogSystem - Parse eHTML" default="parseTemplatesNodeJsEnv">
+	
+	<import file="mmir-build.xml"/>
+
+	<!--  ############# Build Targets: tasks for Templates (.ehtml) #############  -->
+			 
+	<target name="createTemplateParserFile" depends="generateFileListJSONFile">
+	    <echo message="Building script file ${exec.js.compile.template.parser} for parsing templates (.ehtml)..." />
+	    <mkdir dir="${buildDir}" />
+	    <mkdir dir="${buildDirBin}" />
+	    <mkdir dir="${buildDirTempJS}" />
+	    <concat destfile="${exec.js.compile.template.parser}" fixlastline="true" overwrite="true">
+	    	<!-- TODO make generalized init-file for rhino (current file is really for creating GrammarParserGenerator) -->
+	    	<!--fileset dir="${jsBuildDirBase}rhino" includes="InitForAntRhinoScriptEnv.js" />
+	    	<fileset dir="${jsBuildDirBase}ant"      includes="AntFileHandler.js" /-->
+	    	<fileset dir="${jsBuildDirBase}nodejs"   includes="InitNodeJsEnv.js" />
+	    	<fileset dir="${jsBuildDirBase}nodejs"   includes="InitTemplateParserNodeJsEnv.js" />
+	    	
+	        <string>
+	            
+	            //"export" base-dir path for saving generated/compiled template files:
+	            var compiledViewGenPath = '${jsGenDirBase}';
+	            
+	            //FIXME export/move to settings file:
+	            var buildLibDirRelativePath = './../../lib/';
+	            
+                var requiren = require;
+                var require  = require(buildLibDirRelativePath+'r.js');
+                var definejs = require.define;
+	    	</string>
+            <!-- fileset dir="${buildDirLib}"       includes="r.js" /-->
+	    	<fileset dir="${jsBuildDirBase}nodejs"  includes="NodeJsFileHandler.js" />
+            
+            <string>
+                
+                //set the framework's src-path from the build-properties file
+                //  (may be different than the default value in mainConfig.js)
+                var appSrcDir = '${jsSrcDirBase}';
+                require.config({
+                	baseUrl: './' + appSrcDir,
+                	paths: {'core': 'core'}
+                });
+                
+                require(['core'], function(core){
+                
+                	//define "auto-start" module for starting the template processing
+                	// (gets triggered after main-config for requirejs is was applied)
+                	definejs('doStartTemplateProc', function(){
+                		//now: do start processing the eHTML template files
+	                	doStartTemplateProcessing();
+                	});
+					core.startModule = 'doStartTemplateProc';
+					
+	                //configure replacement / build-stub implementations:
+	                var buildLibDir = '${buildDirLib}mmir-build/';
+	                
+	                //...determine correct build/ sub-dir by analysing the main-app's dir:
+	                var appDirParts = appSrcDir.split('/');
+	                for(var i=0, size=appDirParts.length; i+1 != size; ++i){
+	                	if(appDirParts[i] !== '.'){
+	                		buildLibDir = '../' + buildLibDir;
+	                	}
+	                }
+	                
+	                //set the paths for the build-implementations:
+	                core.config({
+                		baseUrl: './' + appSrcDir,
+		                paths: {
+		                	  'jquery': buildLibDir+'jqueryDummy'
+		 					, 'jqueryajax': buildLibDir+'jqueryAjaxDummy'
+		 					, 'env': buildLibDir+'envDetectBuild'
+		 					, 'jqm': buildLibDir+'jqueryMobileDummy'
+		 					
+		 					//"remove" configs for ANTRL parsers:
+		 					//  these need to be initilized separately -> see below definejs(..)
+		 					//  ...since requirejs' shim does not work in nodejs
+		 					, 'antlr3': void(0)
+		 					, 'ES3Lexer': void(0)
+			    			, 'ES3Parser': void(0)
+			    			, 'contentLexer': void(0)
+			    			, 'contentParser': void(0)
+			    			, 'scriptLexer': void(0)
+			    			, 'scriptParser': void(0)
+			    			, 'templateLexer': void(0)
+			    			//, 'templateParser': void(0)
+		                }
+	                });
+	                
+	                //set up dummy implementation for LanguageManager:
+					core.LanguageManager = {};
+					core.LanguageManager.getInstance = function dummyLangMang (){ return core.LanguageManager; };
+					core.LanguageManager.getText = function dummyGetText (id) {return 'dummy-text-'+id;};
+					core.LanguageManager.getLanguage = function dummyGetLang () {return 'NA';};
+						                
+	                doLoadAppConfig(require.define);
+	            });
+	    		
+	    		//apply main-config for requirejs 
+				// (need to pass in requirejs' define as argument "define")
+	    		function doLoadAppConfig(define){
+	    	</string>
+            <fileset dir="${jsSrcDirBase}"        includes="mainConfig.js" />
+	    	<string>
+	    	    }
+	    	    
+	    		function doStartTemplateProcessing(){
+		    		definejs('antlr3', function(){
+				    		
+				    		org = {};
+		    				window.org = org;
+				    		if (typeof org.antlr === "undefined" || !org.antlr) {
+				    		    org.antlr = {};
+				    		}
+		    				if (typeof org.antlr.runtime == "undefined" || !org.antlr.runtime) {
+		    					org.antlr.runtime = {};
+		    				}
+							if (typeof org.antlr.runtime.tree == "undefined" || !org.antlr.runtime.tree) {
+								org.antlr.runtime.tree = {};
+							}
+	    	</string>
+            <fileset dir="${jsSrcDirBase}vendor/libs"         includes="antlr3-all.js" />
+	    	<string>
+		    			return org;
+		    		});
+	    	</string>
+	    	<string>
+	    	    
+	    			require(['antlr3'], function(org){
+	    	</string>
+	        <fileset dir="${jsSrcDirBase}gen/parser"       includes="*.js" excludes="MmirTemplateParser.js" />
+	    	<string>
+		    			definejs('ES3Lexer',  function(){ return ES3Lexer; });
+		    			definejs('ES3Parser', function(){ return ES3Parser; });
+		    			
+		    			definejs('contentLexer',  function(){ return MmirScriptContentLexer; });
+		    			definejs('contentParser', function(){ return MmirScriptContentParser; });
+		    			
+		    			definejs('scriptLexer',  function(){ return MmirScriptLexer; });
+		    			definejs('scriptParser', function(){ return MmirScriptParser; });
+		    			
+		    			definejs('templateLexer',  function(){ return MmirTemplateLexer; });
+		    			//definejs('templateParser', function(){ return MmirTemplateParser; });
+		    				    			
+		    		});
+	    	</string>
+	    	
+	    	
+            <!-- build AMD module for CryptoJS/md5 library: -->
+            <string>
+                	definejs('md5impl', function(){
+            </string>
+			<fileset dir="${jsSrcDirBase}vendor/libs"         includes="md5.js" />
+			<string>
+				    	return CryptoJS;
+				    });
+	                
+	                definejs('jsonlint', function(){
+	    	</string>
+            <!-- ... and an AMD module for the jsonlint parser ... -->
+			<fileset dir="${buildDirLib}"         includes="jsonlint.parser.js" />
+			<string>
+						return jsl.parser;
+					});
+				    	    		
+		    		var checksumUtils = require('checksumUtils');
+		    		checksumUtils.init( require('md5impl') );
+		    		var jsl;
+		    		
+		    		var jqueryDeferred = requiren(buildLibDirRelativePath+'nodejs-jquery-deferred/index.js');
+		    		
+		    		require(['constants', 'jsonlint', 'jqueryajax'], function(constants, jsonlint, jquery){
+		    			
+		    			constants.init(theArguments[2] + 'www/');
+		    			
+			    		jsl = {
+			    			parser: require('jsonlint')
+			    		};
+			    		
+			    		jqueryDeferred.extend(jquery, jqueryDeferred);
+		    		
+	    	</string>
+			<fileset dir="${jsBuildDirBase}ant"              includes="StandaloneTemplateParserExec.js" />
+			<string>
+	    			});
+	    			
+	    		}//END: doStartTemplateProcessing(){...
+	    	</string>
+	        
+
+	    </concat>
+	    <echo message="${exec.js.compile.template.parser} built." />
+	</target>
+	
+	<target name="parseTemplatesRhinoEnv"
+		depends="createTemplateParserFile"
+			description="Parse eHTML Template files with Rhino environment (slow)">
+			
+		<echo message="Running Rhino environment with script file ${exec.js.compile.template.parser} ..." />
+		<exec executable="java" failonerror="true">
+            <arg line="-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.template.parser} ${baseDir}" />
+        </exec>
+        
+		<!-- Need to re-create filelist, since new files may have been created (or deleted).
+			 NOTE that inheritAll needs to be false in order to force re-reading of directories/files.
+		 -->
+		<antcall target="generateFileListJSONFile" inheritAll="false" />
+		<echo>Finished parsing templates (RHINO).</echo>
+	</target>
+	
+	<target name="parseTemplatesNodeJsEnv"
+			depends="createTemplateParserFile"
+			description="Parse eHTML Template files with NodeJS environment">
+		
+		<echo message="Running node.js environment with script file ${exec.js.compile.template.parser} and argument ${baseDir}..." />
+		<exec executable="${exec.nodejs}" failonerror="true">
+            <arg value="${exec.js.compile.template.parser}"/>
+            <arg value="${baseDir}"/>
+        </exec>
+        
+		<!-- Need to re-create filelist, since new files may have been created (or deleted).
+			 NOTE that inheritAll needs to be false in order to force re-reading of directories/files.
+		 -->
+		<antcall target="generateFileListJSONFile" inheritAll="false" />
+		<echo>Finished parsing templates (NODEJS).</echo>
+	</target>
+	
+</project>

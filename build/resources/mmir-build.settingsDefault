@@ -1,0 +1,64 @@
+##
+## This file contains user specific settings for the ANT build.xml file
+##
+## build.settings: used settings by ANT build file 
+##                 (if missing, it will be created upon first time
+##                  the ANT build file is executed; you may have
+##                  to refresh the file viewer to make the new
+##                  file visible) 
+##                 NOTE: this file should be excluded from version control!
+##
+## build.settingsDefault: template file for build.settings.
+##
+
+########################## NodeJS ###########################
+# [optional] configure the following properties, if node.js should be used for 
+#            running JavaScript build tasks
+#			 (see target names in build.xml)
+#
+# [RECOMMENDED] it is highly recommended to use NodeJS for JavaScript compilation tasks
+#               (instead of the slower build-in/shipped-with Java-based Rhino environment)
+#
+# (1) EXAMPLE for Windows 
+#                     -- where executable is located relatively, in the a "parallel" directory:
+#                        [parent dir]
+#                                    /[this project]
+#                                    /nodejs/node.exe
+#
+#nodeJsDir=../nodejs/
+#nodeJsExec=node.exe
+#
+#
+# (2) EXAMPLE for MacOS 
+#                   -- where executable is installed in user's local bin folder
+#
+#nodeJsDir=/usr/local/bin/
+#nodeJsExec=node
+#
+#
+# (3) DEFAULT setting for globally executable NodeJS
+#             NOTE: this may trigger a prompt with a warning in ANT tasks.
+#                   If you want to avoid the prompt, either
+#                   * specify property 
+#                       doIgnoreMissingNodeJsPath
+#                     and set it to true (see below)
+#                   * or configure property
+#                       nodeJsDir
+#                     with the correct path (see examples above).
+#                      Note that in case of Windows you
+#                       also have to specify / add the file
+#                       extension (*.exe) in property 
+#                          nodeJsExec
+#                       when specifying the path.
+nodeJsDir=
+nodeJsExec=node
+#
+# manually disable check, if NodeJS path is accessible 
+# (enable this, if you have configured NodeJS to be 
+#  executable globally)
+#
+# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
+#          it to anything but true will leave this setting disabled)
+#
+#doIgnoreMissingNodeJsPath=true
+
