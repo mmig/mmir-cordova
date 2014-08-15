@@ -35,7 +35,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     
     <onentry>
       <script>
-			mmir.DialogManager.render('Application', 'login');
+			mmir.DialogManager.render('HelloWorld', 'start');
       </script>
     </onentry>
     
