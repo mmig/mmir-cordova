@@ -26,5 +26,7 @@
  -->
  
  <state id="input_manager_initial_state" initial="touch_input" name="input_manager_initial_state">
+	<state id="touch_input" name="touch_input">
+	</state>
  </state>
 </scxml>
