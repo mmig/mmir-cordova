@@ -1,7 +1,7 @@
 mmir-cordova
 ============
 
-A skeleton project for the MMIR framework.
+A skeleton / boilerplate project for the MMIR framework.
 
 This repository contains resources that should be added to newly
 created Cordova 3.x projects, in order to add the MMIR framework.
@@ -12,17 +12,28 @@ This guide assumes that Cordova 3.x CLI is installed globally
 (see Cordova CLI documentation for more details).
 
 --
-### Build
+### Build (Cordova CLI)
 
 after creating a new Cordova project using ```cordova create DIR PACKAGE+APPNAME APPNAME```,
-change into the newly created project directory ```DIR``` and:
+change into the newly created project directory ```DIR```.
+
+The contents of ```DIR``` should look something like:
+
+    hooks/
+    merges/
+    platforms/
+    plugins/
+    www/
+    config.xml
+
+Now, in order to add the MMIR framework, do the following:
 
 1. add platforms, e.g. Android:
 
    ```cordova platform add android```  
    
 2. add plugin-dependencies 
-   (i.e. Cordova plugins required by MMIR framework; 
+   (i.e. Cordova plugins required by the MMIR framework; 
     for specific dependency details see below)
     
    ```cordova plugin add org.apache.cordova.media```
@@ -68,6 +79,62 @@ change into the newly created project directory ```DIR``` and:
          ```mmir-build.settings``` to match your build environment (see comments within the 
          file for more information).
 
+--
+### Build (Cordova Platform)
+
+If, after the first build, you want to continue the development with platform-specific
+tools (i.e. only work on / modify resources located under the ```/platform``` directory
+of the Cordova project), you can _transfer_ the build-tools for the MMIR framework / resources
+into the platform-specific sub-directories and use them there (see also the Cordova 
+documentation for more details about platform specific development).
+
+Firstly, copy the ANT build files and settings for MMIR (i.e. the files in the root directory
+with prefix  ```mmir-```) over to the root directory of the platform-specific project, along
+with the ```/build``` directory.
+
+You may need to modify the settings in ```build.properties``` to match the platform-specific
+file structure.
+
+
+#### Android Platform
+
+For _Android_ you have to copy the files/directories into the
+platform-specific project in ```platform/android/```.
+
+The you have to change the property ```baseDir``` in the file ```build.properties```.
+This property specifies the location for the web resources (i.e. the ```/www``` directory):
+change this from
+
+    baseDir=./
+    
+to
+
+    baseDir=assets/
+    
+in order to specify, that the project's web resources can be found in directory ```assets/www```
+of the platform-specific project.
+
+
+
+For Android, Cordova automatically generates ```build.xml``` and ```custom_rules.xml```. In order
+to integrate the MMIR build process, you can modify ```custom_rules.xml``` by adding the 
+following target:
+```xml
+<target name="-pre-build">
+	<ant antfile="mmir-build.xml" target="compileAllNodeJs"></ant>
+	<ant antfile="mmir-parse.xml" target="parseTemplatesNodeJsEnv"></ant>
+</target>
+```
+
+This will trigger the same build processes, as the _hooks_ in the (platform-independent) Cordova
+root project, that are triggered by using the command ```cordova build```
+(i.e. the hooks specified in ```hooks/before_build```).
+
+--
+### License
+If not stated otherwise, files, resources from here are provided under the MIT license.
+
+Copyright (C) DFKI GmbH 2012 - 2014 
 
 [1]: https://github.com/mmig/mmir-lib
    
