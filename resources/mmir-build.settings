@@ -1,0 +1,11 @@
+##
+## This file contains user specific settings for the ANT build.xml
+##
+
+# [optional] if node.js is used for running JavaScript tasks,
+#			 (see target names in build.xml) 
+# 			 set these values analogous to Maven above
+nodeJsDir=C:/Users/aaru01/App/nodejs/
+nodeJsExec=node.exe
+
+doIgnoreMissingNodeJsPath=false

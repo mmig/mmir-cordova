@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<c:topologicallySortedDependencyList xmlns:c="http://commons.apache.org/scxml-js" xmlns:exsl="http://exslt.org/common" source-path="backends/js/StateTableStatechartGenerator.xsl">
+<c:stylesheet path="ir-compiler/normalizeInitialStates.xsl"/>
+<c:stylesheet path="ir-compiler/generateUniqueInitialStateIds.xsl"/>
+<c:stylesheet path="ir-compiler/generateUniqueStateIds.xsl"/>
+<c:stylesheet path="ir-compiler/positionTransitionsAfterSubstates.xsl"/>
+<c:stylesheet path="ir-compiler/transformIf.xsl"/>
+<c:stylesheet path="ir-compiler/addDefaultTransitionToHistoryStates.xsl"/>
+<c:stylesheet path="ir-compiler/appendBasicStateInformation.xsl"/>
+<c:stylesheet path="ir-compiler/appendStateInformation.xsl"/>
+<c:stylesheet path="ir-compiler/splitTransitionTargets.xsl"/>
+<c:stylesheet path="ir-compiler/changeTransitionsPointingToCompoundStatesToPointToInitialStates.xsl"/>
+<c:stylesheet path="ir-compiler/computeLCA.xsl"/>
+<c:stylesheet path="layout/addTransitionTargetIds.xsl"/>
+<c:stylesheet path="ir-compiler/addNearestParallelDescendantOfLCAToTransition.xsl"/>
+<c:stylesheet path="ir-compiler/flattenTransitions.xsl"/>
+<c:stylesheet path="ir-compiler/nameTransitions.xsl"/>
+<c:stylesheet path="ir-compiler/appendTransitionInformation.xsl"/>
+<c:stylesheet path="ir-compiler/copyEnumeratedEventTransitions.xsl"/>
+<c:stylesheet path="ir-compiler/enumerateEvents.xsl"/>
+<c:stylesheet path="ir-compiler/numberStatesAndTransitions.xsl"/>
+<c:stylesheet path="ir-compiler/addEventRegularExpressions.xsl"/>
+<c:stylesheet path="ir-compiler/expandStarEvent.xsl"/>
+</c:topologicallySortedDependencyList>

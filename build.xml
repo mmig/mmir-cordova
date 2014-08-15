@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<project name="MMIR build resources" default="copy-resources">
+    
+    <target name="copy-resources">
+        <copy todir="../" overwrite="true">
+            <fileset dir="resources"/>
+        </copy>
+    </target>
+    
+</project>
