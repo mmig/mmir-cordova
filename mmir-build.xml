@@ -376,71 +376,103 @@
 	    <mkdir dir="${buildDirBin}" />
 	    <mkdir dir="${buildDirTempJS}" />
 		<concat destfile="${base.js.compile.grammar.parser.generator}" fixlastline="true" outputencoding="UTF-8">
-            
-            <fileset dir="${jsBuildDirBase}"                 includes="buildConfig.js" />
-            
-            <string>
-                
-                //set the framework's src-path from the build-properties file
-                //  (may be different than the default value in buildConfig.js)
+           
+		    <string>
+		        //set the framework's src-path from the build-properties file
+                //  (may be different than the default value in mainConfig.js)
                 var appSrcDir = '${jsSrcDirBase}';
-                require.config({baseUrl: './' + appSrcDir});
+                require.config({
+                	baseUrl: './' + appSrcDir,
+                	paths: {'core': 'core'}
+                });
                 
-                var buildLibDir = '${buildDirLib}mmir-build/';
-                var appDirParts = appSrcDir.split('/');
-                for(var i=0, size=appDirParts.length; i+1 != size; ++i){
-                	if(appDirParts[i] !== '.'){
-                		buildLibDir = '../' + buildLibDir;
-                	}
+                require(['core'], function(core){
+                
+                	//define "auto-start" module for starting the template processing
+                	// (gets triggered after main-config for requirejs is was applied)
+                	definejs('doStartBuildProc', function(){
+                		//now: do start the build process:
+	                	doStartBuildEnv();
+                	});
+					core.startModule = 'doStartBuildProc';
+					
+	                //configure replacement / build-stub implementations:
+	                var buildLibDir = '${buildDirLib}mmir-build/';
+	                
+	                //...determine correct build/ sub-dir by analysing the main-app's dir:
+	                var appDirParts = appSrcDir.split('/');
+	                for(var i=0, size=appDirParts.length; i+1 != size; ++i){
+	                	if(appDirParts[i] !== '.'){
+	                		buildLibDir = '../' + buildLibDir;
+	                	}
+	                }
+	                
+	                //set the paths for the build-implementations:
+	                core.config({
+	                	baseUrl: './' + appSrcDir,
+		                paths: {
+		                	  'jquery': buildLibDir+'jqueryDummy'
+		 					, 'jqueryajax': buildLibDir+'jqueryAjaxDummy'
+		 					, 'env': buildLibDir+'envDetectBuild'
+		 					, 'jqm': buildLibDir+'jqueryMobileDummy'
+		                }
+	                });
+	                
+	                //load main-config for requirejs
+	                // (also triggers the auto-start module)
+	                doLoadAppConfig(require.define);
+				});
+				
+				//apply main-config for requirejs 
+				// (need to pass in requirejs' define as argument "define")
+				function doLoadAppConfig(define){
+            </string>
+            <fileset dir="${jsSrcDirBase}"             includes="mainConfig.js" />
+            <string>
                 }
                 
-                require.config({paths: {
-                	  'jquery': buildLibDir+'jqueryDummy'
- 					, 'jqueryajax': buildLibDir+'jqueryAjaxDummy'
- 					, 'env': buildLibDir+'envDetectBuild'
- 					, 'jqm': buildLibDir+'jqueryMobileDummy'
-                }});
-                
+                //encapsule build-process (gets triggered after build-paths are configured; see above)
+				function doStartBuildEnv(){
+				
+					//build AMD module for CryptoJS/md5 library:
+                	definejs('md5impl', function(){
             </string>
-            <!-- build AMD module for CryptoJS/md5 library: -->
-            <string>
-                
-                definejs('md5impl', function(){
-            </string>
-			<fileset dir="${jsSrcDirBase}vendor/libs"         includes="md5.js" />
+			<fileset dir="${jsSrcDirBase}vendor/libs"  includes="md5.js" />
 			<string>
-			    	return CryptoJS;
-			    });
-                
-                definejs('jsonlint', function(){
+				    	return CryptoJS;
+				    });
+	                
+	                definejs('jsonlint', function(){
 	    	</string>
             <!-- ... and an AMD module for the jsonlint parser ... -->
-			<fileset dir="${buildDirLib}"         includes="jsonlint.parser.js" />
+			<fileset dir="${buildDirLib}"              includes="jsonlint.parser.js" />
 			<string>
-					return jsl.parser;
-				});
-			    	    		
-	    		var checksumUtils;	    		
-	    		var jsl;
-	    		
-	    		// * load dependencies (SemanticInterpreter, jQuery) 
-	    		// * setup JSON parser (for creating detailed error messages)
-	    		// * initialize checksum-utils (with loaded dependencies) 
-	    		require(['semanticInterpreter', 'jquery', 'jsonlint', 'md5impl','checksumUtils'], function(jsonlint){
+						return jsl.parser;
+					});
+				    	    		
+		    		var checksumUtils;	    		
+		    		var jsl;
 		    		
-		    		jsl = {
-		    			parser: require('jsonlint')
-		    		};
-		    		
-	    			checksumUtils = require('checksumUtils');
-	    			checksumUtils.init( require('md5impl') );
-	    			
-	    			//start the standalone-grammar parser / generator: 
+		    		// * load dependencies (SemanticInterpreter, jQuery) 
+		    		// * setup JSON parser (for creating detailed error messages)
+		    		// * initialize checksum-utils (with loaded dependencies) 
+		    		require(['semanticInterpreter', 'jquery', 'jsonlint', 'md5impl','checksumUtils'], function(jsonlint){
+			    		
+			    		jsl = {
+			    			parser: require('jsonlint')
+			    		};
+			    		
+		    			checksumUtils = require('checksumUtils');
+		    			checksumUtils.init( require('md5impl') );
+		    			
+		    			//start the standalone-grammar parser / generator: 
 	    	</string>
-			<fileset dir="${jsBuildDirBase}ant"  includes="StandaloneSemanticParserCompileExec.js" />
+			<fileset dir="${jsBuildDirBase}ant"         includes="StandaloneSemanticParserCompileExec.js" />
 			<string>
-	    		});
-	    		
+			    
+		    		});
+		    		
+		    	}//END: doStartBuild(){..
 	    	</string>
         </concat>
 		<echo message="${base.js.compile.grammar.parser.generator} built." />
