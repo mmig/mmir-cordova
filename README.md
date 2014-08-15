@@ -5,10 +5,19 @@ This repository hold files, resources etc. for building MMIR-based applications 
 combination with Cordova.
 
 
-The repository is not meant be be used by its own:
+The repository is meant be included as a "sub-project":
 for example, this repository is included as a GIT _subtree_ in [MMIR-cordova][1] as
-directory ```/build```.
+directory ```/build``` using
 
+    git subtree add --prefix build https://github.com/mmig/mmir-tooling master --squash
+
+later updates from this repository can be fetched from wihtin the referencing project using
+
+    git subtree pull --prefix build https://github.com/mmig/mmir-tooling master --squash
+
+----
+
+##### Notes
 
 Running the ANT task ```build.xml``` will copy the contents of directory 
 ```/resources``` into the parent directory, i.e. to ```../```.
