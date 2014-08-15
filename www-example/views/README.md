@@ -11,5 +11,5 @@ E.g. for controller implementation ```login.js```:
 In addition, each controller main have (optionally) one layout specified at 
  ```views/layout/[CONTROLLER NAME].ehtml```
  the controller's layout will be used as base-skeleton for each view of the controller
- (if no specific layout is specified, the default ```views/layout/application.ehtml```
+ (if no specific layout is specified, the default ```views/layout/default.ehtml```
   will be used)
