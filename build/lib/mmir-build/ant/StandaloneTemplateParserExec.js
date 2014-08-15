@@ -260,6 +260,12 @@ controllerManager.init().then(
 				}
 				
 				var views = utils.getDirectoryContents('views/'+name);
+				
+				if(!views){
+					console.info('Found non-directory entry (i.e. file) in views/['+i+']: "'+name+'"');
+					continue;
+				}
+				
 				var isLayout = false;
 				var ctrlName;
 				if(name === 'layouts'){
