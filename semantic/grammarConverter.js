@@ -62,8 +62,6 @@ var GrammarConverter = function(){
 	this.tokens_array = new Array();
 	this.stop_words_regexp;
 	
-	this.semanticAnnotationResult = {};
-	
 	//default setting for masking value Strings in JSON values (see maskJSON() / unmaskJSON)
 	this.maskValues = true;
 	//default setting for masking property-name Strings in JSON values (see maskJSON() / unmaskJSON)
@@ -138,7 +136,7 @@ GrammarConverter.prototype.convertJSONGrammar = function(){
 			+ "result['semantic'] = "
 			+ this.variable_prefix
 			+ "result['semantic'].replace(/\"{/g,'{').replace(/}\"/g,'}'); console.log("
-			+ this.variable_prefix + "result);  "+this.THE_INTERNAL_GRAMMAR_CONVERTER_INSTANCE_NAME+".semanticAnnotationResult = "
+			+ this.variable_prefix + "result); semanticAnnotationResult.result = "
 			+ this.variable_prefix + "result*] ;\n\n" + this.grammar_utterances
 			+ "\n" + this.grammar_phrases + ";";
 
@@ -177,24 +175,28 @@ GrammarConverter.prototype.parseStopWords = function(){
 	var stop_words = "";
 	
 	if(size > 0){
-		stop_words += "(";
+		stop_words += "\\b(";           //starting at a word-boundary (-> ignore within-word matches)
 		
-		//the RegExp matches each stopword (and optionally followed by one white-character)
+		//... then the RegExp matches each stopword:
 		for(var index=0; index < size ; ++index){
 			var stop_word = json_stop_words[index];
 			if (index > 0){
-				stop_words +=	"|"; 		//there is already a previous stopword-entry: do add OR-matching ...
+				stop_words +=	"|";    //... if there is already a previous stopword-entry: do add OR-matching ...
 			}
 	
-			stop_words +=	stop_word   //... the stopword "stop_word"
-							+ "\\s?";	//... and optionally one white-character that follows the stopword
+			stop_words +=	stop_word;  //... add the stopword "stop_word"
 		}
 		
-		stop_words += ")";
+		stop_words += ")"
+			       + "\\b"	            //... ending with a word-boundary -> avoid "cutting out" matching partial strings
+		                                //    e.g. without \b: '(in)\s?' would match (and cut out all matches) within "winning" -> "wng"
+			       
+			       + "\\s?";	        //... and optionally: one white-character that follows the stopword
 	}
 	else {
-		//this will never match:
-		stop_words += '^[.]';
+		//for empty stopword definition: match empty string
+		//  (basically: remove nothing)
+		stop_words += '^$';
 	}
 	this.stop_words_regexp = new RegExp(stop_words,"igm");	//RegExp options: 
 															// ignore-case (i),
@@ -228,8 +230,9 @@ GrammarConverter.prototype.parseStopWords_alt = function(){
 		stop_words += ")";
 	}
 	else {
-		//this will never match:
-		stop_words += '^[.]';
+		//for empty stopword definition: match empty string
+		//  (basically: remove nothing)
+		stop_words += '^$';
 	}
 	this.stop_words_regexp_alt = new RegExp(stop_words,"igm");
 };
@@ -423,9 +426,12 @@ GrammarConverter.prototype.doCreateSemanticInterpretationForPhrase = function(ut
  * Set the executable grammar function.
  * 
  * The grammar function takes 1 String argument: the text that should be parsed.
- * The result is written to the GrammarConverter's property <tt>semanticAnnotationResult</tt>
+ * The returned result depends on the JSON definition of the grammar.
  * 
- * @param {Function} func the executable grammar function
+ * @param {Function} func
+ * 			the executable grammar function: <code>func(string) : object</code>
+ * 
+ * @see #exectueGrammar
  */
 GrammarConverter.prototype.setGrammarFunction = function(func){
 	this.executeGrammar = func;
@@ -438,7 +444,20 @@ GrammarConverter.prototype.setGrammarFunction = function(func){
  * 		since that function applies some pre- and post-processing to the text (stopword removal
  * 		en-/decoding of special characters etc.).
  * 
- * @param {String} text the text String that should be parse.
+ * @param {String} text
+ * 			the text String that should be parse.
+ * @returns {Object}
+ * 			the result of the grammar execution:
+ * 			<code>{phrase: STRING, phrases: OBJECT, semantic: OBJECT}</code>
+ * 
+ * 			The property <code>phrase</code> contains the <code>text</code> which was matched (with removed stopwords).
+ * 
+ * 			The property <code>phrases</code> contains the matched <tt>TOKENS</tt> and <tt>UTTERANCES</tt> from
+ * 			the JSON definition of the grammar as properties as arrays
+ *          (e.g. for 1 matched TOKEN "token": <code>{token: ["the matched text"]}</code>).
+ * 
+ *          The returned property <code>semantic</code> depends on the JSON definition of the grammar.
+ *          
  */
 GrammarConverter.prototype.executeGrammar = function(text){
 	console.warn('GrammarConverter.executeGrammar: this is only a stub. No grammar implementation set yet...');
@@ -741,9 +760,9 @@ GrammarConverter.prototype.encodeUmlauts = function(target, doAlsoEncodeUpperCas
 	//	data = data.replaceAll("\u00FC", "__ue__");//HTML: &#252;
 	//	data = data.replaceAll("\u00F6", "__oe__");//HTML: &#246;
 	//	data = data.replaceAll("\u00DF", "__ss__");//HTML: &#223;
-	str = str.replace(/ö/g,'__oe__').replace(/ä/g,'__ae__').replace(/ü/g,'__ue__').replace(/ß/g,'__ss__');
+	str = str.replace(/�/g,'__oe__').replace(/�/g,'__ae__').replace(/�/g,'__ue__').replace(/�/g,'__ss__');
 	if(doAlsoEncodeUpperCase){
-    	str = str.replace(/Ö/g,'__Oe__').replace(/Ä/g,'__Ae__').replace(/Ü/g,'__Ue__');
+    	str = str.replace(/�/g,'__Oe__').replace(/�/g,'__Ae__').replace(/�/g,'__Ue__');
 	}
 	
 	if(isString){
@@ -784,9 +803,9 @@ GrammarConverter.prototype.decodeUmlauts = function(target, doAlsoDecodeUpperCas
 		str = JSON.stringify(target);
 	}
 	
-	str = str.replace(/__oe__/g,'ö').replace(/__ae__/g,'ä').replace(/__ue__/g,'ü').replace(/__ss__/g,'ß');
+	str = str.replace(/__oe__/g,'�').replace(/__ae__/g,'�').replace(/__ue__/g,'�').replace(/__ss__/g,'�');
 	if(doAlsoDecodeUpperCase){
-    	str = str.replace(/__Oe__/g,'Ö').replace(/__Ae__/g,'Ä').replace(/__Ue__/g,'Ü');
+    	str = str.replace(/__Oe__/g,'�').replace(/__Ae__/g,'�').replace(/__Ue__/g,'�');
 	}
 	
 	if(isString){

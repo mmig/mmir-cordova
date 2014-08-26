@@ -71,10 +71,10 @@ function(
 	var helperPath = "helpers/";
 	var languagePath = "config/languages/";
 	var modelPath = "models/";
-	var layoutPath = "views/layouts/";
+	var layoutPath = "views/layouts/";//before changing this: see also use of 'layouts' sub-dir-name in build/lib/mmir-build/ant/StandaloneTemplateParserExec.js
 	var viewPath = "views/";
 	var genViewPath = "gen/views/";
-	var genLayoutPath = "gen/views/layouts/";
+	var genLayoutPath = "gen/views/layouts/";//before changing this: see also use of 'layouts' sub-dir-name in build/lib/mmir-build/ant/StandaloneTemplateParserExec.js
 	var genGrammarsPath = "gen/grammar/";
 	
 	var speechConfigFileName = "speech.json";
@@ -95,6 +95,19 @@ function(
 		// if not on browser: basepath must be different
 		if(typeof isBrowserEnvParam === 'string'){
 			basePath = isBrowserEnvParam;
+		}
+		else if (isBrowserEnvParam && isBrowserEnvParam.env){
+
+			switch(isBrowserEnvParam.env){
+				case 'cordova':
+				case 'android':
+					basePath = "file:///android_asset/www/";
+					break;
+				case 'ios':
+				case 'default':
+					basePath = "";
+			}
+			
 		}
 		else if (isBrowserEnvParam){
 			basePath = "";
@@ -349,6 +362,9 @@ function(
 	var isBrowserEnvironment = env.isBrowserEnv;// module.config().forBrowser;
 	
 	instance = new constructor(isBrowserEnvironment);
+	
+	//TODO find better way for initializing env-dependent settings (see also comment above)
+	setBasePath({env: env.envSetting});
 	
 	return instance;
 
