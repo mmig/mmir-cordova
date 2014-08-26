@@ -200,16 +200,19 @@ controllerManager.init().then(
 		
 		//FIX: halt execution -> do not allow to continue, in case a template file could not be read!
 		var isError = false;
+		var errorList = [];
 		var originalAjax = $.ajax;
 		$.ajax = function(options){
 			var originalErrorFunc = options.error;
-			options.error = function(exc){
+			options.error = function(loadContext, status, exc){
 				if(originalErrorFunc){
 					originalErrorFunc(exc);
 				}
 
 //				console.log('Standalone-Template-Parser.ajax-shim: '+(exc.stack?exc.stack:exc));
+//				console.error('Standalone-Template-Parser.ajax-shim ERROR for URL: '+options.url);
 //				throw(exc);
+				errorList.push(exc);
 				isError = true;
 			};
 			return originalAjax(options);
@@ -220,7 +223,12 @@ controllerManager.init().then(
 	    pm.init().then(function(){//mobileDS.PresentationManager.getInstance();
 	
 			if(isError){
-				throw(new Error('Encountered errors while reading templates files: abort parsing!'));
+				var msg = ' Details: \n';
+				for(var err_i in errorList){
+					var error = errorList[err_i];
+					msg += (error.stack ? error.stack : error.toString()) + '\n';
+				}
+				throw(new Error('Encountered errors while reading templates files: abort parsing!'+msg));
 			}
 		    
 		    console.log('------------------------------------------------------- finished parsing *.ehtml templates -----------------------------------------');
