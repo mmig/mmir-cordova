@@ -6,13 +6,49 @@ A skeleton / boilerplate project for the MMIR framework.
 This repository contains resources that should be added to newly
 created Cordova 3.x projects, in order to add the MMIR framework.
 
+NOTE: the directory `www-example/` contains a somewhat _minimal_
+      MMIR-based application.
+
+
+WARNING: this is only an example project - files in `build/` and
+         and `www-example/mmirf/` may be outdated.
+         For your own project, you should use current versions from
+         [mmir-lib][1] (for `www-example/mmirf/`) and [mmir-tooling][2]
+         (for `build/` and `mmir-*` files in root directory).
+
 --
 ### Prerequisites
 This guide assumes that Cordova 3.x CLI is installed globally
-(see Cordova CLI documentation for more details).
+(see Cordova CLI documentation for more details), i.e. that the `cordova` command
+is available on the terminal/command line.
 
 --
-### Build (Cordova CLI)
+
+### Add MMIR Resources to an existing Cordova Project
+
+Simply Add the files of this repository to the root directory
+of the Cordova project.
+
+The project should then look something like this
+
+    hooks/
+    merges/
+    platforms/
+    plugins/
+    www/
+    config.xml
+    
+    build/
+    www-example/
+    mmir-build.properties
+    mmir-build.settingsDefault
+    mmir-build.xml
+    mmir-parse.xml
+    
+Then use the example from `www-example/` as starting point for
+your application code in `www/`.
+
+### Create A New Cordova Project (Cordova CLI)
 
 after creating a new Cordova project using ```cordova create DIR PACKAGE+APPNAME APPNAME```,
 change into the newly created project directory ```DIR```.
@@ -54,22 +90,36 @@ Now, in order to add the MMIR framework, do the following:
    ``` 
 
 
-4. add the MMIR framework and StarterKit
+4. add the MMIR framework
 
-  1. add SCION queue plugin
+  1. add the _SCION queue plugin_
      
      ```cordova plugin add  https://github.com/mmig/mmir-plugin-scionqueue.git```
      
-  2. copy the contents of this repository into the root folder ```DIR```
-     of the newly created Cordova project
-     * there should not exist a directory ```build/``` yet, so simply copy this directory over
-       to ```DIR```
-     * integrate the contents of ```hooks/before_build``` into the existing directory
-     * copy the files with prefix ```mmir-``` into the root directory of ```DIR```
+  2. copy the [MMIR tooling][2] files into sub-directory ```build/```
+     of the newly created Cordova project at ```DIR```
+     * there should not exist a directory ```build/``` yet, so you should create it
+     * after copying the files into ```build/```, go into this new sub-direcotry and
+       exectue the default ANT build task from ```build/build.xml```.
+       This will copy some scripts into ```hooks/before_build``` as well as
+       several ANT build / configuration files into the root directory ```DIR```
+       (these will have the prefix ```mmir-``` in their file name):
+       
+       ```
+       ...
+       hooks/before_build/**
+       mmir-build.properties
+       mmir-build.settingsDefault
+       mmir-build.xml
+       mmir-parse.xml
+       ...
+       ```
      
   3. copy the JavaScript application code and the main ```index.html``` into ```DIR/www```
+     (you can use the [example index.html](./www-example/index.html) and 
+      [app.js](./www-example/app.js) as starting point)
   
-  4. copy the  the [MMIR-library][1] files into the sub-directory ```DIR/www/mmirf```
+  4. copy the the [MMIR-library][1] files into the sub-directory ```DIR/www/mmirf```
      
 5. build the project for all installed platforms using the command ```cordova build```
 
@@ -80,7 +130,7 @@ Now, in order to add the MMIR framework, do the following:
          file for more information).
 
 --
-### Build (Cordova Platform)
+### Use Cordova Platform-Specific Resources
 
 If, after the first build, you want to continue the development with platform-specific
 tools (i.e. only work on / modify resources located under the ```/platform``` directory
@@ -137,4 +187,4 @@ If not stated otherwise, files, resources from here are provided under the MIT l
 Copyright (C) DFKI GmbH 2012 - 2014 
 
 [1]: https://github.com/mmig/mmir-lib
-   
+[2]: https://github.com/mmig/mmir-tooling
