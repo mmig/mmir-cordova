@@ -24,7 +24,7 @@ is available on the terminal/command line.
 
 --
 
-### Add MMIR Resources to an existing Cordova Project
+### Add MMIR Resources To An Existing Cordova Project
 
 Simply Add the files of this repository to the root directory
 of the Cordova project.
@@ -179,6 +179,10 @@ following target:
 This will trigger the same build processes, as the _hooks_ in the (platform-independent) Cordova
 root project, that are triggered by using the command ```cordova build```
 (i.e. the hooks specified in ```hooks/before_build```).
+
+#### xxxx Platform
+
+TODO
 
 --
 ### License
