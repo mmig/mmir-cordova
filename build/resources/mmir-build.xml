@@ -40,6 +40,8 @@
 	<property name="file.in.InputEngine"   location="${SCXMLInputEngineDir}${SCXMLInputEngineXMLFile}" />
 	<property name="file.out.DialogEngine" location="${JSOutDialogEngineDir}${SCXMLDialogEngineOutfile}" />
 	<property name="file.out.InputEngine"  location="${JSOutInputEngineDir}${SCXMLInputEngineOutfile}" />
+	<property name="compile.dialog.engine.err" location="${buildDirTempJS}dialog_engine.error.log"/>
+	<property name="compile.input.engine.err"  location="${buildDirTempJS}input_engine.error.log"/>
 	
 	<!-- convert Strings to file references (where necessary): -->
 	<property name="file.build.scxmljs.dir" location="${buildSCXMLJSDir}"/>
@@ -52,11 +54,20 @@
 	</taskdef>
 	
 	<!-- ############# Main Build Targets ############# -->
+	
+	<target name="clean" depends="cleanTemp,cleanEngine,cleanGrammars" description="remove temporary and generated files (input-/dialog-engine, grammars)">
+	</target>
 
-	<target name="clean" depends="cleanTempFilesGrammarParserGenerator,cleanCompiledGrammarParserGeneratorDir" description="remove generated and intermediate files">
+	<target name="cleanTemp" description="remove intermediate files">
 		<delete file="${outputDirectoryParseFileJson}"/>
+	</target>
+	
+	<target name="cleanEngine" description="remove generated files for Inpute-/Dialog-Engine">
 		<delete file="${file.out.DialogEngine}"/>
 		<delete file="${file.out.InputEngine}"/>
+	</target>
+	
+	<target name="cleanGrammars" depends="cleanTempFilesGrammarParserGenerator,cleanCompiledGrammarParserGeneratorDir" description="remove generated files for compiled grammars">
 	</target>
 
 	<!--
@@ -229,9 +240,11 @@
 
 	<target name="compileDialogEngine" depends="checkDialogEngineUpToDate,createCompiledDialogEngineDir" unless="${is.up.to.date.DialogEngine}">
 	    
+		<delete file="${compile.dialog.engine.err}" />
+		
 		<java	
 			classname="org.mozilla.javascript.tools.shell.Main"
-			resultproperty="exec.dialog.engine.result" output="${file.out.DialogEngine}" errorproperty="compile.dialog.engine.err"
+			resultproperty="exec.dialog.engine.result" output="${file.out.DialogEngine}" error="${compile.dialog.engine.err}"
 			logError="true">
 			
 			<arg line="-opt -1 ${file.build.scxmljs.dir}/runner.js ${file.build.scxmljs.dir} src/javascript/scxml/cgf/main --backend state --beautify --ie ${file.in.DialogEngine}"/>
@@ -265,9 +278,8 @@
 	
 	<target name="compileDialogEngineFail" if="${compile.dialog.engine.failure}">
 		<loadresource property="compile.dialog.engine.err.out">
-			<file file="${file.out.DialogEngine}" />
+			<file file="${compile.dialog.engine.err}" />
 		</loadresource>
-		<delete file="${file.out.DialogEngine}" />
 		<echo>FAILED to generated file ${file.out.DialogEngine}.</echo>
 		<fail message="Error: ${line.separator}${compile.dialog.engine.err}${line.separator}${compile.dialog.engine.err.out}">
 		</fail>
@@ -309,10 +321,12 @@
 	</target>
 	
 	<target name="compileInputEngine" depends="checkInputEngineUpToDate,createCompiledInputEngineDir" unless="${is.up.to.date.InputEngine}">
-				
+
+		<delete file="${compile.input.engine.err}" />
+		
 		<java	
 			classname="org.mozilla.javascript.tools.shell.Main"
-			resultproperty="exec.input.engine.result" output="${file.out.InputEngine}" errorproperty="compile.input.engine.err"
+			resultproperty="exec.input.engine.result" output="${file.out.InputEngine}" error="${compile.input.engine.err}"
 			logError="true">
 			
 			<arg line="-opt -1 ${file.build.scxmljs.dir}/runner.js ${file.build.scxmljs.dir} src/javascript/scxml/cgf/main --backend state --beautify --ie ${file.in.InputEngine}"/>
@@ -346,9 +360,8 @@
 	
 	<target name="compileInputEngineFail" if="${compile.input.engine.failure}">
 		<loadresource property="compile.input.engine.err.out">
-			<file file="${file.out.InputEngine}" />
+			<file file="${compile.input.engine.err}" />
 		</loadresource>
-		<delete file="${file.out.InputEngine}" />
 		<echo>FAILED to generated file ${file.out.InputEngine}.</echo>
 		<fail message="Error: ${line.separator}${compile.input.engine.err}${line.separator}${compile.input.engine.err.out}">
 		</fail>
