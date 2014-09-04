@@ -1,4 +1,4 @@
-mmir-cordova
+[mmir-cordova][0]
 ============
 
 A skeleton / boilerplate project for the MMIR framework.
@@ -13,11 +13,14 @@ NOTE: the directory `www-example/` contains a somewhat _minimal_
 WARNING: this is only an example project - files in `build/` and
          and `www-example/mmirf/` may be outdated.
          For your own project, you should use current versions from
-         [mmir-lib][1] (for `www-example/mmirf/`) and [mmir-tooling][2]
-         (for `build/` and `mmir-*` files in root directory).
+         [mmir-lib][1] (place files in your `www/mmirf/` directory)
+         and [mmir-tooling][2] (place these file in your `build/` 
+         directory and initialize the build-tools by running the
+         default ANT task in `build/build.xml`).
 
 --
 ### Prerequisites
+
 This guide assumes that Cordova 3.x CLI is installed globally
 (see Cordova CLI documentation for more details), i.e. that the `cordova` command
 is available on the terminal/command line.
@@ -190,5 +193,6 @@ If not stated otherwise, files, resources from here are provided under the MIT l
 
 Copyright (C) DFKI GmbH 2012 - 2014 
 
+[0]: https://github.com/mmig/mmir-cordova
 [1]: https://github.com/mmig/mmir-lib
 [2]: https://github.com/mmig/mmir-tooling
