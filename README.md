@@ -148,8 +148,10 @@ Now, in order to add the MMIR framework, do the following:
        ```
      
   3. copy the JavaScript application code and the main ```index.html``` into ```DIR/www```
-     (you can use the [example index.html](./www-example/index.html) and 
-      [app.js](./www-example/app.js) as starting point)
+     (you can use the 
+       [example index.html](https://github.com/mmig/mmir-cordova/blob/master/www-example/index.html) and 
+       [app.js](https://github.com/mmig/mmir-cordova/blob/master/www-example/app.js)
+      as starting point)
   
   4. copy the the [MMIR-library][1] files into the sub-directory ```DIR/www/mmirf```
      
