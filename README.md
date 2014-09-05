@@ -12,7 +12,17 @@ NOTE: the directory `www-example/` contains a somewhat _minimal_
 
 WARNING: this is only an example project - files in `build/` and
          and `www-example/mmirf/` may be **out of date**.
-For your own project, you should instead use current resources from
+For your own project, you should instead use current resources from the [mmir-lib][1] and
+[mmir-tooling][2] repositories:
+
+    /build                  <- [mmir-tooling]
+    /hooks/
+    /merges/
+    /platforms/
+    /plugins/
+    /www/mmirf/             <- [mmir-lib]
+    
+   
  * [mmir-lib][1]
    _(place these files in your `www/mmirf/` directory)_
  * and [mmir-tooling][2] 
@@ -39,10 +49,7 @@ have to be installed.
 
 ### Add MMIR Resources To An Existing Cordova Project
 
-Simply Add the files of this repository to the root directory
-of the Cordova project.
-
-The project should then look something like this
+Starting with your Cordova 3 project which should look something like this
 
     hooks/
     merges/
@@ -50,16 +57,28 @@ The project should then look something like this
     plugins/
     www/
     config.xml
+
+create a new sub-direcotry `build/`.
+
+Then, copy the the contents of the [MMIR tooling][2] repository into 
+sub-directory ```build/```.
+
+Go into the new sub-directory and execute the default ANT task in
+`build/build.xml` (e.g. execute `ant` in directory `build/`).
+
+This will copy some files into the Cordova-project's root directory
+(as well as some files into `hooks/before_build/`):
     
     build/
-    www-example/
     mmir-build.properties
     mmir-build.settingsDefault
     mmir-build.xml
     mmir-parse.xml
     
-Then use the example from `www-example/` as starting point for
+Then you can use the contents of `www-example/` from [mmir-tooling][0] as starting point for
 your application code in `www/`.
+
+_NOTE_: You should replace the contents of `www/mmirf/` with a current version from [mmir-lib][1].
 
 ### Create A New Cordova Project (Cordova CLI)
 
