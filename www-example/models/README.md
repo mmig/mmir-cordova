@@ -1,1 +1,1 @@
-directory for controller implementations
+directory for (optional) data models
