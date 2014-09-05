@@ -16,5 +16,6 @@ In addition, each controller may have (optionally) one layout specified at
   will be used):
   
     views/layouts/default.ehtml              <- the default layout definition MUST exist
-    views/layouts/home.ehtml                 <- a layout definition that will be used for all views of controller "home"
+    views/layouts/home.ehtml                 <- a layout definition that will be used 
+                                                for all views of controller "home"
   
