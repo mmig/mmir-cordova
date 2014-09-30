@@ -301,6 +301,8 @@ define(['constants', 'grammarConverter', 'grammarParserTemplate', 'jscc'],
 //                	  'define('+moduleNameString+',["semanticInterpreter"],function(semanticInterpreter){\n'
                 	  '(function(){\n  var semanticInterpreter = require("semanticInterpreter");\n'//FIXME
                 	+ 'var grammarFunc = function('+INPUT_FIELD_NAME+'){'
+                			//TODO active/use safe_acc (instead of try-catch construct in semantic-result extraction
+//                			+ "var safe_acc = function(obj){\n  \tvar len = arguments.length;\n  \tif(len === 1){\n  \t    return null;\n  \t}\n  \tvar curr = obj, prop = arguments[1], i = 2;\n  \tfor(; i < len; ++i){\n  \tif(obj[prop] != null){\n  \t    obj = obj[prop];\n  \t}\n  \tprop = arguments[i];\n  \t}\n  \tvar res = obj[prop];\n  \treturn typeof res !== 'undefined'? res : null;\n  \t};"
                 			+ grammarParser
                 	+ '\n};\n'
                 	+ 'semanticInterpreter.addGrammar("'
