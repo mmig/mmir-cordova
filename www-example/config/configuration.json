@@ -1,6 +1,8 @@
 {
     "language": "en",
     "usePrecompiledViews": "false",
+    "usePrecompiledGrammarsOnly": "true",
+    "grammarCompiler": "jscc",
     
     "html5AudioInput": {
 	    "silenceDetector": {
