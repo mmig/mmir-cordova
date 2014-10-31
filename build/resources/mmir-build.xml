@@ -391,6 +391,7 @@
 		<concat destfile="${base.js.compile.grammar.parser.generator}" fixlastline="true" outputencoding="UTF-8">
            
 		    <string>
+		    	
 		        //set the framework's src-path from the build-properties file
                 //  (may be different than the default value in mainConfig.js)
                 var appSrcDir = '${jsSrcDirBase}';
@@ -398,7 +399,7 @@
                 	baseUrl: './' + appSrcDir,
                 	paths: {'core': 'core'}
                 });
-                
+		    	
                 require(['core'], function(core){
                 
                 	//define "auto-start" module for starting the template processing
@@ -428,6 +429,11 @@
 		 					, 'jqueryajax': buildLibDir+'jqueryAjaxDummy'
 		 					, 'env': buildLibDir+'envDetectBuild'
 		 					, 'jqm': buildLibDir+'jqueryMobileDummy'
+		    				
+		    				//remove PEG.js / Jison depenencies
+		    				//  (need to be initialized separately, since requirejs.shim does not work in nodejs; see below)
+		    				, 'pegjs': void(0)
+		    				, 'jison': void(0)
 		                }
 	                });
 	                
@@ -443,10 +449,35 @@
             <fileset dir="${jsSrcDirBase}"             includes="mainConfig.js" />
             <string>
                 }
+            	
+            	
+            	//setup and init PEG.js
+            	(function(){
+    				
+	    	</string>
+	        <fileset dir="${jsSrcDirBase}vendor/libs"       includes="peg-0.8.0.js" />
+	    	<string>
+    	    
+	    			definejs('pegjs',  function(){ return PEG; });
+	    				    			
+	    		})();
+	    		
+            	//setup and init Jison
+	    		var _bnf;
+            	(function(){
+    				
+	    	</string>
+	        <fileset dir="${jsSrcDirBase}vendor/libs"       includes="jison.js" />
+	    	<string>
+	    			
+    	    		_bnf = bnf;
+	    			definejs('jison',  function(){ return Jison; });
+	    				    			
+	    		})();
                 
                 //encapsule build-process (gets triggered after build-paths are configured; see above)
 				function doStartBuildEnv(){
-				
+            	
 					//build AMD module for CryptoJS/md5 library:
                 	definejs('md5impl', function(){
             </string>
@@ -468,22 +499,36 @@
 		    		
 		    		// * load dependencies (SemanticInterpreter, jQuery) 
 		    		// * setup JSON parser (for creating detailed error messages)
-		    		// * initialize checksum-utils (with loaded dependencies) 
-		    		require(['semanticInterpreter', 'jquery', 'jsonlint', 'md5impl','checksumUtils'], function(jsonlint){
-			    		
-			    		jsl = {
-			    			parser: require('jsonlint')
-			    		};
-			    		
-		    			checksumUtils = require('checksumUtils');
-		    			checksumUtils.init( require('md5impl') );
-		    			
-		    			//start the standalone-grammar parser / generator: 
+		    		// * initialize checksum-utils (with loaded dependencies)
+					require([ 'jqueryajax'], function(){
+			    		require(['constants','pegjs', 'jison', 'semanticInterpreter', 'jquery', 'jsonlint', 'md5impl','checksumUtils'], function(constants){
+				    		
+							//fix base-dir location (since we do not execute from the main web-directory)
+							constants.init('${baseDir}www/');
+							
+							var bnf = _bnf;
+							var Jison = require('jison');
+							
+				    		jsl = {
+				    			parser: require('jsonlint')
+				    		};
+							
+							//load deferred-impl. via node's require function:
+							var jqueryDeferred = requiren(theJsLibPath+'nodejs-jquery-deferred/index.js');
+							
+							//attach deferred-impl. to jquery:
+							jqueryDeferred.extend(require('jquery'), jqueryDeferred);
+				    		
+			    			checksumUtils = require('checksumUtils');
+			    			checksumUtils.init( require('md5impl') );
+			    			
+			    			//start the standalone-grammar parser / generator: 
 	    	</string>
 			<fileset dir="${jsBuildDirBase}ant"         includes="StandaloneSemanticParserCompileExec.js" />
 			<string>
 			    
-		    		});
+			    		});
+					});
 		    		
 		    	}//END: doStartBuild(){..
 	    	</string>
@@ -719,7 +764,7 @@
 			<arg value="${grammarLanguageCode}"/>
 			<arg value="${outDirCompiledGrammar}"/>
             <arg value="${outFileCompiledGrammar}"/>
-            <arg value="./../../lib/r.js"/>
+            <arg value="./../../lib/"/>
         </exec>
 		
 	</target>

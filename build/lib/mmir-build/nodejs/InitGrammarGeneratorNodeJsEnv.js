@@ -35,10 +35,13 @@ var theJSONGrammarFileName				= theArguments && theArguments.length > 3? theArgu
 var theJSONGrammarLanguageStr 			= theArguments && theArguments.length > 4? theArguments[4] : null;
 var theCompiledGrammarTargetPath		= theArguments && theArguments.length > 5? theArguments[5] : null;
 var theCompiledGrammarTargetFileName	= theArguments && theArguments.length > 6? theArguments[6] : null;
-var theRequireJsLibPath					= theArguments && theArguments.length > 7? theArguments[7] : null;
+var theJsLibPath						= theArguments && theArguments.length > 7? theArguments[7] : null;
+
+//store nodejs' require (use requirejs by default; see below)
+var requiren = require;
 
 //initialize requirejs
-var require = require(theRequireJsLibPath);
+var require = require(theJsLibPath+'r.js');
 
 //create VAR for requirejs' define() function
 var definejs = require.define;
