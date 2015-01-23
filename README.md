@@ -19,7 +19,7 @@ later updates from this repository can be fetched from wihtin the referencing pr
 
 ### Dependencies
 
-The current build process requires the **[MMIR-lib][4] version 3.0.0**
+The current build process requires the **[MMIR-lib][4] version 3.1.0**
 
 By default the build process will assume that the MMIR-based application is
 located at `www/` and the MMIR-library files at `www/mmirf/`:

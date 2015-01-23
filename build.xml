@@ -3,9 +3,22 @@
 <project name="MMIR build resources" default="copy-resources">
     
     <target name="copy-resources">
-        <copy todir="../" overwrite="true">
+        
+        <!-- copy resources to parent directory
+        	 * ANT scripts and settings
+        	 * Cordova hooks for building MMIR apps
+        -->
+        <copy todir="../" preservelastmodified="true" overwrite="true">
             <fileset dir="resources"/>
         </copy>
+        
+        <!-- create settings-file from settingsDefault 
+        	 (but only, if it is not exists yet)
+        -->
+        <copy
+            file=  "resources/mmir-build.settingsDefault"
+            tofile="../mmir-build.settings"
+            overwrite="false"/>
     </target>
     
 </project>
