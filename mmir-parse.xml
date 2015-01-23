@@ -99,6 +99,12 @@
 		 					, 'env': buildLibDir+'envDetectBuild'
 		 					, 'jqm': buildLibDir+'jqueryMobileDummy'
 		 					
+		 					//disable jQueryMobile plugin SimpleModal (not needed in nodejs-environment)
+		 					, 'jqmSimpleModal': void(0)
+		 					
+		 					//disable loadCss module (not needed in nodejs-environment)
+		 					, 'loadCss': void(0)
+		 					
 		 					//parsingResult has a hidden dependency on org.antrl
 		 					// (need custom module-definition -> see below)
 		 					, 'parsingResult': void(0)
@@ -116,6 +122,16 @@
 			    			, 'templateLexer': void(0)
 			    			//, 'templateParser': void(0)
 		                }
+	                });
+	                
+	                //define dummy loadCss module:
+	                definejs('loadCss', function(){
+	                	//no-op
+	                	return function(){};
+	                });
+	                //define dummy jqmSimpleModal module:
+	                definejs('jqmSimpleModal', ['jqueryajax'] , function(jquery){
+	                	return jquery;
 	                });
 	                
 	                //set up dummy implementation for LanguageManager:
