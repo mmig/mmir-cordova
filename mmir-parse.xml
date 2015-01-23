@@ -51,6 +51,7 @@
                 var requiren = require;
                 var require  = require(buildLibDirRelativePath+'r.js');
                 var definejs = require.define;
+	        	var mmir;
 	    	</string>
             <!-- fileset dir="${buildDirLib}"       includes="r.js" /-->
 	    	<fileset dir="${jsBuildDirBase}nodejs"  includes="NodeJsFileHandler.js" />
@@ -66,7 +67,10 @@
                 });
                 
                 require(['core'], function(core){
-                
+                	
+            		//export core module to "global" mmir variable:
+            		mmir = core;
+            	
                 	//define "auto-start" module for starting the template processing
                 	// (gets triggered after main-config for requirejs is was applied)
                 	definejs('doStartTemplateProc', function(){
@@ -241,15 +245,20 @@
 		    		
 		    		var jqueryDeferred = requiren(buildLibDirRelativePath+'nodejs-jquery-deferred/index.js');
 		    		
-		    		require(['constants', 'jsonlint', 'jqueryajax'], function(constants, jsonlint, jquery){
+		    		require(['constants', 'jsonlint', 'jqueryajax', 'configurationManager'], function(constants, jsonlint, jquery, configurationManager){
 		    			
 		    			constants.init(theArguments[2] + 'www/');
-		    			
+				
 			    		jsl = {
 			    			parser: require('jsonlint')
 			    		};
 			    		
 			    		jqueryDeferred.extend(jquery, jqueryDeferred);
+				
+
+						//export public MMIR modules to "global" mmir variable:
+						mmir.Constants = constants;
+						mmir.ConfigurationManager = configurationManager;
 		    		
 	    	</string>
 			<fileset dir="${jsBuildDirBase}ant"              includes="StandaloneTemplateParserExec.js" />
