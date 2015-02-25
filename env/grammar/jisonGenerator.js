@@ -10,14 +10,29 @@
  * @depends Jison
  * @depends jQuery.Deferred
  * @depends jQuery.extend
+ * @depends jQuery.makeArray
  */
-define(['jison', 'constants', 'grammarConverter', 'jquery'], function(jison, constants, GrammarConverter, $){
+define(['jison', 'constants', 'configurationManager', 'grammarConverter', 'jquery', 'logger', 'module'], function(jison, constants, configManager, GrammarConverter, $, Logger, module){
 
 //////////////////////////////////////  template loading / setup for JS/CC generator ////////////////////////////////
 
 var deferred = $.Deferred();
 //no async initialization necessary for PEG.js generator -> resolve immediately
 deferred.resolve();
+
+//init logger
+var logger = Logger.create(module);
+
+//setup logger for compile errors (if not already set)
+if(! jison.printError){
+	jison.printError = function(){
+		var args = $.makeArray(arguments);
+		//prepend "location-information" to logger-call:
+		args.unshift('jison', 'compile');
+		//output log-message:
+		logger.error.apply(logger, args);
+	};
+}
 
 /**
  * The argument name when generating the grammar function:
@@ -29,6 +44,12 @@ deferred.resolve();
  * @private
  */
 var INPUT_FIELD_NAME = 'asr_recognized_text';
+
+var DEFAULT_OPTIONS = {
+		type: 'lalr'//'lr0' | 'slr' | 'lr' | 'll' | default: lalr
+};
+var pluginName = 'grammar.jison';
+
 
 var jisonGen = {
 	init: function(callback){
@@ -51,8 +72,10 @@ var jisonGen = {
         theConverterInstance.convertJSONGrammar();
         var grammarDefinition = theConverterInstance.getJSCCGrammar();
         
-        //TODO make configurable?
-        var options = {type: 'lalr'};//'lr0' | 'slr' | 'lr' | 'll' | default: lalr
+        //load options from configuration:
+        var config = configManager.get(pluginName, true, {});
+        //combine with default default options:
+        var options = $.extend({}, DEFAULT_OPTIONS, config);
         
         var hasError = false;
         var grammarParser;
@@ -168,7 +191,7 @@ var jisonGen = {
         		jison.printError(evalMsg);
         	}
         	else {
-        		console.error(evalMsg);
+        		logger.error('jison', 'evalCompiled', evalMsg, err);
         	}
         	
         	if(! hasError){
@@ -198,7 +221,7 @@ var jisonGen = {
 ////////////////////////////////////// Jison specific extensions to GrammarConverter ////////////////////////////////
 
 var JisonGrammarConverterExt = {
-		
+	/** @memberOf JisonGrammarConverterExt */
 	init: function(){
 		
 		this.THE_INTERNAL_GRAMMAR_CONVERTER_INSTANCE_NAME = "theGrammarConverterInstance";
@@ -221,7 +244,7 @@ var JisonGrammarConverterExt = {
 		this.json_grammar_definition = this.maskJSON(this.json_grammar_definition);
 		
 		this.token_variables += "  var semanticAnnotationResult = {};\n"
-			+ "  var _flatten = function(match){ if(!match.join){ return match;} for(var i=0, size = match.length; i < size; ++i){if(match[i].join){match[i] = _flatten(match[i])}} return match.join('') };\n"
+			+ "  var _flatten = function(match){ if(!match.join){ return match;} for(var i=0, size = match.length; i < size; ++i){if(!match[i]){continue;}if(match[i].join){match[i] = _flatten(match[i])}} return match.join('') };\n"
 			+ "  var _tok = function(field, match){ match = _flatten(match); field[match] = match; return match;}\n"
 		;
 		
@@ -369,7 +392,7 @@ var JisonGrammarConverterExt = {
 		var semantic = utterance_def.semantic,
 		variable_index, variable_name;
 		
-		if(IS_DEBUG_ENABLED) console.debug('doCreateSemanticInterpretationForUtterance: '+semantic);//debug
+		if(logger.isDebug()) logger.debug('doCreateSemanticInterpretationForUtterance: '+semantic);//debug
 		
 		var semantic_as_string = JSON.stringify(semantic);
 		if( semantic_as_string != null){
@@ -379,7 +402,7 @@ var JisonGrammarConverterExt = {
 			var variable = variables[1],
 			remapped_variable_name = "";
 			
-			if(IS_DEBUG_ENABLED) console.debug("variables " + variable, semantic_as_string);//debug
+			if(logger.isDebug()) logger.debug("variables " + variable, semantic_as_string);//debug
 			
 			variable_index = /\[(\d+)\]/.exec(variable);
 			variable_name = new RegExp('_\\$([a-zA-Z_][a-zA-Z0-9_\\-]*)').exec(variable)[1];
@@ -395,7 +418,7 @@ var JisonGrammarConverterExt = {
 								+ utterance_name.toLowerCase() + "_temp['phrases']['"
 								+ variable_name.toLowerCase() + "']["
 								+ variable_index[1]
-							+ "]]");
+							+ "]."+this.entry_token_field+"]");
 					//TODO replace try/catch with safe_acc function
 					//     PROBLEM: currently, the format for variable-access is not well defined
 					//              -> in case of accessing the "semantic" field for a variable reference of another Utterance
@@ -469,12 +492,16 @@ var JisonGrammarConverterExt = {
 			}
 			semanticProcResult += utterance_name + "_temp['phrases']['"
 						+ phraseList[i].toLowerCase() + "']["
-						+ duplicate_helper[phraseList[i]] + "] = " + this._PARTIAL_MATCH_PREFIX + num
-						+ ";\n\t\t";
+						+ duplicate_helper[phraseList[i]] + "] = {"
+							+ this.entry_token_field + ": " + this._PARTIAL_MATCH_PREFIX + num + ","
+							+ this.entry_index_field + ": " + (num-1)
+						+"};\n\t\t";
 		}
 		
-		semanticProcResult += "var " + this.variable_prefix + "phrase = $$; " + utterance_name
-				+ "_temp['phrase']=" + this.variable_prefix + "phrase; "
+		semanticProcResult += "var " + this.variable_prefix + "phrase = $$; " 
+				+ utterance_name + "_temp['phrase']=" + this.variable_prefix + "phrase; "
+				+ utterance_name + "_temp['utterance']='" + utterance_name + "'; "
+				+ utterance_name + "_temp['engine']='jison'; "//FIXME debug
 				+ utterance_name + "_temp['semantic'] = " + semantic_as_string
 				+ "; " + this.variable_prefix + utterance_name + "["
 				+ this.variable_prefix + "phrase] = " + utterance_name + "_temp; "
@@ -483,10 +510,18 @@ var JisonGrammarConverterExt = {
 		return phraseStr + " %{\n\t   " + pharseMatchResult +  "; " + semanticProcResult + "; \n\t%} ";
 	},
 	_checkIfNotRegExpr: function(token){
+		
 		//test for character-group
-		if( ! /([^\\]\[)|(^\[).*?[^\\]\]/.test(token))
-			//test for group
-			return ! /([^\\]\()|(^\().*?[^\\]\)/.test(token);
+		if( ! /([^\\]\[)|(^\[).*?[^\\]\]/.test(token)){
+			
+			//test for grouping
+			if( ! /([^\\]\()|(^\().*?[^\\]\)/.test(token) ){
+			
+				//try for single-characters that occur in reg-expr FIXME this may procude false-positives!!!
+				return ! /[\?|\*|\+|\^|\|\\]/.test(token); //excluded since these may be more common in natural text: . $
+			}
+		}
+		
 		return false;
 	},
 	_convertRegExpr: function(token){
@@ -509,6 +544,13 @@ var JisonGrammarConverterExt = {
 
 					//if changed from STRING -> non-STRING, then "close" string first:
 					if(isString){
+
+						//for "optional" expression: modify previous entry to be a single character-sequence
+						// ...cars'?  -> ...car' 's'?
+						if(ch === '?' && sb.length > 0){//TODO also for '+', '*', ...???
+							sb[ sb.length - 1 ] = '" "' + sb[ sb.length - 1 ];
+						}
+						
 						sb.push("\" ");
 						isString = false;
 					}

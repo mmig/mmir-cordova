@@ -25,7 +25,7 @@
  */
 
 
-define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
+define(['constants', 'grammarConverter', 'logger', 'module'
         ], 
 	/**
 	 * @name SemanticInterpreter
@@ -34,7 +34,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
 	 * @class
 	 */
 	function (
-		constants, GrammarConverter//, template, jscc
+		constants, GrammarConverter, Logger, module
 ){
 	
 	/**
@@ -44,6 +44,8 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
 	 * @private
 	 */
 	var instance = null;
+
+	var logger = Logger.create(module);
 	
 	/**
      * The version number for the format of generated (JavaScript) grammars.
@@ -247,11 +249,12 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
         		doNotResolve = false;
         	}
         	
-        	if(!callback){
-        		//TODO do this depending on DEBUG setting
+        	var isDefaultCallback = false;
+        	if(!callback && logger.isInfo()){
+        		//create a "debug-info callback"
         		isDefaultCallback = true;
         		callback = function(){
-        			console.info('created executable grammar for "'+id+'" from source '+jsonGrammarUrl);
+        			if(logger.isInfo()) logger.info('created executable grammar for "'+id+'" from source '+jsonGrammarUrl);
         		};
         	}
         	
@@ -260,7 +263,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
         		
         		createAndAddGrammar(jsonGrammarUrl, id, callback);
         	}
-        	else if(callback){
+        	else if(callback && !isDefaultCallback){
         		callback();
         	}
         	
@@ -335,7 +338,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
 		        		        registeredGrammarInstance.setJSCCGrammar(convertedInstance.getJSCCGrammar());
 	        		        }
 	        		        else {
-	        		        	console.error('A problem occured during generation of grammar for "'+generatedParserLanguageCode+'"');
+	        		        	logger.error('A problem occured during generation of grammar for "'+generatedParserLanguageCode+'"');
 	        		        }
 	        		        
 	        		        //invoke callback if present:
@@ -362,14 +365,14 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
             	build_grammar(gc);
             	
             } else {
-            	console.error('SemanticInterpreter.__createAndAddGrammar: could not build grammar due to missing argumens');
+            	logger.error('SemanticInterpreter.__createAndAddGrammar: could not build grammar due to missing argumens');
             }
         }
         
         var process_asr_semantic = function(phrase, stopwordFunc, langCode, callback){
 
 			if(!doCheckIsEnabled()){
-				console.warn('SemanticInterpreter.getASRSemantic: currently disabled!');
+				logger.warn('SemanticInterpreter.getASRSemantic: currently disabled!');
 				return null;
 			}
 			
@@ -382,7 +385,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
 	            var strPreparedPhrase = grammarConverter.maskString( phrase.toLowerCase() );
 	            strPreparedPhrase = stopwordFunc(strPreparedPhrase, langCode, grammarConverter);
 	           
-	            if(IS_DEBUG_ENABLED) console.debug('SemanticInterpreter.process_asr_semantic('+langCode+'): removed stopwords, now parsing phrase "'+strPreparedPhrase+'"');//debug
+	            if(logger.isDebug()) logger.debug('SemanticInterpreter.process_asr_semantic('+langCode+'): removed stopwords, now parsing phrase "'+strPreparedPhrase+'"');//debug
 	            
 	    		var result = grammarConverter.executeGrammar( strPreparedPhrase );
 	            
@@ -446,7 +449,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
         
 		var doRemoveStopWords = function(thePhrase, lang, func){
 			if(!doCheckIsEnabled()){
-				console.warn('SemanticInterpreter.'+func.name+': currently disabled!');
+				logger.warn('SemanticInterpreter.'+func.name+': currently disabled!');
 				return null;
 			}
 			
@@ -536,7 +539,7 @@ define(['constants', 'grammarConverter'//, 'grammarParserTemplate', 'jscc'
 				return doGetGrammar(id).getJSGrammar();//grammarParser;
 			},
 			getGrammarConverter: function(id){
-				return doGetGrammar(id);
+				return doGetGrammar(id, true);//<- if no grammar is loaded for this ID, do NOT try to load it!
 			},
 			
 			createGrammar: function(rawGrammarSrc, id, callback){
