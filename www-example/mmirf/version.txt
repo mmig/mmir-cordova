@@ -1,7 +1,7 @@
 ﻿
-version notes for MMIR framework code (v 3.3.1)
+version notes for MMIR framework code (v 3.5.0)
 
- * using Cordova 3.5.x library
+ * using Cordova 3.x.x library
  * using jQuery 2.1.x library
  * using jQuery Mobile 1.4.x library
  
@@ -22,7 +22,90 @@ version notes for MMIR framework code (v 3.3.1)
  --------------
  Change Log
  --------------
+
+##################
+ Version 3.5.0
+##################
+
+Grammar Compilers (env/grammar/)
+ * added configuration-method for grammar-compiler-options
+   * for pegjs- and jison-engines
+   * configuration via configuration.json, e.g.:
+     "grammar": { "jison": { <jison options> }},
+ * extended meta-data for grammar result object
+   * added meta-data 'utterance': name of the matched utterance
+   * added meta-data 'engine': name of the grammar-compiler that was used to create the grammar
+   * extended meta-data for 'phrases' entries to include ordering information:
+     * use object instead of string
+     * field 'tok': the string that matched the token (as before)
+     * field 'i': the zero-based index of where in the phrase the token occurs
+ * MODIFICATION extended detection/acceptance of regular-expressions in jison- and pegjs-engines
+   * allow optional-operator (?), and multiple-operators (*+) without character-group or grouping
+   * FIX for conversion of optional-operator in combination with STRINGs
+ * BUGFIX for partial matching in phrases (helper function _flatten now accepts non-matched parts, e.g. for optional tokens)
+ * FIX use loggers for compile-error messages (if no custom-function for that was set on the compiler yet); instead of using raw console-output
+ * BUGFIX for JS/CC compiler: handle errors during compilation (has now same behavior as other engines/compilers)
+ * extendend jscc-amd API: added functions for getting/checking print-compile-message-functions (print error, print info etc)
+
+SemanticInterperter:
+ * BUGFIX avoid using generated callback in doGetGrammar
+ * BUGFIX for getGrammarConverter(ID): do not try to resolve (i.e. load) grammars, if the ID is not registered yet
+
+Template rendering (mvc/parser/templateRenderUtils.js)
+ * BUGFIX print warning for missing helper result only, if we do not get a string (instead of a FALSY result, as before)
+
+##################
+ Version 3.4.1
+##################
+
+BUGFIXES
+ * FIXED BUG (and removed HACK for workaround) in PresentationManager.init: removed duplicate declaration of checksumUtils variable
  
+
+##################
+ Version 3.4.0
+##################
+
+Logging:
+ * added logger factory
+ * extended core.js and mainConfig.js for setting up logger factory
+   * enable / disable logging (through the factory) completely
+   * set the default log-level
+ * simplified function for creating a logger for a requirejs module
+   * uses module's ID as logger-name
+   * uses module-specific log-level for the module, if defined in requirejs' config (see mainConfig.js for examples)
+ * FIX removed ("partially" global) variable IS_DEBUG_ENABLED (using logging factory instead)
+ * TODO add "trace mode" for logger (i.e. log from where the logger functions were called) 
+ * TODO replace console.log() etc with logger calls
+
+PresentationManager:
+ * added function callRenderEngine: allows to call custom functions on specific implementations of the rendering-engine
+
+MediaManager:
+ * for use in media-plugins (env/media/)
+  * added helper for firing / triggering events: _fireEvent(..)
+  * added support for "observering listeners", i.e. observing registration / removal of event-listeners
+   * see _addListenerObserver() and _removeListenerObserver()
+   * notification by callback function with arguments: (eventName, ["added" | "removed"], eventHadlerFunction) 
+ * add aliases for addListener(..) and removeListener(..): on(..) / off(..)
+
+loadCss (tools):
+ * extended API: now, alternatively, an options-object can be used as arguments; options are added as attributes to the created link
+
+webkitAudioInput (env/media):
+ * added "mic-levels" / RMS calculation using the microphone input (getUserMedia)
+ * CHANGED experimental "mic-levels" functionality
+  * changed API from "polling style" (get...) to "pushing style" (on...)
+  * removed (experimental) getMicLevels() polling function
+  * implemented listener-mechanism for event "miclevelchanged"
+   * uses MediaManager's listener-management (add/remove)
+   * calculates "change in microphone levels" and notifies registered listeners upon change
+  * optimization: only open microphone (getUserMedia) if listeners for "miclevelchanged" are registered; close audio from getUserMedia, if there are no listeners for "miclevelchanged" anymore (also handles new registrations / removals during active recognition)
+ * FIX disable "mic-levels" functionality in case of an "audio-capture" error (some browsers/devices may not support getUserMedia in combination with webkitSpeechRecognition's audio capturing(?))
+ * FIX recognize function: now creates additional arguments for callback (not just the text-result as before)
+ * FIX calling callback functions in context of the MediaManager instance
+ * added some dev-doc-comments
+
 ##################
  Version 3.3.1
 ##################
