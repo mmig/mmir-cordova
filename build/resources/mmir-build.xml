@@ -574,6 +574,10 @@
 			    	fileExt="_${grammarLanguageCode}.checksum.txt"
 			    	pattern="{0}&#09;"
 			    	verifyProperty="is.up.to.date.grammarjs"/>
+				
+				<not>
+					<istrue value="${forceGrammarGeneration}"/>
+				</not>
 			</and>
 		</condition>
 		<echo>Exists file ${outDirCompiledGrammar}${grammarLanguageCode}_${outFileCompiledGrammar}, and is file ${grammarDefinitionJsonDir}${grammarLanguageCode}/${grammarDefinitionJsonFile} up-to-date? -> ${is.up.to.date.grammarjs}</echo>
@@ -663,12 +667,31 @@
 
 		<echo message="Running Rhino environment with script file ${exec.js.compile.grammar.parser.generator} and arguments ${grammarDefinitionJsonDir}, ${grammarDefinitionJsonFile}, ${grammarLanguageCode}, ${outDirCompiledGrammar}, ${outFileCompiledGrammar}, ${buildDirLib}r.js..." />
 		<exec executable="java" failonerror="true">
-			<arg line="-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.grammar.parser.generator} ${grammarDefinitionJsonDir} ${grammarDefinitionJsonFile} ${grammarLanguageCode} ${outDirCompiledGrammar} ${outFileCompiledGrammar} ${buildDirLib}r.js" />
+			<arg line="-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.grammar.parser.generator} ${grammarDefinitionJsonDir} ${grammarDefinitionJsonFile} ${grammarLanguageCode} ${outDirCompiledGrammar} ${outFileCompiledGrammar} ${buildDirLib}r.js ./../../lib ${grammarEngine}" />
         </exec>
 	</target>
 	
-	<target name="compileGrammarParserRhinoEnv" depends="executeGrammarParserGeneratorRhinoEnv,cleanTempFilesGrammarParserGenerator" description="Compile (and clean up) GrammarParserGenerator script with Rhino environment (slow)">
-		<echo message="Compiled ${outDirCompiledGrammar}/${grammarLanguageCode}/${outFileCompiledGrammar} using Rhino environment." />
+	<target name="compileGrammarParserRhinoEnv" depends="createGeneratedGrammarParserDir,createGrammarLanguageList" description="Compile GrammarParserGenerator script with Rhino environment (slow) for a single language">
+			
+		<input
+		    message="Select one of the following languages / codes for grammar generation:"
+		    validargs="${grammarLanguageList}"
+		    addproperty="selected.language"/>
+	    
+		<input
+		    message="Select one of the following generators / grammar-engines for grammar generation:"
+		    validargs="jscc,jison,pegjs"
+			defaultvalue="jscc"
+		    addproperty="selected.generator"/>
+		
+		<echo message="Using grammar-engine ${selected.generator} for compiling ${outDirCompiledGrammar}${selected.language}/${outFileCompiledGrammar} using Rhino environment..." />
+				
+		<antcall target="executeGrammarParserGeneratorRhinoEnv">
+		    <param name="grammarLanguageCode" value="${selected.language}"/>
+		    <param name="grammarEngine" value="${selected.generator}"/>
+		    <param name="forceGrammarGeneration" value="true"/>
+		</antcall>
+		
 	</target>
 	
 	<target name="compileGrammarParserRhinoEnvAllLanguages" depends="createGeneratedGrammarParserDir,createGrammarLanguageList" description="Compile (and clean up) GrammarParserGenerator scripts for all Languages with Rhino environment (slow)">
@@ -756,7 +779,7 @@
 		description="Compile GrammarParserGenerator script with node.js environment (fast)"
 		unless="${is.up.to.date.grammarjs}">
 
-		<echo message="Running node.js environment with script file ${exec.js.compile.grammar.parser.generator} and arguments ${grammarDefinitionJsonDir}, ${grammarDefinitionJsonFile}, ${grammarLanguageCode}, ${outDirCompiledGrammar}, ${outFileCompiledGrammar}..." />
+		<echo message="Running node.js environment with script file ${exec.js.compile.grammar.parser.generator} and arguments ${grammarDefinitionJsonDir}, ${grammarDefinitionJsonFile}, ${grammarLanguageCode}, ${outDirCompiledGrammar}, ${outFileCompiledGrammar}, ./../../lib, ${grammarEngine}..." />
 		<exec executable="${exec.nodejs}" failonerror="true">
 			<arg value="${exec.js.compile.grammar.parser.generator}"/>
 			<arg value="${grammarDefinitionJsonDir}"/>
@@ -765,12 +788,32 @@
 			<arg value="${outDirCompiledGrammar}"/>
             <arg value="${outFileCompiledGrammar}"/>
             <arg value="./../../lib/"/>
+            <arg value="${grammarEngine}"/>
         </exec>
 		
 	</target>
 
-	<target name="compileGrammarParserNodeJsEnv" depends="executeGrammarParserGeneratorNodeJsEnv,cleanTempFilesGrammarParserGenerator" description="Compile (and clean up) GrammarParserGenerator script with node.js environment (fast)">
-		<echo message="Compiled ${outDirCompiledGrammar}/${grammarLanguageCode}/${outFileCompiledGrammar} using node.js environment." />
+	<target name="compileGrammarParserNodeJsEnv" depends="createGeneratedGrammarParserDir,createGrammarLanguageList" description="Compile GrammarParserGenerator script with node.js environment (fast) for a single language">
+		
+		<input
+		    message="Select one of the following languages / codes for grammar generation:"
+		    validargs="${grammarLanguageList}"
+		    addproperty="selected.language"/>
+	    
+		<input
+		    message="Select one of the following generators / grammar-engines for grammar generation:"
+		    validargs="jscc,jison,pegjs"
+			defaultvalue="jscc"
+		    addproperty="selected.generator"/>
+		
+		<echo message="Using grammar-engine ${selected.generator} for compiling ${outDirCompiledGrammar}${selected.language}/${outFileCompiledGrammar} using node.js environment..." />
+				
+		<antcall target="executeGrammarParserGeneratorNodeJsEnv">
+		    <param name="grammarLanguageCode" value="${selected.language}"/>
+		    <param name="grammarEngine" value="${selected.generator}"/>
+		    <param name="forceGrammarGeneration" value="true"/>
+		</antcall>
+		
 	</target>
 	
 	<target name="compileGrammarParserNodeJsEnvAllLanguages" depends="createGeneratedGrammarParserDir,createGrammarLanguageList" description="Compile (and clean up) GrammarParserGenerator script for all Languages with node.js environment (fast)">

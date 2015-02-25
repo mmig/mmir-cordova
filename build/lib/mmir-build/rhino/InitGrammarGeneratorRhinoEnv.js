@@ -38,6 +38,8 @@ var theCompiledGrammarTargetPath 	= arguments && arguments.length > 3? arguments
 var theCompiledGrammarTargetFileName= arguments && arguments.length > 4? arguments[4] : null;
 var theRequireJsLibPath				= arguments && arguments.length > 5? arguments[5] : null;
 
+var theGrammarEngine				= arguments && arguments.length > 6? arguments[6] : null;
+
 //initialize requirejs
 load(theRequireJsLibPath);
 

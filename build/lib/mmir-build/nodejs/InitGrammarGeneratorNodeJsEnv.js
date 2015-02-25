@@ -37,6 +37,8 @@ var theCompiledGrammarTargetPath		= theArguments && theArguments.length > 5? the
 var theCompiledGrammarTargetFileName	= theArguments && theArguments.length > 6? theArguments[6] : null;
 var theJsLibPath						= theArguments && theArguments.length > 7? theArguments[7] : null;
 
+var theGrammarEngine					= theArguments && theArguments.length > 8? theArguments[8] : null;
+
 //store nodejs' require (use requirejs by default; see below)
 var requiren = require;
 
