@@ -61,4 +61,13 @@ nodeJsExec=node
 #          it to anything but true will leave this setting disabled)
 #
 #doIgnoreMissingNodeJsPath=true
-
+#
+#
+# force re-compilation / generation of language grammars 
+# (enable this, if you want to re-compile the JSON grammars 
+#  regardless of checksum-file status)
+#
+# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
+#          it to anything but true will leave this setting disabled)
+#
+#forceGrammarGeneration=true
