@@ -46,7 +46,7 @@
 	            var compiledViewGenPath = '${jsGenDirBase}';
 	            
 	            //FIXME export/move to settings file:
-	            var buildLibDirRelativePath = './../../lib/';
+	            var buildLibDirRelativePath = '${execBuildLibDir}';
 	            
                 var requiren = require;
                 var require  = require(buildLibDirRelativePath+'r.js');
