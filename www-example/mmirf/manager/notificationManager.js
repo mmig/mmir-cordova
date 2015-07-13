@@ -28,32 +28,36 @@
 define(['module', 'constants', 'mediaManager', 'dictionary'], 
 	/**
 	 * 
-	 * @name mmir.NotificationManager
+	 * @name NotificationManager
+	 * @memberOf mmir
 	 * @static
 	 * @class
 	 * 
-	 * @depends Dictionary
-	 * @depends mmir.MediaManager
+	 * @requires Dictionary
+	 * @requires mmir.MediaManager
 	 */
 	function(
 		module, constants, mediaManager, Dictionary
 ){
-	//next 2 comments are needed by JSDoc so that all functions etc. can
-	// be mapped to the correct class description
-	/** @scope mmir.NotificationManager.prototype */
-	/**
-	 * #@+
-	 * @memberOf mmir.NotificationManager.prototype 
-	 */
+	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
+	/** @scope mmir.NotificationManager.prototype *///for jsdoc2
 	
 	
     //private members
 	
 	
-	//TODO replace by "real" ENV mechanism ... instead of !forBrowser / ! constants.isBrowserEnv()
+	/**
+	 * TODO replace by "real" ENV mechanism ... instead of !forBrowser / ! constants.isBrowserEnv()
+	 * 
+	 * @private
+	 * @memberOf NotificationManager#
+	 */
 	var isCordovaEnv = ! constants.isBrowserEnv();
 	
-	/** @private */
+	/**
+	 * @private
+	 * @memberOf NotificationManager#
+	 */
     var instance = null;
     
     
@@ -63,61 +67,197 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 	 * Constructor-Method of Singleton mmir.NotificationManager.<br> 
 	 * 
 	 * @constructs NotificationManager
+	 * @memberOf NotificationManager#
+	 * @ignore
 	 */
     function constructor(){
     	
+    	/**
+    	 * @private
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	var INIT = 'init';
     	
-    	//VIBRATE initialization:
+    	/**
+    	 * VIBRATE initialization status
+    	 * @private
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	var isHapticEnabled = true;
 
     	/**
     	 * Implementation for vibrate-function:
     	 * platform-dependent (if platform/device does not support it: as stub-function)
     	 * 
-    	 * @function
     	 * @private
-    	 * @param {Number} milliseconds
+    	 * @type {Function}
+    	 * @memberOf NotificationManager.prototype
     	 */
     	var doVibrate = null;
     	
+    	/**
+    	 * Implementation for confirm-function:
+    	 * shows "native" platform-specific confirm-dialog.
+    	 * 
+    	 * <code>function(message, confirmCallback, title, buttonLabels)</code>
+    	 * 
+    	 * @private
+    	 * @type {Function}
+    	 * @memberOf NotificationManager.prototype
+    	 */
+    	var doConfirm = null;
+    	
+    	/**
+    	 * Implementation for confirm-function:
+    	 * shows "native" platform-specific alert-dialog.
+    	 * 
+    	 * <code>(message, alertCallback, title, buttonName)</code>
+    	 * 
+    	 * @private
+    	 * @type {Function}
+    	 * @memberOf NotificationManager.prototype
+    	 */
+    	var doAlert = null;
+    	
+    	/**
+    	 * Initialize the NotificationManager.
+    	 * 
+    	 * At the moment this set the internal vibrate-function,
+    	 * if available in the current execution environment
+    	 * (or with a dummy function, if not).
+    	 * 
+    	 * In addition, the alert-, and confirm-functions are set to their
+    	 * platform-specific implementation.
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 * @private
+    	 * @function
+    	 */
     	var _init = function(){
 	    	if(isCordovaEnv){
 	    		
 	    		if(navigator.notification && navigator.notification.vibrate){
 //		    		console.debug('Vibrate: navigator.notification');
 	    			/** @ignore */
-		    		doVibrate = function(n){ navigator.notification.vibrate(n); };
+		    		doVibrate = function vibrate(n){ navigator.notification.vibrate(n); };
 	    		}
 	    		else {
 	    			console.warn('mmir.NotificationManager.INIT: could not detect navigator.notification.vibrate, using NOOP dummy instead.');
 	    			/** @ignore */
-	        		doVibrate = function(n){ console.error('mmir.NotificationManager.vibrate('+n+') triggered (but no VIBRATE function available).'); };// DEBUG
+	        		doVibrate = function dummyVibrate(n){ console.error('mmir.NotificationManager.vibrate('+n+') triggered in CORDOVA environment, but no VIBRATE functionality available.'); };// DEBUG
 	    		}
 	    		
 	    	}
 	    	else if (navigator.vibrate){
 //	    		console.debug('Vibrate API');
 	    		/** @ignore */
-	    		doVibrate = function(n){ navigator.vibrate(n); };
+	    		doVibrate = function vibrate(n){ navigator.vibrate(n); };
 	    	}
 	    	else if (navigator.webkitVibrate){
 //	    		console.debug('Vibrate: webkit');
 	    		/** @ignore */
-	    		doVibrate = function(n){ navigator.webkitVibrate(n); };
+	    		doVibrate = function vibrate(n){ navigator.webkitVibrate(n); };
 	    	}
+	    	
+	    	//set confirm-implementation
+	    	if(navigator.notification && navigator.notification.confirm){
+//	    		console.debug('Confirm: navigator.notification');
+    			/** @ignore */
+	    		doConfirm = function confirm(message, confirmCallback, title, buttonLabels){
+	    			
+	    			var cbWrapper = confirmCallback;
+	    			if(confirmCallback){
+	    				var self = this;
+		    			cbWrapper = function(result){
+		    				//need to convert NUMBER result to BOOLEAN:
+		    				//  result = [1,2,..] 
+		    				//  -> default is: OK = 1, CANCEL = 2, close-the-dialog = 0
+		    				var res = result === 1 ? true : false;
+		    				confirmCallback.call(self, res);
+		    			};
+	    			}
+	    			
+	    			navigator.notification.confirm(message, cbWrapper, title, buttonLabels);
+	    		};
+    		}
+    		else if(typeof window !== 'undefined' && window && window.confirm) {
+    			/** @ignore */
+    			doConfirm = function confirmWindow(message, confirmCallback, title, buttonLabels){
+    				//TODO use setTimeout here to "simulate" async execution?
+    				var result = window.confirm(message);
+    				if(confirmCallback){
+    					confirmCallback.call(this, result);
+    				}
+    			};
+    		}
+	    	
+	    	//set alert-implementation
+	    	if(navigator.notification && navigator.notification.alert){
+//	    		console.debug('Alert: navigator.notification');
+    			/** @ignore */
+	    		doAlert = function confirm(message, alertCallback, title, buttonLabels){
+	    			navigator.notification.alert(message, alertCallback, title, buttonLabels);
+	    		};
+    		}
+    		else if(typeof window !== 'undefined' && window && window.alert){
+    			/** @ignore */
+    			doAlert = function confirmWindow(message, alertCallback, title, buttonLabels){
+    				//TODO use setTimeout here to "simulate" async execution?
+    				window.alert(message);
+    				if(alertCallback){
+    					alertCallback.call(this);
+    				}
+    			};
+    		}
     	};
     	
     	
     	//SOUND / BEEP initialization:
     	
+    	/**
+    	 * @private
+    	 * @type Number
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	var beepVolume = 1.0;
+    	
+    	/**
+    	 * The Audio object for the <em>beep</em> sound.
+    	 * 
+    	 * @private
+    	 * @type AudioObject
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	var beepAudio = null;
     	
+    	/**
+    	 * Dictionary that manages the currently loaded sounds
+    	 * 
+    	 * @private
+    	 * @type Dictionary
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	//TODO add option for limiting size of soundMap (-> e.g. how many resources are max. cached/occupied for Android) 
     	var soundMap = new Dictionary();
     	
-    	var initNotificationSound = function(audioObj, name){
+    	/**
+    	 * Factory function for creating "sounds objects",
+    	 * i.e. extend the basic Audio objects with needed functions/properties
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {mmir.env.media.IAudio} audioObj
+    	 * @param {String} name
+    	 * 
+    	 * @returns {mmir.env.media.INotificationSound} the extended audio object, i.e. a NotificationSound
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
+    	function initNotificationSound(audioObj, name){
     		audioObj.name = name;
     		audioObj.setVolume(beepVolume);
 			audioObj.isNotificationPlaying = false;
@@ -201,11 +341,43 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 			return audioObj;
     	};
     	
+    	/**
+    	 * Helper for creating an Audio object
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {String} url
+    	 * @param {Function} success
+    	 * @param {Function} fail
+    	 * @param {Function} init
+    	 * 
+    	 * @returns {AudioObject} audio object
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	function createAudio(url, success, fail, init){
     		return mediaManager.getURLAsAudio(url, success, fail, init);
     	}
     	
-    	
+    	/**
+    	 * Helper for "registering" a NotificationSound.
+    	 * 
+    	 * Stores the sound object in {@link #soundMap}
+    	 * with the ID <code>name</code>.
+    	 * 
+    	 * The sound object will be initialized on first
+    	 * retrieval, ie. {@link #doGetSoundFromMap}
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {String} name
+    	 * @param {String} theUrl
+    	 * @param {Boolean} isKeepOnPause
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	function initAudioSoundEntry(name, theUrl, isKeepOnPause){
     		var config = {url: theUrl, audio: null};
     		if(isKeepOnPause){
@@ -214,6 +386,20 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     		soundMap.put(name, config);
     	}
     	
+    	/**
+    	 * Helper for retrieving an existing sound from
+    	 * the {@link #soundMap}.
+    	 * 
+    	 * Initializes the sound if necessary.
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {String} name
+    	 * @param {Function} onErrorCallback
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	function doGetSoundFromMap(name, onErrorCallback){
     		var audioObj = null;
     		var audioUrl = null;
@@ -258,6 +444,22 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     		};
     	}
     	
+    	/**
+    	 * Helper for playing a registered notification sound.
+    	 * 
+    	 * Initializes the sound if necessary.
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {String} name
+    	 * 				ID of the sound
+    	 * @param {Number} times 
+    	 * @param {Function} onFinishedCallback
+    	 * @param {Function} onErrorCallback
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	function playAudioSound(name, times, onFinishedCallback, onErrorCallback){
     		
     		var soundEntry = doGetSoundFromMap(name, onErrorCallback);
@@ -344,6 +546,21 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     		
     	}
     	
+    	/**
+    	 * Helper for stop playing a registered notification sound.
+    	 * 
+    	 * Initializes the sound if necessary.
+    	 * 
+    	 * @private
+    	 * @function
+    	 * 
+    	 * @param {String} name
+    	 * 				ID of the sound
+    	 * @param {Function} onFinishedCallback
+    	 * @param {Function} onErrorCallback
+    	 * 
+    	 * @memberOf NotificationManager.prototype
+    	 */
     	function stopAudioSound(name, onFinishedCallback, onErrorCallback){
     		
     		var soundEntry = doGetSoundFromMap(name, onErrorCallback);
@@ -423,23 +640,38 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     		);
     	}
     	
+		/** @lends mmir.NotificationManager.prototype */
     	return { //public members and methods
     		/** @scope mmir.NotificationManager.prototype */
             
         	/**
         	 * Trigger a haptic vibration feedback.
         	 * 
-        	 * <p>Note: The device / execution environment may not support haptic vibration feedback 
+        	 * <p>Note: The device / execution environment may not support haptic vibration feedback
         	 * 
-        	 * @function vibrate
-        	 * @param milliseconds {Number} duration for vibration in milliseconds
+        	 * @function
+        	 * @param {Number} milliseconds
+        	 * 		duration for vibration in milliseconds. Must be <code>> 0</code>
         	 * @public
+        	 * 
+        	 * @memberOf mmir.NotificationManager.prototype
         	 */
             vibrate: function(milliseconds){
             	if (isHapticEnabled && doVibrate){
             		doVibrate(milliseconds);
             	}
             },
+            /**
+             * Check if {@link #vibrate} is functional and enabled.
+             * 
+             * <p>
+             * If <code>false</code> is returned, calling the <code>vibrate()</code>
+             * function will have no effect.
+             * 
+        	 * @function
+        	 * @returns {Boolean} <code>true</code> if {@link #vibrate} is functional
+        	 * @public
+        	 */
             isVibrateEnabled: function(){
             	if (isHapticEnabled && doVibrate){
             		return true;
@@ -448,6 +680,17 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
             		return false;
             	}
             },
+            /**
+             * Check if the execution environment supports {@link #vibrate}.
+             * 
+             * <p>
+             * If <code>false</code> is returned, calling the <code>vibrate()</code>
+             * function will have no effect.
+             * 
+        	 * @function
+        	 * @returns {Boolean} <code>true</code> if {@link #vibrate} is functional
+        	 * @public
+        	 */
             isVibrateAvailable: function(){
             	if (doVibrate){
             		return true;
@@ -456,32 +699,79 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
             		return false;
             	}
             },
+            /**
+             * Enable or disable {@link #vibrate}.
+             * <p>
+             * NOTE: If {@ #isVibrateAvailable} returns <code>false</code>, enabling will have no effect.
+             * 
+        	 * @function
+        	 * @public
+        	 * 
+        	 * @param {Boolean} enabled
+        	 * 			set vibrate function to <code>enable</code>
+        	 */
             setVibrateEnabled: function(enabled){
             	isHapticEnabled = enabled;
             },
             /**
-             * Opens a (native) notification dialog.
+             * Opens a (native) alert-notification dialog.
              * 
-             * @function alert
+             * @param {String} message
+             * 				the alert message
+             * @param {Function} [alertCallback]			
+             * 				callback that is triggered, after dialog was closed
+             * @param {String} [title] OPTIONAL
+             * 				the title for the alert dialog
+             * 				(may not be provided / settable in all execution environments)
+             * @param {String} [buttonName] OPTIONAL
+             * 				the label for the close button in the alert dialog
+             * 				(may not be provided / settable in all execution environments)
+             * @function
              * @public
              */
             alert: function(message, alertCallback, title, buttonName){
-            	navigator.notification.alert(message, alertCallback, title, buttonName);
+            	if(doAlert){
+            		doAlert.call(this, message, alertCallback, title, buttonName);
+            	}
+            	else {
+            		console.warn('NotificationManager.alert: No alert dialog implementation available ', message, alertCallback, title, buttonName);
+            	}
             },
             /**
-             * Opens a (native) confirmation dialog.
+             * Opens a (native) confirm-notification dialog.
              * 
-             * @function confirm
+             * @param {String} message
+             * 				the confirm message
+             * @param {Function} [alertCallback]			
+             * 				callback that is triggered, after dialog was closed.
+             * 				The callback will be invoked with 1 argument:<br>
+             * 				<code>callback(wasConfirmed : Boolean)</code><br>
+             * 				if the OK/CONFIRM button was pressed, <code>wasConfirmed</code>
+             * 				will be <code>true</code>, otherwise <code>false</code>.
+             * @param {String} [title] OPTIONAL
+             * 				the title for the confirm dialog
+             * 				(may not be provided / settable in all execution environments)
+             * @param {Array<String>} [buttonLabels] OPTIONAL
+             * 				the labels for the buttons of the confirm dialog
+             * 				(may not be provided / settable in all execution environments)
+             * 
+             * @function
              * @public
              */
             confirm: function(message, confirmCallback, title, buttonLabels){
-            	navigator.notification.confirm(message, confirmCallback, title, buttonLabels);
+            	if(doConfirm){
+            		doConfirm.call(this, message, confirmCallback, title, buttonLabels);
+            	}
+            	else {
+            		console.warn('NotificationManager.confirm: No confirm dialog implementation available ', message, confirmCallback, title, buttonLabels);
+            	}
             },
             /**
              * Trigger a beep notification sound.
              * 
-             * @function beep
-             * @param times {Number} how many times should to beep repeated
+             * @function
+             * @param {Number} times
+             * 			how many times should to beep repeated
              * @public
              */
             beep: function(times){
@@ -493,6 +783,14 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
             getVolume: function(){
             	return beepVolume;
             },
+            /**
+             * Set the volume for sound notifications.
+             * 
+             * @param {Number} vol
+             * 			the new volume: a number between [0, 1]
+             * 
+             * @see mmir.env.media.IAudio#setVolume
+             */
             setVolume: function(vol){
             	if(typeof vol !== 'number'){
             		throw new TypeError('argument vol (value: '+vol+') must be a number, but is instead: '+(typeof vol));
@@ -522,16 +820,41 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
             /**
              * Trigger a sound notification by NAME (needs to be created first).
              * 
-             * @function playSound
-             * @param name {String} the name / identifier for the sound (if NULL, beep notification is used)
-             * @param times {Number} how many times should to beep repeated
+             * @function
+             * @param {String} name
+             * 				the name / identifier for the sound (if <code>null</code>, beep notification is used)
+             * @param {Number} times
+             * 				how many times should to beep repeated
              * @public
+             * 
+             * @see #createSound
              */
             ,playSound: function(name, times, onFinished, onError){
         		if (times>0){
         			playAudioSound(name, times, onFinished, onError);
         		}
             },
+            /**
+             * Create a sound notification.
+             * 
+             * <p>
+             * After creation, the sound "theSoundId" can be played via 
+             * <code>playSound("theSoundId", 1)</code>
+             * 
+             * @function
+             * @param {String} name 
+             * 			the name / identifier for the sound
+             * @param {String} url
+             * 			the URL for the audio of the sound
+             * @param {Boolean} [isKeepOnPause] OPTIONAL
+             * 			flag indicating, if the audio resources should be keept
+             * 			when the device goes into <em>pause mode</em>
+             * 			(may not apply to all execution environments; 
+             * 			 e.g. relevant for Android environment)
+             * 			<br>
+             * 			DEFAULT: <code>false</code> 
+             * @public
+             */
             createSound: function(name, url, isKeepOnPause){ // TODO add callbacks? this would make the impl. more complex ..., successCallback, errorCallback){
             	initAudioSoundEntry(name, url, isKeepOnPause);
 
@@ -540,19 +863,51 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 //            	//immediately initialize the sound (but do not play it yet);
 //            	playAudioSound(name, 0);
             }
+            /**
+             * Stop a sound notification, if it is playing.
+             * 
+             * Has no effect, if the notification is not playing.
+             * 
+             * @function
+             * @param {String} name 
+             * 			the name / identifier for the sound
+             */
             ,stopSound: function(name){
         		stopAudioSound(name);
             }
             
-            , initBeep: function(){
+            , initBeep: function(){//<- used by framework to initialize the default beep-sound
             	//initialize beep sound:
         		playAudioSound(null, 0);
             }
+            /**
+             * Initialize a sound notification.
+             * 
+             * <p>
+             * NOTE a sound does not need to be explicitly initialized, <code>playSound</code> will
+             * automatically initialize the sound if necessary.
+             * 
+             * <p>
+             * Initializing a sound prepares all resources, so that the sound can be immediately played.
+             * 
+             * For instance, a sound that needs to loaded from a remote server first, may take some time
+             * before it can be played.
+             * 
+             * <p>
+             * NOTE the sound must be {@link #createSound|created} first, before initializing it.
+             * 
+             * @function
+             * @param {String} name 
+             * 			the name / identifier for the sound
+             * @public
+             * 
+             * @see #createSound
+             */
             , initSound: function(name){
             	//initialize sound (identified by its name):
         		playAudioSound(name, 0);
             }
-            , init: function(){
+            , init: function(){//<- used by framework to initialize the NotificationManager
             	_init();
             	this.init = function(){ return this; };
             	
@@ -568,14 +923,12 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 	 * 
 	 * @function
 	 * @name getInstance
-	 * @memberOf mmir.NotificationManager.prototype 
+	 * @memberOf mmir.NotificationManager#
 	 */
 	instance.getInstance = function(){
 		return instance;
 	};
     		
     return instance;
-    
-    /** #@- */
     
 });//END: define(..., function(){...

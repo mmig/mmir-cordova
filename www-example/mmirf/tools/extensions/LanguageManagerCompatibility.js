@@ -77,18 +77,12 @@ define(['commonUtils', 'presentationManager', 'dialogManager'],
          */
         return setToCompatibilityMode = function(compatibilitySelf) {
         	
-        	/** @scope mmir.LanguageManager.setToCompatibilityModeExtension.prototype */
-        	
-        	/**
-        	 * #@+
-        	 * @memberOf mmir.LanguageManager.setToCompatibilityModeExtension.prototype
-        	 */
+        	/** @scope mmir.LanguageManager.setToCompatibilityModeExtension.prototype *///for jsdoc2
         	
 //            /**
 //             * The instance that holds the extensions for compatibility
 //             * mode, which really is the LanguageManager instance.
 //             * 
-//             * @property compatibilitySelf
 //             * @type mmir.LanguageManager
 //             * @private
 //             */
@@ -98,7 +92,7 @@ define(['commonUtils', 'presentationManager', 'dialogManager'],
              * This function is used to localize the view description
              * (ehtml) before they are displayed.
              * 
-             * @function translateHTML
+             * @function
              * @param {String}
              *            html The (HTML) string which is to be localized
              *            into the currently used language
@@ -110,8 +104,8 @@ define(['commonUtils', 'presentationManager', 'dialogManager'],
              * @deprecated used for old template format
              * 
              * 
-             * @depends mmir.CommonUtils
-             * @depends requires that CommonUtils is set to
+             * @requires mmir.CommonUtils
+             * @requires requires that CommonUtils is set to
              *           setToCompatibilityMode:
              *           {@link mmir.CommonUtils#setToCompatibilityMode}
              */
@@ -146,10 +140,10 @@ define(['commonUtils', 'presentationManager', 'dialogManager'],
              * a menu to choose the application language.<br>
              * This should better be implemented as a partial. </div>
              * 
-             * @depends mmir.PresentationManager
-             * @depends mmir.DialogManager
+             * @requires mmir.PresentationManager
+             * @requires mmir.DialogManager
              * 
-             * @function changeLanguage
+             * @function
              * @param {String}
              *            newLang The new language which is to be used
              *            henceforth
@@ -176,7 +170,6 @@ define(['commonUtils', 'presentationManager', 'dialogManager'],
             compatibilitySelf.getCurrentLanguage = compatibilitySelf.getLanguage;
             compatibilitySelf.cycleLanguages = compatibilitySelf.setNextLanguage;
             
-            /** #@- */
-            
         };//END: setToCompatibilityMode()
+        
 });

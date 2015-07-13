@@ -35,63 +35,208 @@ define(['env'],
  * vs. BROWSER). As a consequence the constants object has 2 modes, that can be
  * switchted via the getInstance()-method, e.g. <code>getInstance(false)</code>
  * 
- * @example <code>mmir.Constants</code>
- * @category core
  * 
  * @name Constants
- * @exports Constants as mmir.Constants
+ * @memberOf mmir
  * @static
  * @class
+ * 
+ * @requires org.apache.cordova.device: cordova plugin add org.apache.cordova.device
+ * 
+ * @example var appBase = mmir.Constants.getBasePath();
  */
 function(
 		env
 ){
-	 /**
-     * Object containing the instance of the class constants 
-     * 
-     * @property instance
-     * @type mmir.Constants#constructor
-     * @private
-     */
-    var instance = null;
 	
+	/**
+	 * Object containing the instance of the class constants 
+	 * 
+	 * @type mmir.Constants
+	 * @private
+	 * @memberOf Constants#
+	 */
+	var instance = null;
+	
+	/**
+	 * @memberOf Constants#
+	 */
 	var isBrowserEnv = false;
 
 	// needed basepath
+	/**
+	 * the base path for the "invoking" app (i.e. where the main HTML file is located)
+	 * @private
+	 * @memberOf Constants#
+	 */
     var basePath = "";
 	
-	// Paths
+    ///////////////////////////////////////////////////// Paths /////////////////////////////////////////////////////
+    
+    /**
+	 * the base path of the (i.e. this) library
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var frameworkBasePath = "mmirf/";
 	
+	/**
+	 * the path for WebWorkers
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var workerPath = frameworkBasePath + "workers/";
+	/**
+	 * the path for plugins
+	 *  
+	 * TODO deprecated? since Cordova 3.x brings its own loading mechanism now...
+	 * 
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var pluginsPath = frameworkBasePath + "plugins/";
+	/**
+	 * the path for Extensions (i.e. extending JavaScript base classes)
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var extensionsPath = frameworkBasePath + "tools/extensions/";
+	/**
+	 * the path to the audio file containing the default beep sound.
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var beepURL = frameworkBasePath + "vendor/sounds/beep-notification.mp3";
+	/**
+	 * the path to the app's controllers
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var controllerPath = "controllers/";
+	/**
+	 * the path to the app's controller helpers
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var helperPath = "helpers/";
+	/**
+	 * the path to the language resources root directory
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var languagePath = "config/languages/";
+	/**
+	 * the path to the app's models
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var modelPath = "models/";
+	/**
+	 * the path to the app's layouts
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var layoutPath = "views/layouts/";//before changing this: see also use of 'layouts' sub-dir-name in build/lib/mmir-build/ant/StandaloneTemplateParserExec.js
+	/**
+	 * the path to the app's view root directory
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var viewPath = "views/";
+	/**
+	 * the path to the app's generated (compiled JS) views
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var genViewPath = "gen/views/";
+	/**
+	 * the path to the app's generated (compiled JS) layouts
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var genLayoutPath = "gen/views/layouts/";//before changing this: see also use of 'layouts' sub-dir-name in build/lib/mmir-build/ant/StandaloneTemplateParserExec.js
+	/**
+	 * the path to the app's generated (compiled JS) grammars
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var genGrammarsPath = "gen/grammar/";
-	
-	var speechConfigFileName = "speech.json";
-	var grammarFileName = "grammar.json";
-	var dictionaryFileName = "dictionary.json";
+
+	/**
+	 * the path to media plugins / modules
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var mediaPluginPath = frameworkBasePath + "env/media/";
+	/**
+	 * the path to grammar engine implementations / modules
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var grammarPluginPath = frameworkBasePath + "env/grammar/";
 	
+	///////////////////////////////////////////////////// Resource Names /////////////////////////////////////////////////////
+    
+	/**
+	 * the name of speech (output) configuration files
+	 * @private
+	 * @memberOf Constants#
+	 */
+	var speechConfigFileName = "speech.json";
+	/**
+	 * the name of (JSON) grammar files, i.e. "grammar definitions"
+	 * @private
+	 * @memberOf Constants#
+	 */
+	var grammarFileName = "grammar.json";
+	/**
+	 * the name of language dictionary files
+	 * @private
+	 * @memberOf Constants#
+	 */
+	var dictionaryFileName = "dictionary.json";
+	/**
+	 * the name of the app's configuration file
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var configurationFileUrl = "config/configuration.json";
+	/**
+	 * the name of the app's directory-/file-information file
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var directoriesFileUrl = "config/directories.json";
 	
+	
+	////////////////////////////////////////////////// General Constant Values///////////////////////////////////////////////////
+    
+	/**
+	 * the default language setting
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var language = "en";
 	
 	// Prefixes
+	
+	/**
+	 * the prefix for partial-view file-names
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var partialsPrefix = '~';
+	/**
+	 * the postfix for controller-helper file-names
+	 * @private
+	 * @memberOf Constants#
+	 */
 	var helperSuffix = "Helper";
 	
+	/**
+	 * @private
+	 * @memberOf Constants#
+	 */
 	function setBasePath(isBrowserEnvParam){
 		// if not on browser: basepath must be different
 		if(typeof isBrowserEnvParam === 'string'){
@@ -99,8 +244,43 @@ function(
 		}
 		else if (isBrowserEnvParam && isBrowserEnvParam.env){
 
-			switch(isBrowserEnvParam.env){
-				case 'cordova':
+			//if cordova env, try to detect the specific platform
+			//TODO move this to somewhere else? to envDetect.js ?
+			var env = isBrowserEnvParam.env;
+			if(env === 'cordova'){
+				
+				//use plugin org.apache.cordova.device for detecting specific env
+				if(typeof device !== 'undefined' && device.platform){
+					
+					var platform = device.platform;
+					if(/\bios\b/i.test(platform)){
+						env = 'ios';
+					} else if(/\bandroid\b/i.test(platform)){
+						env = 'android';
+					} else {//TODO handle other platforms
+						console.warn('Unknown platform "'+env+'", using default base path /');
+						env = 'default';
+					}
+					
+				} else {
+					
+					//fallback: use UserAgent for detecting env
+					var userAgent = navigator.userAgent;
+					if(/(iPad|iPhone|iPod)/ig.test(userAgent)){
+						env = 'ios';
+					} else if(/android/i.test(userAgent)){
+						env = 'android';
+					} else {//TODO handle other platforms
+						console.warn('Unknown platform "'+env+'", using default base path /');
+						env = 'default';
+					}
+					
+				}
+				
+			}
+			
+			switch(env){
+//				case 'cordova':
 				case 'android':
 					basePath = "file:///android_asset/www/";
 					break;
@@ -121,8 +301,9 @@ function(
 	
 	/**
 	 * Constructor-Method of Class {@link Constants}<br>
-	 * @constructs Constants
-	 * @memberOf Constants.prototype
+	 * 
+	 * @constructs Constants#
+	 * @memberOf mmir.Constants.prototype
 	 * @private
 	 */
     function constructor(forBrowserParameter){
@@ -133,16 +314,18 @@ function(
 		return {
 			/**
 			 * Returns a string with the base path.
-			 * @function getBasePath
+			 * @function
 			 * @public
 			 * @returns {String} base path
+			 * 
+			 * @memberOf mmir.Constants.prototype
 			 */
 			getBasePath: function(){
 				return basePath;
 			},
 			/**
 			 * Returns a string with the path to the plugins.
-			 * @function getPluginsPath
+			 * @function
 			 * @public
 			 * @returns {String} plugin path
 			 */
@@ -151,7 +334,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the layouts.
-			 * @function getLayoutPath
+			 * @function
 			 * @public
 			 * @returns {String} layout path
 			 */
@@ -163,7 +346,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the models.
-			 * @function getModelPath
+			 * @function
 			 * @public
 			 * @returns {String} model path
 			 */
@@ -172,7 +355,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the views.
-			 * @function getViewPath
+			 * @function
 			 * @public
 			 * @returns {String} view path
 			 */
@@ -185,7 +368,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the languages.
-			 * @function getLanguagePath
+			 * @function
 			 * @public
 			 * @returns {String} language path
 			 */
@@ -194,7 +377,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the controllers.
-			 * @function getControllerPath
+			 * @function
 			 * @public
 			 * @returns {String} controller path
 			 */
@@ -203,7 +386,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the workers.
-			 * @function getWorerPath
+			 * @function
 			 * @public
 			 * @returns {String} worker path
 			 */
@@ -212,7 +395,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the helpers.
-			 * @function getHelperPath
+			 * @function
 			 * @public
 			 * @returns {String} helper path
 			 */
@@ -221,7 +404,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the extensions.
-			 * @function getExtensionsPath
+			 * @function
 			 * @public
 			 * @returns {String} extensions path
 			 */
@@ -230,7 +413,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the Media-Plugins.
-			 * @function getMediaPluginPath
+			 * @function
 			 * @public
 			 * @returns {String} MediaPlugin path
 			 */
@@ -241,7 +424,7 @@ function(
 			 * Returns a string with the path to the Grammar-Plugins
 			 * (ie. engines for grammar generation).
 			 * 
-			 * @function getGrammarPluginPath
+			 * @function
 			 * @public
 			 * @returns {String} Grammar Plugin path (
 			 */
@@ -250,7 +433,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the directory that contains the generated/executable grammars.
-			 * @function getGeneratedGrammarsPath
+			 * @function
 			 * @public
 			 * @returns {String} path for generated grammars (JavaScript files)
 			 */
@@ -259,7 +442,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the configuration file.
-			 * @function getConfigurationFileUrl
+			 * @function
 			 * @public
 			 * @returns {String} path to configuration file
 			 */
@@ -268,7 +451,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the directories file (directory-strucure / file-list).
-			 * @function getDirectoriesFileUrl
+			 * @function
 			 * @public
 			 * @returns {String} path to directories file
 			 */
@@ -277,7 +460,7 @@ function(
 			},
 			/**
 			 * Returns a string with the path to the beep audio-file.
-			 * @function getBeepUrl
+			 * @function
 			 * @public
 			 * @returns {String} path to beep wav file
 			 */
@@ -286,7 +469,7 @@ function(
 			},
 			/**
 			 * Returns the name of the dictionary filename as string 
-			 * @function getDictionaryFileName
+			 * @function
 			 * @public
 			 * @returns {String} dictionary filename
 			 */
@@ -296,7 +479,7 @@ function(
 			/**
 			 * Returns the name of the filename for
 			 * the speech configuration as string 
-			 * @function getSpeechFileName
+			 * @function
 			 * @public
 			 * @returns {String} dictionary filename
 			 */
@@ -305,7 +488,7 @@ function(
 			},
 			/**
 			 * Returns the name of the grammar filename as string 
-			 * @function grammarFileName
+			 * @function
 			 * @public
 			 * @returns {String} grammar filename
 			 */
@@ -314,7 +497,7 @@ function(
 			},
 			/**
 			 * Returns the prefix for partial filenames as string 
-			 * @function getPartialsPrefix
+			 * @function
 			 * @public
 			 * @returns {String} prefix for partial filenames
 			 */
@@ -323,7 +506,7 @@ function(
 			},
 			/**
 			 * Returns the suffix for helper filenames as string. A helpers filename looks like: "ControllerName"+"Helper"+".js"
-			 * @function getHelperSuffix
+			 * @function
 			 * @public
 			 * @returns {String} suffix for helper filenames
 			 */
@@ -332,7 +515,7 @@ function(
 			},
 			/**
 			 * Returns default language as string.
-			 * @function getLanguage
+			 * @function
 			 * @public
 			 * @returns {String} default language
 			 */
@@ -343,7 +526,7 @@ function(
 			/**
 	         * Initialize the Constants singleton.
 	         * 
-	         * @function init
+	         * @function
 	         * @param {Boolean} forBrowserParameter <tt>true</tt> for browser-environment, if <tt>false</tt> ANDROID environment
 	         * @returns {Object} Object containing the instance of the class {@link mmir.Constants}
 	         * @public
@@ -355,6 +538,11 @@ function(
 				return this;
 			},
 			
+			/**
+	         * @function
+	         * @returns {Boolean}
+	         * @public
+	         */
 			isBrowserEnv: function(){//FIXME replace with real environment-setting/-mechanism
 				return isBrowserEnv;
 			},

@@ -25,22 +25,37 @@
  */
 
 define(['languageManager', 'parserModule', 'storageUtils'],
+	//this comment is needed by jsdoc2 [copy of comment for: function ContentElement(...]
 	/**
-	 * @name ContentElement
+	 * The ContentElement represents "content" parts of a view; it may itself contain one or more ContentElements.
+	 * 
+	 * This class holds the name of the content-field (used via the yield-tag in the layouts: content, header, footer, dialogs, ...)
+	 * and its definition as HTML-String.
+	 * 
 	 * @class
+	 * @name ContentElement
+	 * @public
+	 * 
+	 * @param {Array|Object} group
+	 * 				 an array or object with properties <code>name</code> {String}, and <code>content</code> {String}
+	 * @param {Object} view 
+	 * 				the view that owns this ContentElement-element 
+	 * @param {mmir.parser.ParserUtils} parser 
+	 * 				for the the content (optional) if supplied this object must have a function <code>parse({String})</code> (see templateParseUtil)
+	 * @param {mmir.parser.RenderUtils} renderer
+	 * 				 for the the content (optional) if supplied, a <code>parser</code> must also be supplied; the renderer must have a function <code>parse({String})</code> (see templateRenderUtil)
 	 * 
 	 */
 	function(
 			languageManager, parser_context
 ){//NOTE: dependency storageUtils is actually accessed through parser_context (i.e. it attaches its functions to parserModule)
 	
-/** @scope ContentElement.prototype */
-/**
- * #@+
- * @memberOf ContentElement.prototype
- */
+/** @scope ContentElement.prototype *///for jsdoc2
 	
+//set to @ignore in order to avoid doc-duplication in jsdoc3
 /**
+ * @ignore
+ * 
  * The ContentElement represents "content" parts of a view; it may itself contain one or more ContentElements.
  * 
  * This class holds the name of the content-field (used via the yield-tag in the layouts: content, header, footer, dialogs, ...)
@@ -61,13 +76,31 @@ define(['languageManager', 'parserModule', 'storageUtils'],
  */
 function ContentElement(group, view, parser, renderer){
 
+	/**
+	 * the "localizer" i.e. for handeling internationalization / localized Strings
+	 * 
+	 * @protected
+	 * @type mmir.LanguageManager
+	 * @memberOf ContentElement#
+	 */
 	this.localizer  = languageManager;
 	
 	if(arguments.length === 0){
 		return this;
 	}
 	
-	//TODO externalize as constant
+	
+	/**
+	 * dummy name, if the ContentElement does not have a name:
+	 * only ContentElements that represent Views and Partials have names -
+	 * other sub-elements (@if,@for etc) do not have their own name/identifier.
+	 * 
+	 * TODO externalize as constant
+	 * 
+	 * @private
+	 * @constant
+	 * @memberOf ContentElement#
+	 */
 	var SUB_ELEMENT_NAME = "@fragment";
 	
 	this.parser     = parser;
@@ -98,20 +131,19 @@ function ContentElement(group, view, parser, renderer){
 		/**
 		 * The offset of the ContentElement's raw String-content
 		 * in relation to its parent ContentElement. 
-		 * 
+		 * <p>
 		 * I.e. only when ContentElements are nested with other ContentElements.
-		 * 
+		 * <p>
 		 * For nested ContentElements, the offset always refers to outermost
 		 * ContentElement, e.g.
-		 * 
+		 * <pre>
 		 *   content
 		 *   ContentElement_1
 		 *   	ContentElement_2.parentOffset: offset to ContentElement_1
 		 *   		...
-		 *   			ContentElement_i.parentOffset: offset to ContentElement_1
+		 *   			ContentElement_i.parentOffset: offset to ContentElement_1</pre>
 		 * 
-		 * @property parentOffset
-		 * @type {Number} 
+		 * @type Number
 		 * @private
 		 */
 		this.parentOffset = group.offset;
@@ -124,32 +156,119 @@ function ContentElement(group, view, parser, renderer){
 		this.parentOffset = 0;
 	}
 	
+	/**
+	 * The ParsingResult that represents this ContentElement
+	 * 
+	 * @private
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 */
 	var parsingResult = parser.parse(this.definition, this);
-	
+	/**
+	 * The "raw" template text.
+	 * 
+	 * @protected
+	 * @type String
+	 * @memberOf ContentElement#
+	 * 
+	 */
 	this.definition 	= parsingResult.rawTemplateText;
-	
+	/**
+	 * List of the "localize" statements in the template.
+	 * 
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.LOCALIZE
+	 */
 	this.localizations 	= parsingResult.localizations;
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.ESCAPE_ENTER
+	 * @see mmir.parser.element.ESCAPE_EXIT
+	 */
 	this.escapes        = parsingResult.escapes;
-	
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.HELPER
+	 */
 	this.helpers		= parsingResult.helpers;
-
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.BLOCK
+	 */
 	this.scriptBlocks     = parsingResult.scriptBlocks;
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.STATEMENT
+	 */
 	this.scriptStatements = parsingResult.scriptStatements;
-////	this.includeScripts   = parsingResult.includeScripts;
-////	this.includeStyles    = parsingResult.includeStyles;
+////	this.includeScripts   = parsingResult.includeScripts; @see mmir.parser.element.INCLUDE_SCRIPT
+////	this.includeStyles    = parsingResult.includeStyles; @see mmir.parser.element.INCLUDE_STYLE
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.RENDER
+	 */
 	this.partials         = parsingResult.partials;
-	
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.IF
+	 */
 	this.ifs              = parsingResult.ifs;
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.FOR
+	 */
 	this.fors             = parsingResult.fors;
-	
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.VAR_DECLARATION
+	 */
 	this.vars             = parsingResult.vars;
-
+	/**
+	 * @protected
+	 * @type mmir.parser.ParsingResult
+	 * @memberOf ContentElement#
+	 * 
+	 * @see mmir.parser.element.COMMENT
+	 */
 	this.comments         = parsingResult.comments;
 	
-//	this.yields           = parsingResult.yields;
-//	this.contentFors    = parsingResult.contentFors;
+//	this.yields           = parsingResult.yields; @see mmir.parser.element.YIELD_DECLARATION
+//	this.contentFors    = parsingResult.contentFors; @see mmir.parser.element.YIELD_CONTENT
 	
 	//create ALL array and sort localizations etc. ...
+	/**
+	 * create ALL array and sort it, i.e. for localizations etc. ...
+	 * @private
+	 * @type Array<mmir.parser.ParsingResult>
+	 * @memberOf ContentElement#
+	 */
 	var all = this.localizations.concat(
 			this.escapes, 
 			this.helpers,
@@ -166,14 +285,26 @@ function ContentElement(group, view, parser, renderer){
 //			this.contentFors
 	);
 	
-	//sorting function -> sort elements by occurrence in raw template text
-	var sortAscByStart=function(parsedElem1, parsedElem2){
+	/**
+	 * HELPER sorting function -> sort elements by occurrence in raw template text
+	 * @private
+	 * @function
+	 * @memberOf ContentElement#
+	 */
+	var sortAscByStart = function(parsedElem1, parsedElem2){
 		return parsedElem1.getStart() - parsedElem2.getStart();
 	};
 	all.sort(sortAscByStart);
 
 	this.allContentElements = all;
 	
+	/**
+	 * HELPER check if a ContentElement has "dynamic content"
+	 * 
+	 * @private
+	 * @function
+	 * @memberOf ContentElement#
+	 */
 	var checkHasDynamicContent = function(contentElement){
 		return	(contentElement.localizations 		&& contentElement.localizations.length 		> 0)
 			|| 	(contentElement.helpers 			&& contentElement.helpers.length 			> 0)
@@ -192,6 +323,21 @@ function ContentElement(group, view, parser, renderer){
 	// (--> i.e. has to be evaluated on each rendering, or -if not- can be statically rendered once)
 	this.internalHasDynamicContent = checkHasDynamicContent(this);
 	
+	/**
+	 * Error for parsing problems with detailed location information (i.e. where the parsing problem occured).
+	 * 
+	 * @property {String} name		the error name, that triggered the ScriptEvalError
+	 * @property {String} message	the message of the error that triggered the ScriptEvalError
+	 * @property {String} stack		the error stack (if available)
+	 * 
+	 * @property {String} details	the detailed message of the ScriptEvalError including the positional information and the error that triggered it
+	 * @property {Number} offset	the offset (number of characters) of the ContentElement where the error occurred (in relation to its parent/owning Element)
+	 * @property {Number} start		the starting position for the content (number of characters) within the ContentElement's <code>rawText</code>
+	 * @property {Number} end		the end position for the content (number of characters) within the ContentElement's <code>rawText</code>
+	 * 
+	 * @class
+	 * @name ScriptEvalError
+	 */
 	var ScriptEvalError = function(error, strScript, contentElement, parsingElement){
 		
 		var err = Error.apply(this, arguments);
@@ -226,6 +372,15 @@ function ContentElement(group, view, parser, renderer){
 				this
 		);
 		
+		/**
+		 * Get the detailed error message with origin information.
+		 * 
+		 * @public
+		 * @returns {String} the detailed error message
+		 * @see #details
+		 * 
+		 * @var {Function} ScriptEvalError#getDetails
+		 */
 		this.getDetails = function(){
 			return this.errorDetails;
 		};
@@ -233,9 +388,21 @@ function ContentElement(group, view, parser, renderer){
 		return this;
 	};
 	
-	//this creates a function for embedded JavaScript code:
-	//	using a function pre-compiles codes, in order to avoid parsing the code  
-	//  (by execution environment) each time the template is rendered
+	/**
+	 * HELPER: this creates a function for embedded JavaScript code:
+	 *  		using a function pre-compiles codes - this avoids (re-) parsing the code  
+	 *   		(by the execution environment) each time that the template is rendered.
+	 *   
+	 * @param {String} strFuncBody
+	 * 			the JavaScript code for the function body
+	 * @param {String} strFuncName
+	 * 			the name for the function
+	 * @returns {Function} the evaluated function with one input argument (see <code>DATA_NAME</code>)
+	 * 
+	 * @private
+	 * @function
+	 * @memberOf ContentElement#
+	 */
 	var createJSEvalFunction = function(strFuncBody, strFuncName){
 		
 		//COMMENT: using new Function(..) may yield less performance than eval('function...'), 
@@ -613,7 +780,7 @@ function ContentElement(group, view, parser, renderer){
 /**
  * Gets the name of a {@link mmir.ContentElement} object (content, header, footer, dialogs, ...).
  * 
- * @function getName
+ * @function
  * @returns {String} Name - used by yield tags in layout
  * @public
  */ 
@@ -624,7 +791,7 @@ ContentElement.prototype.getName = function(){
 /**
  * Gets the owner for this ContentElement, i.e. the {@link mmir.View} object.
  * 
- * @function getView
+ * @function
  * @returns {mmir.View} the owning View
  * @public
  */ 
@@ -635,7 +802,7 @@ ContentElement.prototype.getView = function(){
 /**
  * Gets the controller for this ContentElement.
  * 
- * @function getName
+ * @function
  * @returns {mmir.Controller} the Controller of the owning view
  * @public
  */ 
@@ -648,7 +815,7 @@ ContentElement.prototype.getController = function(){
  * 
  * TODO remove this?
  * 
- * @function toHtml
+ * @function
  * @returns {String} The HTML content.
  * @public
  */
@@ -662,7 +829,9 @@ ContentElement.prototype.toHtml = function(){
  * 
  * @param renderingBuffer {Array} of Strings (if <code>null</code> a new buffer will be created)
  * @param data {Any} (optional) the event data with which the rendering was invoked
- * @returns {Array} of Strings the renderingBuffer with the contents of this object added at the end
+ * @returns {Array<String>} of Strings the renderingBuffer with the contents of this object added at the end
+ * 
+ * @public
  */
 ContentElement.prototype.toStrings = function(renderingBuffer, data){
 
@@ -670,31 +839,64 @@ ContentElement.prototype.toStrings = function(renderingBuffer, data){
 	
 };
 
+/**
+ * @public
+ * @returns {String} the raw text from which this content element was parsed
+ * @see #getDefinition
+ * 
+ * @public
+ */
 ContentElement.prototype.getRawText = function(){
     return this.definition;
 };
-
+/**
+ * @deprecated use {@link #getRawText} instead
+ * @returns {String} the raw text from which this content element was parsed
+ * @see #getRawText
+ * 
+ * @public
+ */
 ContentElement.prototype.getDefinition = function(){
     return this.definition;
 };
-
+/**
+ * @returns {Number} the start position for this content Element within {@link #getRawText}
+ * @public
+ */
 ContentElement.prototype.getStart = function(){
     return this.start;
 };
-
+/**
+ * @returns {Number} the end position for this content Element within {@link #getRawText}
+ * @public
+ */
 ContentElement.prototype.getEnd = function(){
     return this.end;
 };
 
-//FIXME add to storage? (this should only be relevant for parsing, which is not neccessary in case of store/restore...)
+//FIXME add to storage? (this should only be relevant for parsing, which is not necessary in case of store/restore...)
 ContentElement.prototype.getOffset = function(){
     return this.parentOffset;
 };
 
+/**
+ * @returns {Boolean} returns <code>true</code> if this ContentElement conatains dynamic content,
+ * 					i.e. if it needs to be "evaluated" for rendering 
+ * 					(otherwise, its plain text representation can be used for rendering)
+ * @public
+ */
 ContentElement.prototype.hasDynamicContent = function(){
     return this.internalHasDynamicContent; 
 };
 
+/**
+ * create a String representation for this content element.
+ * @returns {String} the string-representation
+ * @public
+ * 
+ * @requires StorageUtils
+ * @requires RenderUtils
+ */
 ContentElement.prototype.stringify = function(){
 	
 	//TODO use constants for lists
@@ -824,7 +1026,5 @@ ContentElement.prototype.stringify = function(){
 };
 
 return ContentElement;
-
-/**  #@- */
 
 });//END: define(..., function(){

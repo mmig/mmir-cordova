@@ -39,46 +39,64 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 	 * 
 	 * @class
 	 * @name ModelManager
-	 * @exports ModelManager as mmir.ModelManager
+	 * @memberOf mmir
 	 * @static
-	 * @category core
 	 * 
-	 * @depends jQuery.Deferred
+	 * @requires jQuery.Deferred
 	 * 
 	 */
 	function( 
     		Dictionary,  constants, commonUtils, $
 ){
-	//next 2 comments are needed by JSDoc so that all functions etc. can
-	// be mapped to the correct class description
+	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.ModelManager.prototype */
-	/**
-	 * #@+
-	 * @memberOf mmir.ModelManager.prototype 
-	 */
 
 	// private members
     /**
      * Array of models
      * 
-     * @property models
      * @type Dictionary
      * @private
+     * 
+	 * @memberOf mmir.ModelManager#
      */
 	var models = new Dictionary();
 	
+	/**
+     * Name of the default namespace 
+     * (within the global space) 
+     * into which Models will be loaded
+     * 
+     * @constant
+     * @type String
+     * @private
+     * 
+	 * @memberOf mmir.ModelManager#
+     */
 	var MODEL_DEFAULT_NAMESPACE_NAME = 'mmir';
+	
+	/**
+     * The global namespace
+     * 
+     * @constant
+     * @type Object
+     * @private
+     * 
+	 * @memberOf mmir.ModelManager#
+     */
 	var GLOBAL_NAMESPACE = window;
 
 	/**
 	 * 
 	 * This function returns the fully qualified model name (including namespace(s)).
 	 * 
-	 * @function getFullModelName
+	 * @function
 	 * @param {String}
 	 *            modelClassName the model's class-name (i.e. without namespace)
 	 * @returns {String} fully qualified name for the model
 	 * @private
+	 * 
+	 * @memberOf mmir.ModelManager#
 	 */
     function getFullModelName(modelClassName){
     	if( ! MODEL_DEFAULT_NAMESPACE_NAME){
@@ -93,9 +111,10 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 	 * 
 	 * This function returns all loaded models. 
 	 * 
-	 * @function getModels
+	 * @function
 	 * @returns {Array<String>} all loaded model names
 	 * @public
+	 * @memberOf mmir.ModelManager#
 	 */
     function getModelNames(){//TODO export this function on _instance?
     	return models.getKeys();
@@ -106,25 +125,34 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 	 * {@link mmir.ModelManager#foundModelsCallBack} to load all
 	 * models in the path specified by *modelPath*.
 	 * 
-	 * @function loadModels
+	 * @function
 	 * @param {Function}
 	 *            myCallbackFunction The callback function from the constructor
 	 *            which shall be called after the initialization of the
 	 *            {@link mmir.ModelManager}.
 	 * @private
+	 * @memberOf mmir.ModelManager#
 	 */
 	function _init(myCallbackFunction) {
 		
 		/** @scope mmir.ModelManager.prototype */
 
 //		delete _instance.init;
+		/**
+		 * <code>init</code> as alias for #getInstance
+		 * @private
+		 * @function
+		 * @name init
+		 * @memberOf mmir.ModelManager#
+		 */
 		_instance.init = _instance.getInstance;
 
 		/**
 		 * 
 		 * This function returns the fully qualified model name (incl. namespace(s)). 
 		 * 
-		 * @function getModelByName
+		 * @function
+		 * @name getModelByName
 		 * @param {String|Array<String>} fullModelName the fully qualified model name (i.e. with namespace(s))
 		 * 								Note, if {String} components/namespaces are separated by a <tt>.</tt> (dot)
 		 * 								If {Array<String>} the entries correspond to the namespace components (without dots),
@@ -137,6 +165,8 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 		 * 
 		 * @see mmir.ModelManager#getFullModelName
 		 * @see mmir.ModelManager#doGetModelInstance
+		 * 
+		 * @memberOf mmir.ModelManager#
 		 */
         function getModelByName(fullModelName){
         	var components;
@@ -176,10 +206,12 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
          * Otherwise the model-object itself is returned (e.g. for 
          * singleton pattern models).
          * 
-         * @function doGetModelInstance
+         * @function
          * @private
          * 
 		 * @see mmir.ModelManager#getModelByName
+		 * 
+		 * @memberOf mmir.ModelManager#
          */
         function doGetModelInstance(modelImplObject){
         	
@@ -277,7 +309,6 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 	/**
 	 * Object containing the instance of the class {@link mmir.ModelManager}
 	 * 
-	 * @property instance
 	 * @type Object
 	 * @private
 	 * @ignore
@@ -290,6 +321,8 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 			 * 				use: mmir.ModelManager.getModel()
 			 * 
 			 * NOTE: ModelManager must be initialized before it can be used.
+			 * 
+			 * @memberOf mmir.ModelManager.prototype
 			 */
 			getInstance : function () {
 				return this;
@@ -299,7 +332,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function gets the model by name.
 			 * 
-			 * @function getModel
+			 * @function
 			 * @param {String}
 			 *            modelName Name of the model which should be returned
 			 * @returns {Object} The model if found, null else
@@ -324,7 +357,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function returns all loaded models.
 			 * 
-			 * @function getModels
+			 * @function
 			 * @returns {Array} All loaded models
 			 * @public
 			 */
@@ -349,7 +382,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 			 * 
 			 * NOTE: use EITHER callback-function OR returned Promise -- do not use both!
 			 * 
-			 * @function create
+			 * @function
 			 * @param {Function} [callbackFunction] 
 			 * 					The function which should be called after loading all controllers
 			 * @returns {Promise} 
@@ -367,7 +400,5 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'jquery' ],
 	};
 
 	return _instance;
-	
-	/** #@- */
 	
 });

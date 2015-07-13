@@ -25,17 +25,19 @@
  */
 
 define(
+	//this comment is needed by jsdoc2 [copy of comment for: function Dictionary(...]
 	/**
+	 * A dictionary (or map) for key-value storage and access.
 	 * @name Dictionary
 	 * @class
-	 * 
 	 */
-	function(
-){
+	function(){
 
+//set to @ignore in order to avoid doc-duplication in jsdoc3
 /**
- * A dictionary (or map) for key-value storage and access.
+ * @ignore
  * 
+ * A dictionary (or map) for key-value storage and access.
  * @constructs Dictionary
  */
 function Dictionary() {
@@ -43,16 +45,18 @@ function Dictionary() {
 	/**
 	 * "map" for the dictionary
 	 * 
-	 * @property map
 	 * @private
+	 * 
+	 * @memberOf Dictionary#
 	 */
 	var map = {};
 
 	/**
 	 * This list contains the "keys" of all current entries in <tt>map</tt>.
 	 * 
-	 * @property keyList
 	 * @private
+	 * 
+	 * @memberOf Dictionary#
 	 */
 	var keyList = [];
 
@@ -60,9 +64,10 @@ function Dictionary() {
 	 * Prefix for keys in internal MAP object, for avoiding overwrite of
 	 * existing Object properties/functions
 	 * 
-	 * @property KEY_PREFIX
-	 * @static
+	 * @constant
 	 * @private
+	 * 
+	 * @memberOf Dictionary#
 	 */
 	var KEY_PREFIX = '$$';
 
@@ -71,8 +76,14 @@ function Dictionary() {
 	 * 
 	 * The "lookup key" is original key with applied key-prefix.
 	 * 
-	 * @function lookupKey
+	 * @param {String} key
+	 * 			the key (without the internal key prefix)
+	 * @returns {String}
+	 * 			the key prefixed with the internal key prefix
+	 * 
 	 * @private
+	 * 
+	 * @memberOf Dictionary#
 	 */
 	var lookupKey = function(key) {
 		return KEY_PREFIX + key;
@@ -83,14 +94,14 @@ function Dictionary() {
 		/**
 		 * Put / add an entry to the dictionary.
 		 * 
-		 * @function put
-		 * 
 		 * @param {String}
 		 *            key the lookup key for the value
 		 * @param {any}
 		 *            value the value to store
 		 * 
 		 * @public
+		 * 
+		 * @memberOf Dictionary.prototype
 		 */
 		put : function(key, value) {
 
@@ -105,8 +116,6 @@ function Dictionary() {
 		},
 		/**
 		 * Check if the dictionary contains an entry for a key.
-		 * 
-		 * @function containsKey
 		 * 
 		 * @param {String}
 		 *            key the lookup key to check
@@ -123,8 +132,6 @@ function Dictionary() {
 		 * 
 		 * <p>
 		 * NOTE that this function may execute rather slowly, with O(n).
-		 * 
-		 * @function containsValue
 		 * 
 		 * @param {any}
 		 *            value the value to check
@@ -155,8 +162,6 @@ function Dictionary() {
 		/**
 		 * Get the value for a key.
 		 * 
-		 * @function get
-		 * 
 		 * @param {String}
 		 *            key the lookup key with was used to store the entry/value.
 		 * @returns {any} the value for the <tt>key</tt>, or
@@ -174,7 +179,6 @@ function Dictionary() {
 		 * <p>
 		 * NOTE that this may execute rather slowly, with O(n).
 		 * 
-		 * @function remove
 		 * 
 		 * @param {String}
 		 *            key the lookup key for the entry to remove
@@ -219,7 +223,6 @@ function Dictionary() {
 		 * on this list will not be reflected by the dictionary's key-list.
 		 * 
 		 * @returns {Array<String>} a list of all keys
-		 * 
 		 * @public
 		 */
 		getKeys : function() {
@@ -235,7 +238,6 @@ function Dictionary() {
 		/**
 		 * Get the size of the dictionary.
 		 * 
-		 * @function size
 		 * @returns {Number} the count of entries in the dictionary
 		 * @public
 		 */
@@ -248,7 +250,6 @@ function Dictionary() {
 		 * <p>
 		 * NOTE that this may execute rather slowly, with O(n).
 		 * 
-		 * @function clear
 		 * @public
 		 */
 		clear : function() {

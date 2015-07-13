@@ -1,5 +1,5 @@
 ﻿
-version notes for MMIR framework code (v 3.5.0)
+version notes for MMIR framework code (v 3.6.0rc5)
 
  * using Cordova 3.x.x library
  * using jQuery 2.1.x library
@@ -22,6 +22,179 @@ version notes for MMIR framework code (v 3.5.0)
  --------------
  Change Log
  --------------
+
+##################
+ Version 3.6.0rc5
+##################
+
+API Changes
+ * MODIFICATION: location for silenceDetection.js changed: moved from /mmirf/env/media to /mmirf/workers
+   currently this file is un-used; for old implementations, change setting in configuration.json:
+   {
+   	...
+   	"html5AudioInput": {
+   		...
+   		"silenceDetectorPath": "mmirf/workers/silenceDetection.js", //old value: "mmirf/env/media/silenceDetection.js"
+   		...
+   	}...
+ 
+ * MODIFICATION: externalized preparing/wait functionality from media audio-input plugins (prevously in internal/private _wait implementation)
+   * added property to MediaManger: waitReadyImpl
+     * if set, then its preparing/ready functions are exported to MediaManager's _preparing/_ready functions, i.e. set object with:
+         preparing: function(moduleName : String)
+         ready: function(moduleName : String)
+       these functions will be called by module implementations when they are preparing (i.e. user should wait) or are ready for further input/processing
+     * if not set, MediaManager's _preparing/_ready functions are NO-OP functions
+     * media plugins may invoke preparing/ready functions via MediaManager._prepare(moduleName) and MediaManager._ready(moduleName)
+   * added implementation for "standalone wait dialog" (extracted wait overlay from jQuery Mobile 1.4.x)
+   * added media module env/media/waitReadyIndicator.js which "standalone wait dialog" and sets MediaManager's waitReadyImpl property
+   * changed MediaManager's default modules to include waitReadyIndicator.js (i.e. is loaded by default for the preparing() / ready() implementation)
+ * ADDITION: mmir.config() now allows setting options for modules
+   * module settings are merged with default framework settings (previously they were overwritten causing errors if required settings were missing)
+   * for example can be used for setting specific log-levels:
+     mmir.config({config: { 'moduleName': {logLevel: 'warn'}}});
+   * allows to modify settings for dialogManager and inputManager (which currently have required settings in the default settings), e.g. modify log-level:
+     mmir.config({config: { 'dialogManager': {logLevel: 'warn'}, 'inputManager': {logLevel: 'warn'}}});
+     or using alternative SCXML definition (overwriting the default setting)
+     mmir.config({config: { 'dialogManager': {scxmlDoc: 'config/statedef/example-view_transitions-dialogDescriptionSCXML.xml'});
+ * ADDITION: MediaManager now allows to load multiple modules for same functionality (e.g. two modules for text-to-speech) by using "execution contexts":
+   example: in configuration.json specify the context for a media module using {"mod": "moduleFile.js", "ctx": "thecontext"}, 
+            e.g. the following configuration will load a 2nd speech-input module into context "html"
+            
+   "mediaManager": {
+    	"plugins": {
+    		"browser": ["html5AudioOutput.js",
+    		            "webkitAudioInput.js",
+    		            "maryTextToSpeech.js",
+    		            {"mod": "html5AudioInput.js","ctx": "html" }
+    		],
+    		...
+    		
+    		the 'default module' for speech-input is available - same as before - without the "context prefix" (i.e. the following will use module functions from "webkitAudioInput.js")
+    		    mmir.MediaManager.recognize(...
+    		and the 2nd module for speech-input can then be used via its context (this will use module functions from "html5AudioInput.js"):
+    		    mmir.MediaManager.ctx.html.recognize(...
+    see also related functions to this new feature in MediaManager:
+     * perform(ctx, fname, args)
+     * getFunc(ctx, fname)
+     * setDefaultCtx
+ * ADDITION AudioOutput (HTML5) env/media/html5AudioInput.js:
+   * the module now provides additional function getWAVAsAudio() analogous to getURLAsAudio()
+   * except (1): first parameter is a data-blob (instead of an URL)
+   * except (2): "additional" second parameter for callback: instead of the return-value, the audio-object is passed to the callback (because audio-object creation is potentially asynchronous)
+ * MODIFICATION AudioInput (HTML5/Webkit) env/media/webkitAudioInput.js:
+   * in repeat-mode (startRecord()): retry n-times to re-start the recognition for "serious" errors (before giving up an triggering the error-callback)
+ * ADDITION Recorder (extended) env/media/recorderExt.js:
+   * provides new semi-public function _initSource(inputSource)
+   * allows to set new input-source (e.g. in case original input-stream/-source was stopped)
+     NOTE: this can be useful in order to avoid creating multiple WebWorkers for recording...
+   * code example:
+   
+     navigator.getUserMedia({audio: true}, function(stream){
+     
+     	var input = new AudioContext().createMediaStreamSource(stream);
+     	var recorder = new Recorder(input);
+     	
+     	//start recording
+     	recorder.record();
+     	
+     	...
+     	
+     	//stop recording
+     	recorder.stop();
+     	recorder.clear();
+     	
+     	//close audio-stream
+     	stream.stop();
+     	
+     	...
+     	
+     	//restart recorder with another input-stream
+     	navigator.getUserMedia({audio: true}, function(stream2){
+     		
+     		var input2 = new AudioContext().createMediaStreamSource(stream2);
+     		
+     		//set new input-source on existing recorder:
+     		recorder._initSource(input2);
+     		
+     		//start recording
+     		recorder.record();
+     		
+     		...
+     	});
+     });
+     
+ * ADDITION / MODIFICATION for MARY textToSpeech module env/media/maryTextToSpeech.js:
+  * an (OPTIONAL) options-object allows to specify a different language and voice (than the current app's settings) when synthesizing text
+    * NOTE: if you specify a voice which does not exist for the language, an error will be trigger
+    * example:	//specify no callbacks: set onEnd, onError, onInit to NULL
+    			//specify different language and voice in 5th/last arguments
+    			mmir.MediaManager.textToSpeech(text, null, null, null, {
+						voice: 'bits3-hsmm',
+						language: 'de'
+					}
+				);
+  * allow empty text: in sentence-mode (i.e. invoking textToSpeech() with an array) empty Strings will be ignored but the sentence-pause will be applied (before, no pause was applied, if an empty string occurred)
+  
+ * ADDITION the Layout object now provides the additional field headerElements:
+   * a list of structured data for the parsed SCRIPT, LINK, and STYLE tags in the layout-definition
+   * see also documentation for Layout.TagElement
+
+New modules for speech input on Android platform via Cordova plugin v0.4.0 (env/media/android*.js)
+ * added framework integration for Android Speech Plugin (Cordova Plugin)
+   * NOTE: the Cordova Android Speech Plugin must be installed in the targeted Cordova project first, before the new modules can be used
+ * added text-to-speech module (android)
+ * added audio-input module (android)
+ * use/select the new modules via /www/config/configuration.json, by changing the array-entries in property mediaManager.plugins.cordova, e.g. to
+   ["cordovaAudioOutput.js", "androidAudioInput.js", "androidTextToSpeech.js"]
+
+Media modules (env/media/)
+ * webkitAudioInput: added normalization-factor for mic-levels (to make values more similar with results from other audio-input plugins)
+ * maryTextToSpeech:
+  * added support for "empty sentences" (-> for reading a String-array: an empty String in the array) -> will insert a pause in place of the empty sentence
+  * added support for using options (language, voice) on funciton-call (instead of/overwriting the app-settings for this call)
+ 
+ * Nuance Speech Plugin (integration code in: env/media/nuanceAudioInput.js):
+  * suppress start-prompt in sentence-wise input mode
+  * added option for disabling delayed results (i.e. disabling "improved feedback mode")
+  
+ * removed files for Speech Plugins in MMIR lib:
+  * these files are now installed with the corresponding plugin
+  * removed files for NuanceSpeechPlugin (but will be installed, when plugin is installed):
+    * env/media/nuanceAudioInput.js
+    * env/media/nuanceTextToSpeech.js
+  * removed files for AndroidSpeechPlugin (but will be installed, when plugin is installed):
+    * env/media/androidAudioInput.js
+    * env/media/androidTextToSpeech.js   
+
+Logger (tools/logger):
+ * added trace functionality (using stacktrace.js)
+ * configurable via core.js (see #logTrace)
+ 
+NotificationManager:
+ * added implementations for alert() and confirm() for non-Cordova environments
+
+JSDoc
+ * updated JSDoc comments
+ * FIX for some incorrect JSDoc comments
+ * added several comments for enabling Eclipse to detect file structure (e.g. for JavaScript Outline View)
+ * made comments compatible with JSDoc3 ( >= 3.4.0dev, NOTE: some additional plugins are required for correct (symbolic) link generation)
+ 
+BUGFIX
+ * CommonUtils: fixed un-intentional global variable (script)
+ * in some places (i.e. where this was still missing): explicitly handle / not handle cases where a var is typeof object, but NULL
+ * AudioOutput, HTML5 (env/media/html5AudioOutput.html):
+   * correctly register error-listener on Audio object & handle error-callback
+   * trigger error callbacks with unified error object (same as Cordova AudioOutput error-callbacks)
+ * PresentationManager:
+   * need to load/require renderUtils (mvc/parser/templateRenderUtils.js) for stored-views, too (i.e. not only when parsing template-views anew)
+   * when loading templates/views: if up-to-date check fails, do not load the pre-compiled view (but _only_ the re-parsed/-compiled view)
+ * Core: BUGFIX for merging additional configurations into the requirejs main-configuration (did omit some additional config-values before)
+ * maryTextToSpeech: fixed potential error when on playing the requested audio is not available yet
+ 
+REFACTOR
+ * some structural (non-functional) changes
+  * mainly in parserModule, parsingResult, strorageUtils, templateProcessor, renderUtils, paramsParseFunc
 
 ##################
  Version 3.5.0
