@@ -37,32 +37,27 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	 * 
 	 * This "class" is structured as a singleton - so that only one instance is in use.<br>
 	 * 
-	 * @category core
 	 * 
 	 * @class
 	 * @name mmir.ControllerManager
 	 * @static
 	 * 
-	 * @depends jQuery.Deferred
+	 * @requires jQuery.Deferred
 	 */
 	function( 
 		Dictionary, Controller, constants, commonUtils, $
 ){
-	//next 2 comments are needed by JSDoc so that all functions etc. can
-	// be mapped to the correct class description
+	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.ControllerManager.prototype */
-	/**
-	 * #@+
-	 * @memberOf mmir.ControllerManager.prototype 
-	 */
 	
 	// private members
 	/**
 	 * Array of controller-instances
 	 * 
-	 * @property controllers
 	 * @type Dictionary
 	 * @private
+	 * 
+	 * @memberOf mmir.ControllerManager#
 	 */
 	var controllers = new Dictionary();
 	
@@ -72,12 +67,14 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	 * Load all Controllers from /controller
 	 * that are specified in /config/directories.json
 	 * 
-	 * @function _init
+	 * @function
 	 * @param {Function} [callback] OPTIONAL
 	 * 				an optional callback that will be triggered after the controllers where loaded
 	 * @returns {Promise}
 	 * 				a Deferred.promise that will get fulfilled when controllers are loaded
 	 * @private
+	 * 
+	 * @memberOf mmir.ControllerManager#
 	 */
 	function _init(callback) {
 
@@ -95,6 +92,8 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		/**
 		 * HELPER FUNC: remove file extension from file-name
 		 * @private
+		 * 
+		 * @memberOf mmir.ControllerManager#
 		 */
 		function removeFileExt(fileName){
 	    	return fileName.replace(/\.[^.]+$/g,'');
@@ -102,6 +101,8 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		/**
 		 * HELPER FUNC: convert first letter to upper case
 		 * @private
+		 * 
+		 * @memberOf mmir.ControllerManager#
 		 */
 	    function firstToUpperCase(name){
 	    	return name[0].toUpperCase()+name.substr(1);
@@ -126,6 +127,8 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		 * 				the info-object: if a path for the generated file exists,
 		 * 				a property <code>genPath</code> (String) with the path as value is added.
 		 * @private
+		 * 
+		 * @memberOf mmir.ControllerManager#
 		 */
 	    function addGenPath(genDirPath, infoObj, fileNamePrefix){
 	    	
@@ -142,7 +145,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		 * This function gets the controller file names and builds a JSON object containing information about
 		 * the location, file name etc. for the controller itself, its views, partials, layout, and helper.
 		 * 
-		 * @function getControllerResources
+		 * @function
 		 * @param {String} controllerName
 		 * 					the name of the Controller (must start with an upper case letter).
 		 * @param {String} controllerPath
@@ -199,8 +202,10 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		 *           if the corresponding file exists
 		 * //NOTE 2: layout may be NULL
 		 * 
-		 * @depends mmir.CommonUtils
-		 * @depends mmir.Constants
+		 * @requires mmir.CommonUtils
+		 * @requires mmir.Constants
+		 * 
+		 * @memberOf mmir.ControllerManager#
 		 */
 	    function getControllerResources(controllerName, controllerPath){
 	    	
@@ -368,15 +373,13 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	/**
      * Object containing the instance of the class {@link mmir.ControllerManager} 
      * 
-     * @property _instance
      * @type Object
      * @private
 	 * @augments mmir.ControllerManager
-	 * @memberOf mmir.ControllerManager.prototype
 	 * @ignore
      */
 	var _instance = {
-			/** @scope mmir.ControllerManager.prototype */
+			/** @scope mmir.ControllerManager.prototype *///for jsdoc2
 
 			/**
 			 * Get instance of ControllerManager.
@@ -384,6 +387,8 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * @deprecated use directly: instead of <code>mmir.ControllerManager.getInstance()</code> use <code>mmir.ControllerManager</code>
 			 * 
 			 * NOTE: The ControllerManager must be initialized, before it can be used! (see {@link ControllerManager#init})
+			 * 
+			 * @memberOf mmir.ControllerManager.prototype
 			 */
 			getInstance : function () {
 
@@ -395,7 +400,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function gets the controller by name. 
 			 * 
-			 * @function getController
+			 * @function
 			 * @param {String} ctrlName Name of the controller which should be returned
 			 * @returns {Object} controller if found, null else
 			 * @public
@@ -412,7 +417,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function returns names of all loaded controllers. 
 			 * 
-			 * @function getControllerNames
+			 * @function
 			 * @returns {Array<String>} Names of all loaded controllers
 			 * @public
 			 */
@@ -425,7 +430,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function performs an action of a controller. 
 			 * 
-			 * @function perform
+			 * @function
 			 * @param {String} ctrlName Name of the controller to which the action belongs
 			 * @param {String} actionName Name of the action that should be performed
 			 * @param {Object} data optional data that can be submitted to the action
@@ -446,7 +451,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			/**
 			 * This function performs an action of a helper-class for a controller. 
 			 * 
-			 * @function performHelper
+			 * @function
 			 * @param {String} ctrlName Name of the controller to which the helper action belongs
 			 * @param {String} actionName Name of the action that should be performed by the helper
 			 * @param {Object} data optional data that can be submitted to the action
@@ -484,7 +489,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * <code> callbackFunction(controllerManagerInstance) </code>
 			 * </div>
 			 * 
-			 * @function init
+			 * @function
 			 * 
 			 * @param {Function} [callback] OPTIONAL
 			 * 				an optional callback that will be triggered after the controllers where loaded
@@ -511,8 +516,6 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	};
 	/**@ignore*/
 	return _instance;
-	
-	/** #@- */
 	
 });
 

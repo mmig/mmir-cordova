@@ -25,28 +25,26 @@
  */
 
 
-
 /**
-* @module mmir.semantic
+* The GrammarConverter object initializes the grammar for processing
+* <em>natural language text</em>, e.g. from the voice recognition.
 * 
-*/
-
-/**
-* The GrammarConverter object initializes the grammar for the voice recognition.
-* 
-* @class GrammarConverter
-* @constructor
-* @category core
+* @class
+* @name GrammarConverter
 * 
 * @requires mmir.CommonUtils.isArray
 * @requires jQuery.ajax
 */
 define(['commonUtils', 'jquery'], function(commonUtils, $){
 
+
+
 /**
- * @class GrammarConverter
+ * @ignore
+ * 
+ * @constructs GrammarConverter
  */
-var GrammarConverter = function(){
+function GrammarConverter(){
 	
 //	this.THE_INTERNAL_GRAMMAR_CONVERTER_INSTANCE_NAME = "theGrammarConverterInstance";
 //	this.grammar_tokens = "/~ --- Token definitions --- ~/\n\n/~ Characters to be ignored ~/\n!   ' |\\t' ;\n\n/~ Non-associative tokens ~/\n";
@@ -785,6 +783,7 @@ GrammarConverter.prototype.unmaskJSON = function (json, isMaskValues, isMaskName
 /**
  * Recodes Strings of a JSON-like object.
  * 
+ * @function
  * @param {Object} json 
  * 					the JSON-like object (i.e. PlainObject)
  * 
@@ -838,6 +837,9 @@ GrammarConverter.prototype.recodeJSON = (function () {//<- NOTE this is only the
 			
 			return obj;
 		}
+		else if(obj === null) {//NOTE null is typeof object!
+			return null;
+		}	
 		else if(typeof obj === 'object') {
 			//OBJECT: process all the object's properties (but only, if they are not inherited)
 			for(var p in obj){

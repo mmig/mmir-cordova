@@ -25,35 +25,61 @@
  */
 
 
-/**
- * @module mmir.tools
- * 
- */
-
 define(['md5'],
 	/**
 	 * A Utility class for creating / reading checksum (files).<br>
 	 * 
 	 * @name ChecksumUtils
 	 * @class
-	 * @exports ChecksumUtils as mmir.tools.ChecksumUtils
+	 * @memberOf mmir.tools
 	 * @static
 	 * 
-	 * @depends CryptoJS (MD5, see https://code.google.com/p/crypto-js/)
+	 * @requires CryptoJS (MD5, see https://code.google.com/p/crypto-js/)
 	 */
 	function(
 		CryptoJS
 ){
 	
+	/** 
+	 * @private
+	 * @type CryptoJS.MD5
+	 * @memberOf ChecksumUtils#
+	 */
 	var cryptoInstance;
+	
+	/**
+	 * @private
+	 * @function
+	 * @memberOf ChecksumUtils#
+	 */
 	var computeChecksum = function(str){
 		return ''+cryptoInstance.MD5(str);//<- enforce String-value by using: ''+...
 	};
 	
+	/** 
+	 * @private
+	 * @type String
+	 * @memberOf ChecksumUtils#
+	 */
 	var digestFileExt = '.checksum.txt';
+	/** 
+	 * @private
+	 * @type String
+	 * @memberOf ChecksumUtils#
+	 */
 	var digestContentSeparator = '\t';
+	/** 
+	 * @private
+	 * @type String
+	 * @memberOf ChecksumUtils#
+	 */
 	var digestContentPostfix = '\r\n';
 	
+	/** 
+	 * @private
+	 * @function
+	 * @memberOf ChecksumUtils#
+	 */
 	var createDigestFileContent = function(originalText){
 	
 		var size = originalText.length;
@@ -62,6 +88,12 @@ define(['md5'],
 		return digest + digestContentSeparator + size + digestContentPostfix;
 	};
 	
+	/** 
+	 * @returns {PlainObject} <code>{size: Number, hash: String}</code>
+	 * @private
+	 * @type String
+	 * @memberOf ChecksumUtils#
+	 */
 	var parseDigestFileContent = function(rawTextContent){
 		
 		var data = rawTextContent.split(digestContentSeparator);
@@ -72,6 +104,12 @@ define(['md5'],
 		};
 	};
 	
+	/** 
+	 * @returns {Boolean}
+	 * @private
+	 * @function
+	 * @memberOf ChecksumUtils#
+	 */
 	var verifyIsSame = function(rawTextContent, referenceHash){
 		
 		if(typeof referenceHash === 'string'){
@@ -96,6 +134,8 @@ define(['md5'],
 		 * @param {CryptoJS} [cryptoImpl] OPTIONAL
 		 * 				if omitted, the (global!) variable <code>CryptoJS</code> is used by default.
 		 * 				This argument should be the CryptoJS object containing the MD5 function/algorithm, i.e. CryptoJS.MD5() must be a function!
+		 * 
+		 * @memberOf mmir.tools.ChecksumUtils#
 		 */
 		init: function(cryptoImpl){
 			if(!cryptoImpl){
@@ -110,11 +150,13 @@ define(['md5'],
 		 * 
 		 * The result can be "written as is" to a file.
 		 * 
+		 * @function
 		 * @param {String} originalText
 		 * 						the "raw" text for which to generate the checksum information
 		 * 
 		 * @returns {String} the checksum information as a String (formatted as content of a checksum file)
 		 * 
+		 * @memberOf mmir.tools.ChecksumUtils#
 		 */
 		createContent: createDigestFileContent,
 		/**
@@ -123,12 +165,14 @@ define(['md5'],
 		 * 
 		 * <code>{ size: INTEGER, hash: STRING }</code>
 		 * 
-		 * 
+		 * @function
 		 * @param {String} rawTextContent
 		 * 					the raw conent of a checksum file
 		 * 
 		 * @returns {PlainObject} an object with the extracted properties from the checksum-data:
 		 * 				{ size: INTEGER, hash: STRING }
+		 * 
+		 * @memberOf mmir.tools.ChecksumUtils#
 		 */
 		parseContent: parseDigestFileContent,
 		/**
@@ -136,6 +180,7 @@ define(['md5'],
 		 * 
 		 * NOTE: The actual checksum for the raw text is only generated & checked, if the size is equal.
 		 * 
+		 * @function
 		 * @param {String} rawTextContent
 		 * 					the (raw) text/content which should be checked
 		 * @param {String|PlainObject} referenceHash
@@ -145,7 +190,10 @@ define(['md5'],
 		 * 					properties:
 		 * 					{ size: INTEGER, hash: STRING }
 		 * 
-		 * @returns {Boolean} <code>true</code> if 
+		 * @returns {Boolean} 
+		 * 					<code>true</code> if the raw content matches the hash
+		 * 
+		 * @memberOf mmir.tools.ChecksumUtils#
 		 */
 		isSame: verifyIsSame,
 		/**
@@ -153,8 +201,11 @@ define(['md5'],
 		 * 
 		 * CONST
 		 * 
+		 * @function
 		 * @returns {String} the default file extension for checksum files 
-		 * 						(including the separating dot, eg. ".checksum.txt") 
+		 * 						(including the separating dot, eg. ".checksum.txt")
+		 * 
+		 * @memberOf mmir.tools.ChecksumUtils# 
 		 */
 		getFileExt: function(){
 			return digestFileExt;
@@ -163,6 +214,8 @@ define(['md5'],
 		 * The Char used for separating fields within checksum files.
 		 * 
 		 * @returns {String} the separator char (TAB)
+		 * 
+		 * @memberOf mmir.tools.ChecksumUtils#
 		 */
 		getConentSeparator: function(){
 			return digestContentSeparator;

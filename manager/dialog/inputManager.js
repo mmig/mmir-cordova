@@ -48,28 +48,28 @@ define(['core', 'jquery', 'commonUtils', 'module', 'engineConfig', 'logger' ],
 	 * @class
 	 * 
 	 * 
-     *  @depends jQuery.Deferred
-     *  @depends jQuery.extend
+     *  @requires jQuery.Deferred
+     *  @requires jQuery.extend
 	 * 
 	 */
 	function(
 		mmir, $, commonUtils,module, engineConfig, Logger
 ){
 
-	//next 2 comments are needed by JSDoc so that all functions etc. can
-	// be mapped to the correct class description
+	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.InputManager.prototype */
-	/**
-	 * #@+
-	 * @memberOf mmir.InputManager.prototype 
-	 */
 	
+	/**
+	 * @memberOf mmir.InputManager#
+	 */
 	var _instance = {
 
 		/** @scope mmir.InputManager.prototype */
 		
 		/** 
 		 * @deprecated instead: use mmir.InputManager object directly.
+		 * 
+		 * @memberOf mmir.InputManager.prototype
 		 */
 		getInstance : function() {
 			return this;
@@ -78,7 +78,7 @@ define(['core', 'jquery', 'commonUtils', 'module', 'engineConfig', 'logger' ],
 		/**
 		 * This function raises an event. 
 		 * 
-		 * @function raise
+		 * @function
 		 * @param {String} eventName
 		 * 				The name of the event which is to be raised
 		 * @param {Object} [eventData] OPTIONAL
@@ -99,6 +99,13 @@ define(['core', 'jquery', 'commonUtils', 'module', 'engineConfig', 'logger' ],
 
 	return $.extend(true, _instance, {
 
+		/**
+		 * @function
+		 * @name init
+		 * @returns {Deferred}
+		 * 
+		 * @memberOf mmir.InputManager.prototype
+		 */
 		init : function() {
 			delete this.init;
 			
@@ -140,7 +147,5 @@ define(['core', 'jquery', 'commonUtils', 'module', 'engineConfig', 'logger' ],
 			}).promise();
 		}
 	});
-	
-	/** #@- */
 
 });

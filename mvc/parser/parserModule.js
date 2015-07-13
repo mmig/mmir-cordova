@@ -25,31 +25,34 @@
  */
 
 
-/**
- * @module mmir.tools
- * 
- */
-
 define(
 	/**
-	 * The module that holds functions / classes for template parsing.
+	 * This module holds functions / classes for template parsing.
 	 * 
-	 * This module contains constant Definitions for the Template Parser and Renderer.
+	 * <p>
+	 * This module contains definitions for constants used in the Template Parser and Renderer.
 	 * 
-	 * @category parser
+	 * 
 	 * 
 	 * @namespace
-	 * @name parser
-	 * @exports parser as mmir.parser
+	 * @name mmir.parser
+	 * @example
+	 * //access the parser module
+	 * // (it is a sub-module of mmir!)
+	 * var someConst = mmir.parser.element.INCLUDE_SCRIPT;
+	 * ...
 	 * 
 	 */
 	function(
 ){
 
 	
-	parser = {
-			element: {}
-	};
+var parser = {
+	/**
+	 * @namespace
+	 * @name mmir.parser.element
+	 */
+	element: {
 
 	//TODO detect&use Object.defineProperty (if positively detected), e.g.:
 //		Object.defineProperty(parser.element, 'INCLUDE_SCRIPT', {value : 0, writable : false, configurable : false, enumerable : true});
@@ -68,12 +71,12 @@ define(
 	 * 		 field: one of <code>StringLiteral</code>, <code>Identifier</code>, <code>IdentifierNameAmpersatStart</code></li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.INCLUDE_SCRIPT 		= 0;
+	INCLUDE_SCRIPT 		: 0,
 	/**
 	 * Constant for template expression type <tt>include style</tt>.
 	 * 
@@ -89,12 +92,12 @@ define(
 	 * 		 field: one of <code>StringLiteral</code>, <code>Identifier</code>, <code>IdentifierNameAmpersatStart</code></li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.INCLUDE_STYLE 		= 2;
+	INCLUDE_STYLE 		: 2,
 	/**
 	 * Constant for template expression type <tt>localize</tt>.
 	 * 
@@ -109,12 +112,12 @@ define(
 	 * 		 field: one of <code>StringLiteral</code>, <code>Identifier</code>, <code>IdentifierNameAmpersatStart</code></li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.LOCALIZE	 		= 4;
+	LOCALIZE	 		: 4,
 	/**
 	 * Constant for template expression type <tt>yield declaration</tt>.
 	 * 
@@ -129,12 +132,12 @@ define(
 	 * 		 field: one of <code>StringLiteral</code>, <code>Identifier</code>, <code>IdentifierNameAmpersatStart</code></li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.YIELD_DECLARATION 	= 8;
+	YIELD_DECLARATION 	: 8,
 	/**
 	 * Constant for template expression type <tt>yield content</tt>.
 	 * 
@@ -145,12 +148,12 @@ define(
 	 * A yield section corresponds to a {@link ContentElement}:
 	 * Its content can itself contain HTML content as well as template expressions.
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.YIELD_CONTENT 		= 16;
+	YIELD_CONTENT 		: 16,
 	/**
 	 * Constant for template expression type <tt>code block</tt>.
 	 * 
@@ -165,12 +168,12 @@ define(
 	 * 							function takes one argument: the current data-object.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.BLOCK 				= 32;
+	BLOCK 				: 32,
 	/**
 	 * Constant for template expression type <tt>code statement</tt>.
 	 * 
@@ -185,12 +188,12 @@ define(
 	 * 							function takes one argument: the current data-object.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.STATEMENT 			= 64;
+	STATEMENT 			: 64,
 	/**
 	 * Constant for template expression type <tt>helper</tt>.
 	 * 
@@ -208,12 +211,12 @@ define(
 	 * 			(optional argument) of the helper expression. The function takes one argument: the current data-object.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.HELPER	 			= 128;
+	HELPER	 			: 128,
 	/**
 	 * Constant for template expression type <tt>if</tt>.
 	 * 
@@ -232,12 +235,12 @@ define(
 	 *  					representing an else-expression, see {@link mmir.parser.element.ELSE}.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.IF		 			= 256;
+	IF		 			: 256,
 	/**
 	 * Constant for template expression type <tt>else</tt>.
 	 * 
@@ -252,12 +255,12 @@ define(
 	 * 					if-expression (to which the else-expression belongs) evaluates to <code>false</code>.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.ELSE	 			= 512;
+	ELSE	 			: 512,
 	/**
 	 * Constant for template expression type <tt>for</tt>.
 	 * 
@@ -290,12 +293,12 @@ define(
 	 * 								 during each iteration of the for-loop.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.FOR		 			= 1024;
+	FOR		 			: 1024,
 	/**
 	 * Constant for template expression type <tt>render</tt>.
 	 * 
@@ -316,12 +319,12 @@ define(
 	 * 								(optional argument) of the render expression. The function takes one argument: the current data-object.</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.RENDER	 			= 2048;
+	RENDER	 			: 2048,
 	/**
 	 * Constant for template expression type <tt>escape enter</tt>.
 	 * 
@@ -335,12 +338,12 @@ define(
 	 * 	<li><strong>text</strong> {String}: the text that will be rendered (i.e. without the escape-character(s) itself).</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.ESCAPE_ENTER		= 4096;
+	ESCAPE_ENTER		: 4096,
 	/**
 	 * Constant for template expression type <tt>escape exit</tt>.
 	 * 
@@ -354,12 +357,12 @@ define(
 	 * 	<li><strong>text</strong> {String}: the text that will be rendered (i.e. without the escape-character(s) itself).</li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.ESCAPE_EXIT			= 8192;
+	ESCAPE_EXIT			: 8192,
 
 	/**
 	 * Constant for for-expression type <tt>iter</tt> ("iteration").
@@ -368,14 +371,14 @@ define(
 	 * This type identifies an ITERATION type for-expression.
 	 * 
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 * 
 	 * @see parser.element.FOR
 	 */
-	parser.element.FOR_TYPE_ITER		= 16384;
+	FOR_TYPE_ITER		: 16384,
 	/**
 	 * Constant for for-expression type <tt>step</tt> ("step-wise").
 	 * 
@@ -383,14 +386,14 @@ define(
 	 * This type identifies an STEP-wise type for-expression.
 	 * 
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 * 
 	 * @see parser.element.FOR
 	 */
-	parser.element.FOR_TYPE_STEP		= 32768;
+	FOR_TYPE_STEP		: 32768,
 
 	/**
 	 * Constant for template expression type <tt>variable declaration</tt>.
@@ -405,12 +408,12 @@ define(
 	 * 	<li><strong>nameType</strong>: the type of the <tt>name</tt> field: <code>StringLiteral</code></li>
 	 * </ul>
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.VAR_DECLARATION		= 65536;
+	VAR_DECLARATION		: 65536,
 	/**
 	 * Constant for template expression type <tt>variable reference</tt>.
 	 * 
@@ -427,12 +430,12 @@ define(
 	 * NOTE: the name of the variable is extracted from the raw-template text during processing/compilation
 	 * 		 of the Functions.
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.VAR_REFERENCE		= 131072;
+	VAR_REFERENCE		: 131072,
 
 	/**
 	 * Constant for template expression type <tt>comment</tt>.
@@ -441,46 +444,49 @@ define(
 	 * The template expression represents a template-comment: the content of the comment will be ignored
 	 * (that is: removed during processing of the template).
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {Number}
+	 * @type Number
 	 * @public
 	 */
-	parser.element.COMMENT				= 262144;
+	COMMENT				: 262144,
 
 	/**
 	 * Constant for <tt>data</tt> name that is used to hold the <tt>current data</tt>:
 	 * this name will be used for the argument name of generated/compiled Functions, and in the Function code block
 	 * appropriate getter/setter expression will be inserted.
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {String}
+	 * @type String
 	 * @public
 	 */
-	parser.element.DATA_NAME				= '__$$DATA$$__';
+	DATA_NAME				: '__$$DATA$$__',
 	/**
 	 * Constant for the name of the reserved <tt>data</tt> variable: the optional data argument is passed in 
 	 * into rendering-calls for views, layouts etc. (see PresentationManager)
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {String}
+	 * @type String
 	 * @public
 	 */
-	parser.element.DATA_ARGUMENT_NAME		= '@data';
+	DATA_ARGUMENT_NAME		: '@data',
 	/**
 	 * Constant for the name of the reserved <tt>argument</tt> variable: some template expressions
 	 * have an (optional) <tt>argument</tt> argument, which can be accessed using the variable name
 	 * within the template expressions inner content-/code-blocks. 
 	 * 
-	 * @memberOf mmir.parser
+	 * @memberOf mmir.parser.element
 	 * @constant
-	 * @type {String}
+	 * @type String
 	 * @public
 	 */
-	parser.element.ARGUMENT_ARGUMENT_NAME	= '@argument';
+	ARGUMENT_ARGUMENT_NAME	: '@argument'
+	
+	}//END element: {...
 
+};//END: parser: {...
 
 return parser;
 });

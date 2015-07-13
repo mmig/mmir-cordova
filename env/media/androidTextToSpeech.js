@@ -25,70 +25,95 @@
  */
 
 /**
- * part of Cordova plugin: de.dfki.iui.mmir.NuancePlugin
- * @version 0.7.0
+ * part of Cordova plugin: de.dfki.iui.mmir.speech.AndroidSpeech
+ * @version 0.4.0
  * @ignore
  */
 newMediaPlugin = {
-		/**  @memberOf NuanceAndroidTextToSpeech# */
+		/**  @memberOf AndroidTextToSpeech# */
 		initialize: function(callBack){//, mediaManager){//DISABLED this argument is currently un-used -> disabled
 			
-			/**  @memberOf NuanceAndroidTextToSpeech# */
-			var _pluginName = 'nuanceTextToSpeech';
-			
-			/**
-			 * separator char for language- / country-code (specific to Nuance language config / codes)
-			 *   
-			 * @memberOf NuanceAndroidTextToSpeech#
-			 */
-			var _langSeparator = '_';
-			
+			/**  @memberOf AndroidTextToSpeech# */
+			var _pluginName = 'androidTextToSpeech';
 			/** 
 			 * @type mmir.LanguageManager
-			 * @memberOf NuanceAndroidTextToSpeech#
+			 * @memberOf AndroidTextToSpeech#
 			 */
 			var languageManager = require('languageManager');
 			/** 
 			 * @type mmir.CommonUtils
-			 * @memberOf NuanceAndroidTextToSpeech#
+			 * @memberOf AndroidTextToSpeech#
 			 */
 			var commonUtils = require('commonUtils');
+			/** 
+			 * @type String
+			 * @memberOf AndroidTextToSpeech#
+			 */
+			var language;
+			
+			//initialize the TTS plugin (with the current language setting)
+			window.plugins.androidTtsPlugin.startup(
+				
+				function(data){
+					
+					console.info('AndroidTTS.js.startup: success -> '+JSON.stringify(data));
+					
+					language = languageManager.getLanguageConfig(_pluginName);
+					//TODO get & set voice (API in plugin is missing for that ... currently...)
+					//var voice = languageManager.getLanguageConfig(_pluginName, 'voice');
+					
+					window.plugins.androidTtsPlugin.setLanguage(
+							language,
+						function(data){
+							console.info('AndroidTTS.js.setLanguage('+language+'): success -> '+JSON.stringify(data));
+						}, function(e){
+							console.info('AndroidTTS.js.setLanguage('+language+'): error -> '+JSON.stringify(e));
+							language = void(0);
+						}
+					);
+					
+				}, function(e){
+					console.info('AndroidTTS.js.startup: error -> '+JSON.stringify(e));
+				}
+			);
+			//TODO destructor: register onpause/exit handler that shuts down the TTS engine
 			
 			//invoke the passed-in initializer-callback and export the public functions:
 			callBack({
 					/**
 					 * @public
-					 * @memberOf NuanceAndroidTextToSpeech.prototype
+					 * @memberOf AndroidTextToSpeech.prototype
 					 * @see mmir.MediaManager#textToSpeech
 					 */
 				    textToSpeech: function (parameter, successCallBack, failureCallBack, startCallBack){
+				    	
+				    	var text;
+			    		if((typeof parameter !== 'undefined') && commonUtils.isArray(parameter) ){
+			    			//TODO implement pausing similar to maryTextToSpeech.js (i.e. in JS code); use XML?
+			    			
+			    			text = parameter.join('\n');//FIXME may need 2 newlines here: in some cases the Nuance TTS does not make pause, when there is only 1 newline (why?!?...)
+			    			
+			    		}
+			    		else {
+			    			//FIXME implement evaluation / handling the parameter similar to treatment in maryTextToSpeech.js
+			    			text = parameter;
+			    		}
+			    		
 				    	try{
+				    		var currentLanguage = languageManager.getLanguageConfig(_pluginName);
+				    		currentLanguage = currentLanguage !== language? currentLanguage : void(0);
 				    		
-				    		var text;
-				    		if((typeof parameter !== 'undefined')&& commonUtils.isArray(parameter) ){
-				    			//TODO implement pausing similar to maryTextToSpeech.js (i.e. in JS code); use XML?
-				    			
-				    			text = parameter.join('\n\n');//FIXME may need 2 newlines here: in some cases the Nuance TTS does not make pause, when there is only 1 newline (why?!?...)
-				    			
-				    		}
-				    		else {
-				    			//FIXME implement evaluation / handling the parameter similar to treatment in maryTextToSpeech.js
-				    			text = parameter;
-				    		}
-				    		
-					    	window.plugins.nuancePlugin.speak(
+			    			window.plugins.androidTtsPlugin.speak(
 					    			text, 
 					    			successCallBack, 
 					    			failureCallBack,
-					    			languageManager.getLanguageConfig(_pluginName, 'language', _langSeparator)
-					    			//TODO get & set voice (API in plugin is missing for that ... currently...)
-					    			//, languageManager.getLanguageConfig(_pluginName, 'voice')
+					    			currentLanguage
 					    	);
-					    	
 					    	//TODO implement real start-callback (needs to be done within java-/javascript-plugin)
 					    	if(startCallBack){
 					    		startCallBack();
 					    	}
+				    		
 				    	} catch(e){
 				    		if(failureCallBack){
 				    			failureCallBack(e);
@@ -98,17 +123,17 @@ newMediaPlugin = {
 				    },
 				    /**
 					 * @public
-					 * @memberOf NuanceAndroidTextToSpeech.prototype
+					 * @memberOf AndroidTextToSpeech.prototype
 					 * @see mmir.MediaManager#cancelSpeech
 					 */
 	    			cancelSpeech: function(successCallBack,failureCallBack){
 	    				
-	    				window.plugins.nuancePlugin.cancelSpeech(successCallBack, failureCallBack);
-	    				
-	    			},
-					setTextToSpeechVolume: function(newValue){
-	    				//FIXME implement this? how? Nuance library gives no access to audio volume (we could set the Android volume level ...)
-					}
-			});	
+				    	window.plugins.androidTtsPlugin.cancel(
+				    			successCallBack, 
+				    			failureCallBack
+				    	);
+				    	
+	    			}
+				});	
 		}
 };

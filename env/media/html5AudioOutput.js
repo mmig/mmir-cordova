@@ -25,66 +25,287 @@
  */
 
 
-/**
- * @name media.plugin.html5AudioOutput
- */
 newMediaPlugin = {
 
-		/** @scope media.plugin.html5AudioOutput.prototype */
-		
+		/**  @memberOf Html5AudioOutput# */
 		initialize: function(callBack, mediaManagerInstance){
 			
+			/**  @memberOf Html5AudioOutput# */
 			var _pluginName = 'html5AudioOutput';
+			
+			/**
+			 * Media error (codes):
+			 * 
+			 * the corresponding code is their <code>index</code>.
+			 * 
+			 * <p>
+			 * 
+			 * Code 0 is an internal error code for unknown/unspecific error causes.
+			 * <br>
+			 * Codes 1 - 4 correspond to the HTML5 MediaError interface
+			 * (which are the same as Cordova's Audio MediaError codes).
+			 * The description texts are taken from the HTML5 documentation.
+			 * 
+			 * @enum
+			 * @constant
+			 * @type Array<String>
+			 * @memberOf Html5AudioOutput#
+			 * 
+			 * @see <a href="https://html.spec.whatwg.org/multipage/embedded-content.html#mediaerror">https://html.spec.whatwg.org/multipage/embedded-content.html#mediaerror</a>
+			 * @see <a href="http://plugins.cordova.io/#/package/org.apache.cordova.media">http://plugins.cordova.io/#/package/org.apache.cordova.media</a>
+			 */
+			var MediaError = [
+			  	{name: 'MEDIA_ERR_UNKNOWN', 		code: 0, description: 'An unknown or unspecific (internal) error occurred.'},
+			  	{name: 'MEDIA_ERR_ABORTED', 		code: 1, description: 'The fetching process for the media resource was aborted by the user agent at the user\'s request.'},
+			  	{name: 'MEDIA_ERR_NETWORK', 		code: 2, description: 'A network error of some description caused the user agent to stop fetching the media resource, after the resource was established to be usable.'},
+			  	{name: 'MEDIA_ERR_DECODE', 			code: 3, description: 'An error of some description occurred while decoding the media resource, after the resource was established to be usable.'},
+			  	{name: 'MEDIA_ERR_NONE_SUPPORTED', 	code: 4, description: 'The media resource indicated by the src attribute or assigned media provider object was not suitable.'}
+			];
+			
+			/**
+			 * HELPER for creating error object that is returned in the failureCallbacks
+			 * 
+			 * @param {Number} code
+			 * 			The error code: if in [1,4], the corresponding HTML5 MediaError information will be returned
+			 * 			Otherwise an "error 0", i.e. internal/unknown error will be created
+			 * @param {Event|Error} errorEvent
+			 * 			the causing event- or error-object
+			 * 
+			 * @returns {Object} the error object, which has 3 properties: 
+			 * 			  code (Number): the error code
+			 * 			  message (String): the error name
+			 * 			  description (String): a descriptive text for the error
+			 * 
+			 * @memberOf Html5AudioOutput#
+			 */
+			function createError(code, errorEvent){
+				
+				var mErr;
+				if(code > 0 && code < 5){
+					mErr = MediaError[code];
+				}
+				else {
+					mErr = MediaError[0];
+				}
+				
+				return {
+						code: 			mErr.code,
+						message: 		mErr.name,
+						description: 	mErr.description + (code===0 && errorEvent? ' ' + errorEvent.toString() : '')
+				};
+			}
+			
+			/**
+			 * FACTORY for creating error-listeners (that trigger the failureCallback)
+			 * 
+			 * @param {Object} [ctx]
+			 * 			the context for the errorCallback.
+			 * 			IF omitted, the callback will be within the default (i.e. global) context.
+			 * @param {Function} [errorCallback]
+			 * 			the error callback.
+			 * 			Is invoked with 2 arguments:
+			 * 			errorCallback(error, event)
+			 * 			where error has 3 properties: 
+			 * 			  code (Number): the error code
+			 * 			  message (String): the error name
+			 * 			  description (String): a descriptive text for the error
+			 * 
+			 * 			IF omitted, the error will be printed to the console.
+			 * 
+			 * @return {Function} wrapper function that can be registered as event-listener (takes one argument: the event)
+			 * 
+			 * @memberOf Html5AudioOutput#
+			 */
+			function createErrorWrapper(ctx, errorCallback){
+				
+				return function(evt){
+					
+					var code;
+					//extract MediaError from event's (audio) target:
+					if(evt && evt.target && evt.target.error && (code = evt.target.error.code) && code > 0 && code < 5){
+//						code = code; //NO-OP: code value was already assigned in IF clause
+					}
+					else {
+						//unknown cause: create internal-error object
+						code = 0;
+					}
+					
+					var err = createError(code, evt);
+					
+					if(errorCallback){
+						errorCallback.call(ctx, err, evt);
+					}
+					else {
+						console.error(err.message + ' (code '+err.code + '): '+err.description, evt);
+					}
+				};
+			}
+			
+			/**
+			 * HELPER for creating data-URL from binary data (blob)
+			 * 
+			 * @param {Blob} blob
+			 * 			The audio data as blob
+			 * @param {Function} callback
+			 * 			callback that will be invoked with the data-URL:
+			 * 			<code>callback(dataUrl)</code>
+			 * 
+			 * @memberOf Html5AudioOutput#
+			 */
+			function createDataUrl(blob, callback){
+				
+				if(window.URL){
+					callback( window.URL.createObjectURL(blob) );
+				}
+				else if(window.webkitURL){
+					callback( window.webkitURL.createObjectURL(blob) );
+				}
+				else {
+					
+					//DEFAULT: use file-reader:
+					var fileReader = new FileReader();
 
+		            // onload needed since Google Chrome doesn't support addEventListener for FileReader
+		            fileReader.onload = function (evt) {
+		            	// Read out "file contents" as a Data URL
+		                var dataUrl = evt.target.result;
+		                callback(dataUrl);
+		            };
+		            
+		            //start loading the blob as Data URL:
+		            fileReader.readAsDataURL(blob);
+				}
+				
+			}
+
+			//invoke the passed-in initializer-callback and export the public functions:
 			callBack({
-				playWAV: function(blob, successCallback, failureCallback){
+				/**
+				 * @public
+				 * @memberOf Html5AudioOutput.prototype
+				 * @see mmir.MediaManager#playWAV
+				 */
+				playWAV: function(blob, onEnd, failureCallback, successCallback){
+					
 					try {
-						blobURL = window.webkitURL.createObjectURL(blob);
-						var my_audio = new Audio(blobURL,null,failureCallback);
-						if(successCallback){
-							my_audio.addEventListener('ended', successCallack, false);
-						}
-						my_audio.play();
+						
+						var self = this;
+						createDataUrl(blob, function(dataUrl){
+							
+							self.playURL(dataUrl, onEnd, failureCallback, successCallback);
+							
+						});
+						
+						
 					} catch (e){
-						if(failureCallBack){
-							failureCallBack(e);
-						}
-					}
-				},
-				playURL: function(url, onEnd, failureCallBack, successCallback){
-					try {
-
-						var my_media = new Audio(url,null,failureCallback);
-
-						if(successCallback){
-							my_media.addEventListener('ended', onEnd, false);
-							my_media.addEventListener('canplay', successCallback, false);
-						}
-						my_media.play();
-					} catch (e){
+						
+						var err = createError(0,e);
 						if(failureCallback){
-							failureCallback(e);
+							failureCallback.call(null, err, e);
+						}
+						else {
+							console.error(err.message + ': ' + err.description, e);
 						}
 					}
 				},
-				getURLAsAudio: function(url, onEnd,  failureCallback, successCallback){
+				/**
+				 * @public
+				 * @memberOf Html5AudioOutput.prototype
+				 * @see mmir.MediaManager#playURL
+				 */
+				playURL: function(url, onEnd, failureCallback, successCallback){
+					
+					try {
+						
+						var audio = new Audio(url);
+
+						if(failureCallback){
+							audio.addEventListener('error', createErrorWrapper(audio, failureCallback), false);
+						}
+						
+						if(onEnd){
+							audio.addEventListener('ended', onEnd, false);
+						}
+						
+						if(successCallback){
+							audio.addEventListener('canplay', successCallback, false);
+						}
+						
+						audio.play();
+						
+					} catch (e){
+						
+						var err = createError(0,e);
+						if(failureCallback){
+							failureCallback.call(null, err, e);
+						}
+						else {
+							console.error(err.message + ': ' + err.description, e);
+						}
+					}
+					
+				},
+				/**
+				 * @public
+				 * @memberOf Html5AudioOutput.prototype
+				 * @see mmir.MediaManager#getWAVAsAudio
+				 */
+				getWAVAsAudio: function(blob, callback, onEnd, failureCallback, onInit){
+					
+					try {
+						
+						var self = this;
+						var audioObj;
+						
+						createDataUrl(blob, function(dataUrl){
+							
+							audioObj = self.getURLAsAudio(dataUrl, onEnd, failureCallback, onInit);
+							
+							callback(audioObj);
+							
+						});
+						
+						
+					} catch (e){
+						
+						var err = createError(0, e);
+						if(failureCallback){
+							failureCallback.call(audioObj, err, e);
+						}
+						else {
+							console.error(err.message + ': ' + err.description, e);
+						}
+					}
+				},
+				/**
+				 * @public
+				 * @memberOf Html5AudioOutput.prototype
+				 * @see mmir.MediaManager#getURLAsAudio
+				 */
+				getURLAsAudio: function(url, onEnd, failureCallback, successCallback){
+					
 					try {
 
+						/**
+						 * @private
+						 * @memberOf AudioHtml5Impl#
+						 */
 						var enabled = true;
+						/**
+						 * @private
+						 * @memberOf AudioHtml5Impl#
+						 */
 						var ready = false;
-						var my_media = new Audio(url,null,failureCallback);
+						/**
+						 * @private
+						 * @memberOf AudioHtml5Impl#
+						 */
+						var my_media = new Audio(url);
 
-						my_media.addEventListener('ended', function(){
-
-							//only proceed if we have a media-object (may have already been released)
-							if(enabled & mediaImpl){
-								mediaImpl.stop();
-							}
-							if (onEnd){
-								onEnd.apply(mediaImpl, arguments);
-							}
-						}, false);
-
+						/**
+						 * @private
+						 * @memberOf AudioHtml5Impl#
+						 */
 						var canPlayCallback = function(){
 							ready = true;
 //							console.log("sound is ready!");
@@ -99,9 +320,31 @@ newMediaPlugin = {
 							}
 						};
 						my_media.addEventListener('canplay', canPlayCallback, false);
-
-
+						
+						/**
+						 * The Audio abstraction that is returned by {@link mmir.MediaManager#getURLAsAudio}.
+						 * 
+						 * <p>
+						 * NOTE: when an audio object is not used anymore, its {@link #release} method should
+						 * 		 be called.
+						 * 
+						 * <p>
+						 * This is the same interface as {@link mmir.env.media.AudioCordovaImpl}.
+						 * 
+						 * @class
+						 * @name AudioHtml5Impl
+						 * @memberOf mmir.env.media
+						 * @implements mmir.env.media.IAudio
+						 * @public
+						 */
 						var mediaImpl = {
+								/**
+								 * Play audio.
+								 * 
+								 * @inheritdoc
+								 * @name play
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								play: function(){
 									if (enabled){
 										// if (ready){
@@ -112,6 +355,13 @@ newMediaPlugin = {
 
 									};
 								},
+								/**
+								 * Stop playing audio.
+								 * 
+								 * @inheritdoc
+								 * @name stop
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								stop: function(){
 									if(enabled){
 										if(my_media.stop){
@@ -134,18 +384,40 @@ newMediaPlugin = {
 										}
 									}
 								},
+								/**
+								 * Enable audio (should only be used internally).
+								 * 
+								 * @inheritdoc
+								 * @name enable
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								enable: function(){
 									if(my_media != null){
 										enabled = true;
 									}
 									return enabled;
 								},
+								/**
+								 * Disable audio (should only be used internally).
+								 * 
+								 * @inheritdoc
+								 * @name disable
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								disable: function(){
 									if(enabled){
 										this.stop();
 										enabled = false;
 									}
 								},
+								/**
+								 * Release audio: should be called when the audio
+								 * file is not used any more.
+								 * 
+								 * @inheritdoc
+								 * @name release
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								release: function(){
 									if(enabled && ! this.isPaused()){
 										this.stop();
@@ -153,37 +425,100 @@ newMediaPlugin = {
 									enabled= false;
 									my_media=null;
 								},
+								/**
+								 * Set the volume of this audio file
+								 * 
+								 * @param {Number} value
+								 * 			the new value for the volume:
+								 * 			a number between [0.0, 1.0]
+								 * 
+								 * @inheritdoc
+								 * @name setVolume
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								setVolume: function(value){
 									if(my_media){
 										my_media.volume = value;
 									}
 								},
+								/**
+								 * Get the duration of the audio file
+								 * 
+								 * @returns {Number} the duration in MS (or -1 if unknown)
+								 * 
+								 * @inheritdoc
+								 * @name getDuration
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								getDuration: function(){
 									if(my_media){
 										return my_media.duration;
 									}
 									return -1;
 								},
+								/**
+								 * Check if audio is currently paused.
+								 * 
+								 * NOTE: "paused" is a different status than "stopped".
+								 * 
+								 * @returns {Boolean} TRUE if paused, FALSE otherwise
+								 * 
+								 * @inheritdoc
+								 * @name isPaused
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								isPaused: function(){
 									if(my_media){
 										return my_media.paused;
 									}
 									return false;
 								},
+								/**
+								 * Check if audio is currently enabled
+								 * 
+								 * @returns {Boolean} TRUE if enabled
+								 * 
+								 * @inheritdoc
+								 * @name isEnabled
+								 * @memberOf mmir.env.media.AudioHtml5Impl.prototype
+								 */
 								isEnabled: function(){
 									return enabled;
 								}
 						};
+						
+						my_media.addEventListener('error', createErrorWrapper(mediaImpl, failureCallback), false);
+						
+						my_media.addEventListener('ended',
+							/**
+							 * @private
+							 * @memberOf AudioHtml5Impl#
+							 */
+							function onEnded(){
+
+								//only proceed if we have a media-object (may have already been released)
+								if(enabled & mediaImpl){
+									mediaImpl.stop();
+								}
+								if (onEnd){
+									onEnd.apply(mediaImpl, arguments);
+								}
+							},
+							false
+						);
 
 						return mediaImpl;
 
 					} catch (e){
+						var err = createError(0,e);
 						if(failureCallback){
-							failureCallback(e);
+							failureCallback.call(mediaImpl, err, e);
+						}
+						else {
+							console.error(err.message + ': ' + err.description, e);
 						}
 					}
 				}
 			});
 		}
 };
-
