@@ -1,4 +1,4 @@
-Mozilla Rhino
+Mozilla Rhino (majority of code is under Mozilla Public License 2.0)
 * js-14.jar
 
 ANTLR

@@ -52,6 +52,8 @@
 #                       when specifying the path.
 nodeJsDir=
 nodeJsExec=node
+
+
 #
 # manually disable check, if NodeJS path is accessible 
 # (enable this, if you have configured NodeJS to be 
@@ -71,3 +73,17 @@ nodeJsExec=node
 #          it to anything but true will leave this setting disabled)
 #
 #forceGrammarGeneration=true
+
+
+########################## JSDoc ###########################
+#
+# set the version for JSDoc that should be used in doc-task
+# (i.e. generating documentation for MMIR framework files)
+#
+# Valid values are:
+#
+# X2: jsdoc2
+# X3: jsdoc3
+# 
+# DEFAULT: X2
+jsDocVersion=X2
