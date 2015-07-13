@@ -19,6 +19,41 @@
             file=  "resources/mmir-build.settingsDefault"
             tofile="../mmir-build.settings"
             overwrite="false"/>
+        
+        
+        
+        <!-- FIX
+        	 
+        	 set file permissions for UNIX:
+        	 
+        	 set executable-flag for scripts (*.js, *.xml)
+        	 
+         -->
+        
+		<property location="${basedir}/../" name="targetdir"/>
+		
+		<!-- 
+			only consider files that exist in ./resources/* AND to copy-target ./../*:
+			map files names from ./resources/* to ./../*
+			
+			...but only for script files *.js (nodejs) and *.xml (ant) 
+		 -->
+		<pathconvert property="remappedlist" pathsep=",">
+		    <fileset dir="resources" id="source-list" includes="**/*.js,**/*.xml"/>
+			<mapper>
+			  <globmapper from="${basedir}/resources/*" to="*" handledirsep="yes"/>
+			</mapper>
+		</pathconvert>
+		
+		<!-- remapped list of script files: -->
+		<fileset id="target.script.files" dir="${targetdir}" includes="${remappedlist}">
+		</fileset>
+		
+		<!-- set the executable flag for file-owner -->
+		<chmod perm="u+x">
+		    <fileset refid="target.script.files"/>
+		</chmod>
+		
     </target>
     
 </project>

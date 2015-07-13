@@ -28,11 +28,10 @@
 		      (regardless whether or not the checkusm-files would indicate no changes or not).
 		
 	-->
-	<target name="createTemplateParserFile" depends="cleanTemplateFiles,generateFileListJSONFile">
+	<target name="createTemplateParserFile" depends="cleanTemplateFiles,generateFileListJSONFile,createTempCompileDir">
 	    <echo message="Building script file ${exec.js.compile.template.parser} for parsing templates (.ehtml)..." />
 	    <mkdir dir="${buildDir}" />
 	    <mkdir dir="${buildDirBin}" />
-	    <mkdir dir="${buildDirTempJS}" />
 	    <concat destfile="${exec.js.compile.template.parser}" fixlastline="true" overwrite="true">
 	    	<!-- TODO make generalized init-file for rhino (current file is really for creating GrammarParserGenerator) -->
 	    	<!--fileset dir="${jsBuildDirBase}rhino" includes="InitForAntRhinoScriptEnv.js" />
@@ -78,6 +77,9 @@
 	                	doStartTemplateProcessing();
                 	});
 					core.startModule = 'doStartTemplateProc';
+					
+					//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
+					core.logTrace = false;
 					
 	                //configure replacement / build-stub implementations:
 	                var buildLibDir = '${buildDirLib}mmir-build/';
@@ -261,24 +263,27 @@
 		    		
 		    		var jqueryDeferred = requiren(buildLibDirRelativePath+'nodejs-jquery-deferred/index.js');
 		    		
-		    		require(['constants', 'jsonlint', 'jqueryajax', 'configurationManager'], function(constants, jsonlint, jquery, configurationManager){
-		    			
-		    			constants.init(theArguments[2] + 'www/');
-				
-			    		jsl = {
-			    			parser: require('jsonlint')
-			    		};
-			    		
-			    		jqueryDeferred.extend(jquery, jqueryDeferred);
-				
+		    		require(['constants'], function(constants){
 
-						//export public MMIR modules to "global" mmir variable:
-						mmir.Constants = constants;
-						mmir.ConfigurationManager = configurationManager;
+    					constants.init(theArguments[2] + 'www/');
+						
+						require(['jsonlint', 'jqueryajax', 'configurationManager'], function(jsonlint, jquery, configurationManager){
+					
+				    		jsl = {
+				    			parser: require('jsonlint')
+				    		};
+				    		
+				    		jqueryDeferred.extend(jquery, jqueryDeferred);
+					
+	
+							//export public MMIR modules to "global" mmir variable:
+							mmir.Constants = constants;
+							mmir.ConfigurationManager = configurationManager;
 		    		
 	    	</string>
 			<fileset dir="${jsBuildDirBase}ant"              includes="StandaloneTemplateParserExec.js" />
 			<string>
+			    		});
 	    			});
 	    			
 	    		}//END: doStartTemplateProcessing(){...
