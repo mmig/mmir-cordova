@@ -158,7 +158,7 @@
 	 -->
 	<target name="doc" description="create HTML documenation for framework code">
 		<exec executable="${docExec}" dir="${docDir}" failonerror="true" resolveexecutable="true">
-			<arg value="X2"/>
+			<arg value="${jsDocVersion}"/>
 		</exec>
 		<echo>Created HTML documentation files in ${docDir}api_jsdoc2.</echo>
     </target>
@@ -206,6 +206,11 @@
 		<mkdir dir="${outDirCompiledTemplate}"/>
 	</target>
 	
+	<!-- create temp-dir for temporary / generated files during compiling -->
+	<target name="createTempCompileDir" description="Create directory for temporary files">
+	    <mkdir dir="${buildDirTempJS}" />
+	</target>
+	
 	<!-- ############# Build Targets: compile DialogEngine (with up-to-date check) ############# -->
 
 	<!--
@@ -238,7 +243,7 @@
 		<mkdir dir="${JSOutDialogEngineDir}"/>
 	</target>
 
-	<target name="compileDialogEngine" depends="checkDialogEngineUpToDate,createCompiledDialogEngineDir" unless="${is.up.to.date.DialogEngine}">
+	<target name="compileDialogEngine" depends="checkDialogEngineUpToDate,createTempCompileDir,createCompiledDialogEngineDir" unless="${is.up.to.date.DialogEngine}">
 	    
 		<delete file="${compile.dialog.engine.err}" />
 		
@@ -276,7 +281,7 @@
 		<echo>JavaScript DialogEngine file at ${file.out.DialogEngine}.</echo>
 	</target>
 	
-	<target name="compileDialogEngineFail" if="${compile.dialog.engine.failure}">
+	<target name="compileDialogEngineFail" if="${compile.dialog.engine.failure}" depends="createTempCompileDir">
 		<loadresource property="compile.dialog.engine.err.out">
 			<file file="${compile.dialog.engine.err}" />
 		</loadresource>
@@ -320,7 +325,7 @@
 		<mkdir dir="${JSOutInputEngineDir}"/>
 	</target>
 	
-	<target name="compileInputEngine" depends="checkInputEngineUpToDate,createCompiledInputEngineDir" unless="${is.up.to.date.InputEngine}">
+	<target name="compileInputEngine" depends="checkInputEngineUpToDate,createTempCompileDir,createCompiledInputEngineDir" unless="${is.up.to.date.InputEngine}">
 
 		<delete file="${compile.input.engine.err}" />
 		
@@ -358,7 +363,7 @@
 		<echo>JavaScript InputEngine file at ${file.out.InputEngine}.</echo>
 	</target>
 	
-	<target name="compileInputEngineFail" if="${compile.input.engine.failure}">
+	<target name="compileInputEngineFail" if="${compile.input.engine.failure}" depends="createTempCompileDir">
 		<loadresource property="compile.input.engine.err.out">
 			<file file="${compile.input.engine.err}" />
 		</loadresource>
@@ -383,11 +388,10 @@
 						with the default JavaScript environment.
 	 -->
 	 
-	<target name="createBaseParserScriptFile">
+	<target name="createBaseParserScriptFile" depends="createTempCompileDir">
 		<echo message="Building base script file ${base.js.compile.grammar.parser.generator} for compiling GrammarParser..." />
 	    <mkdir dir="${buildDir}" />
 	    <mkdir dir="${buildDirBin}" />
-	    <mkdir dir="${buildDirTempJS}" />
 		<concat destfile="${base.js.compile.grammar.parser.generator}" fixlastline="true" outputencoding="UTF-8">
            
 		    <string>
@@ -409,6 +413,9 @@
 	                	doStartBuildEnv();
                 	});
 					core.startModule = 'doStartBuildProc';
+					
+					//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
+					core.logTrace = false;
 					
 	                //configure replacement / build-stub implementations:
 	                var buildLibDir = '${buildDirLib}mmir-build/';
