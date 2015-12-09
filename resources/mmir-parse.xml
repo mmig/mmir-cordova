@@ -29,7 +29,7 @@
 		
 	-->
 	<target name="createTemplateParserFile" depends="cleanTemplateFiles,generateFileListJSONFile,createTempCompileDir">
-	    <echo message="Building script file ${exec.js.compile.template.parser} for parsing templates (.ehtml)..." />
+	    <echo message="Building script file &quot;${exec.js.compile.template.parser}&quot; for parsing templates (.ehtml)..." />
 	    <mkdir dir="${buildDir}" />
 	    <mkdir dir="${buildDirBin}" />
 	    <concat destfile="${exec.js.compile.template.parser}" fixlastline="true" overwrite="true">
@@ -291,14 +291,14 @@
 	        
 
 	    </concat>
-	    <echo message="${exec.js.compile.template.parser} built." />
+	    <echo message="&quot;${exec.js.compile.template.parser}&quot; built." />
 	</target>
 	
 	<target name="parseTemplatesRhinoEnv"
 		depends="createTemplateParserFile"
 			description="Parse eHTML Template files with Rhino environment (slow)">
 			
-		<echo message="Running Rhino environment with script file ${exec.js.compile.template.parser} ..." />
+		<echo message="Running Rhino environment with script file &quot;${exec.js.compile.template.parser}&quot; and argument &quot;-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.template.parser} ${baseDir}&quot;" />
 		<exec executable="java" failonerror="true">
             <arg line="-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.template.parser} ${baseDir}" />
         </exec>
@@ -314,7 +314,7 @@
 			depends="createTemplateParserFile"
 			description="Parse eHTML Template files with NodeJS environment">
 		
-		<echo message="Running node.js environment with script file ${exec.js.compile.template.parser} and argument ${baseDir}..." />
+		<echo message="Running node.js environment with script file &quot;${exec.js.compile.template.parser}&quot; and argument &quot;${baseDir}&quot;" />
 		<exec executable="${exec.nodejs}" failonerror="true">
             <arg value="${exec.js.compile.template.parser}"/>
             <arg value="${baseDir}"/>

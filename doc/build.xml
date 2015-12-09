@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!-- 
+	This Ant-Build-File is for the generating API docs of the MMIR framework
+-->
+<project name="MMIR Framework API Doc" default="doc">
+    
+    <!-- ############# Initialization and Property Defintions ############# -->
+	
+	<property file="../mmir-build.settings" />
+	<property file="doc.properties" />
+	
+	<!-- set command (path) for nodejs executable (derived from imported properties mmir-build.settings) -->
+	<property name="exec.nodejs" value="${nodeJsDir}${nodeJsExec}" />
+	
+	<!--
+		Creates HTML documentation files for JavaScript code of the MMIR framework.
+		The documentation is generated using JSDoc v2 or v3 (or both), depending on the jsDocEngine property.
+	 -->
+	<target name="doc" depends="checkDocVersion,jsdoc2,jsdoc3" description="create HTML documenation for framework code">
+    </target>
+    
+	<target name="checkDocVersion">
+		<condition property="is.jsdoc.v2" else="false">
+		    <equals arg1="${jsDocEngine}" arg2="2" trim="true"/>
+		</condition>
+		<condition property="is.jsdoc.v3" else="false">
+		    <equals arg1="${jsDocEngine}" arg2="3" trim="true"/>
+		</condition>
+		<echo>Use only JSDoc v2? ${is.jsdoc.v2}</echo>
+		<echo>Use only JSDoc v3? ${is.jsdoc.v3}</echo>
+	</target>
+	
+	<target name="checkInit">
+		<condition property="is.jsdoc.installed" else="false">
+		    <available file="${dir.jsdoc.node.modules}"/>
+		</condition>
+		<echo>Are JSDoc Resources installed? ${is.jsdoc.installed}</echo>
+	</target>
+	
+	<!-- initiate installation for doc-gen resources: -->
+	<target name="init"  depends="checkInit" unless="${is.jsdoc.installed}" description="initialize and setup resources doc generation">
+		
+		<echo>Installing JSDoc Resources in ${dir.doc.base} ...</echo>
+		
+		<exec executable="npm.cmd" dir="${dir.doc.base}" osfamily="windows">
+			<arg value="install"/>
+		</exec>
+		
+		<exec executable="npm" dir="${dir.doc.base}" osfamily="unix">
+			<arg value="install"/>
+		</exec>
+		
+	</target>
+    
+	<!-- ############# Clean Generated Files ############# -->
+	
+	<target name="cleanDoc2" description="delete generated jsdoc2 files" unless="${is.jsdoc.v3}">
+		<echo>Clearing target directory for generated files at ${dir.out.jsdoc}2</echo>
+		<delete file="${dir.out.jsdoc}2"/>
+	</target>
+	
+	<target name="cleanDoc3" description="delete generated jsdoc3 files" unless="${is.jsdoc.v2}">
+		<echo>Clearing target directory for generated files at ${dir.out.jsdoc}3</echo>
+		<delete file="${dir.out.jsdoc}3"/>
+	</target>
+	
+	<!-- ############# Execute JSDoc ############# -->
+	
+	<target name="jsdoc2" 
+		depends="init,cleanDoc2" 
+		description="Create API doc with jsdoc v2"
+		unless="${is.jsdoc.v3}">
+
+		<echo message="Running node.js environment for jsdoc2 with script file ${exec.jsdoc.v2} and arguments ${default.options.jsdoc.v2} -e=${exclude.config.jsdoc.v3} -d=${dir.out.jsdoc}2 -t=${template.jsdoc.v2} ${dir.src.in}" />
+		<exec executable="${exec.nodejs}" failonerror="true">
+			<arg value="${exec.jsdoc.v2}"/>
+			<arg line="${default.options.jsdoc.v2}"/>
+            <arg line="-E=${exclude.config.jsdoc.v3}"/>
+            <arg line="-d=${dir.out.jsdoc}2"/>
+			<arg line="-t=${template.jsdoc.v2}"/>
+			<arg value="${dir.src.in}"/>
+        </exec>
+		
+	</target>
+	
+	<target name="jsdoc3" 
+		depends="init,cleanDoc3" 
+		description="Create API doc with jsdoc v3"
+		unless="${is.jsdoc.v2}">
+
+		<echo message="Running jsdoc3 with ${exec.jsdoc.v3} and arguments ${default.options.jsdoc.v3} -c ${file.config.jsdoc.v3} -d ${dir.out.jsdoc}3 -t ${template.jsdoc.v3} ${dir.src.in}" />
+		<exec executable="${exec.jsdoc.v3}" failonerror="true">
+			<arg line="${default.options.jsdoc.v3}"/>
+            <arg line="-c ${file.config.jsdoc.v3}"/>
+            <arg line="-d ${dir.out.jsdoc}3"/>
+			<arg line="-t ${template.jsdoc.v3}"/>
+			<arg value="${dir.src.in}"/>
+        </exec>
+		
+	</target>
+    
+</project>

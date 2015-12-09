@@ -148,21 +148,6 @@
 		<echo>Finished compile task (RHINO).</echo>
 	</target>
 	
-	    
-	<!--
-		Creates HTML documentation files for JavaScript code of the MMIR framework.
-		
-		Currently, this is only supported for Windows environment (see /doc/create_doc.bat).
-		
-		The documentation is generated using JSDoc v2.
-	 -->
-	<target name="doc" description="create HTML documenation for framework code">
-		<exec executable="${docExec}" dir="${docDir}" failonerror="true" resolveexecutable="true">
-			<arg value="${jsDocVersion}"/>
-		</exec>
-		<echo>Created HTML documentation files in ${docDir}api_jsdoc2.</echo>
-    </target>
-	
 	<!-- ############# Test Targets ############# -->
     <target name="test" depends="" description="runs all tests specified in test/drivers">
         <ant antfile="test.xml" target="test-all"/>
@@ -223,18 +208,38 @@
 	
 	<target name="checkDialogEngineUpToDate">
 		<condition property="is.up.to.date.DialogEngine" else="false">
-	        <and>
-	            <!-- does (compiled) JavaScript file exist? -->
-				<available file="${file.out.DialogEngine}"	     property="is.up.to.date.DialogEngine" />
+	        
+			<or>
+				
+				<!-- if ignoreDialogEngineGeneration is set to true,
+				     then the DialogEngine should NEVER get compiled!
+				-->
+				<istrue value="${ignoreDialogEngineCompilation}"/>
+				
+				<and>
+		            <!-- does (compiled) JavaScript file exist? -->
+					<available file="${file.out.DialogEngine}"	     property="is.up.to.date.DialogEngine" />
+				    
+				    <!-- check, if the SCXML file has changed by its checksum -->
+					<checksum
+					    file="${file.in.DialogEngine}"
+					    toDir="${JSOutDialogEngineDir}"
+				    	fileExt=".checksum.txt"
+				    	pattern="{0}&#09;"
+					    verifyProperty="is.up.to.date.DialogEngine"/>
+		        	
+					<!-- if forceDialogEngineGeneration is set to true,
+					     then the DialogEngine should ALWAYS get compiled,
+					     even if it seems up-to-date!
+					-->
+		        	<not>
+						<istrue value="${forceDialogEngineCompilation}"/>
+					</not>
+		        	
+			    </and>
 			    
-			    <!-- check, if the SCXML file has changed by its checksum -->
-				<checksum
-				    file="${file.in.DialogEngine}"
-				    toDir="${JSOutDialogEngineDir}"
-			    	fileExt=".checksum.txt"
-			    	pattern="{0}&#09;"
-				    verifyProperty="is.up.to.date.DialogEngine"/>
-		    </and>
+			</or>
+			
 	    </condition>
 		<echo>Is file ${file.out.DialogEngine} up-to-date? -> ${is.up.to.date.DialogEngine}</echo>
 	</target>
@@ -306,17 +311,39 @@
 
 	<target name="checkInputEngineUpToDate">
 		<condition property="is.up.to.date.InputEngine" else="false">
-	        <and>
-	            <!-- does (compiled) JavaScript file exist? -->
-				<available file="${file.out.InputEngine}"       property="is.up.to.date.InputEngine" />
-			    <!-- has SCXML file changed? -->
-				<checksum
-				    file="${file.in.InputEngine}"
-				    toDir="${JSOutInputEngineDir}"
-					fileExt=".checksum.txt"
-			    	pattern="{0}&#09;"
-				    verifyProperty="is.up.to.date.InputEngine"/>
-		    </and>
+	        
+			<or>
+							
+				<!-- if ignoreInputEngineGeneration is set to true,
+				     then the InputEngine should NEVER get compiled!
+				-->
+				<istrue value="${ignoreInputEngineCompilation}"/>
+							
+				<and>
+		            
+					<!-- does (compiled) JavaScript file exist? -->
+					<available file="${file.out.InputEngine}"       property="is.up.to.date.InputEngine" />
+				    
+					<!-- has SCXML file changed? -->
+					<checksum
+					    file="${file.in.InputEngine}"
+					    toDir="${JSOutInputEngineDir}"
+						fileExt=".checksum.txt"
+				    	pattern="{0}&#09;"
+					    verifyProperty="is.up.to.date.InputEngine"/>
+					
+					<!-- if forceInputEngineGeneration is set to true,
+					     then the InputEngine should ALWAYS get compiled,
+					     even if it seems up-to-date!
+					-->
+		        	<not>
+						<istrue value="${forceInputEngineCompilation}"/>
+					</not>
+		        	
+			    </and>
+				
+			</or>
+			
 	    </condition>
 		<echo>Is file ${file.out.InputEngine} up-to-date? -> ${is.up.to.date.InputEngine}</echo>
 	</target>
@@ -614,7 +641,7 @@
 	</target>
 
 	<target name="createGrammarParserGeneratorScriptFileRhino" depends="verifyRhinoAvailable,createBaseParserScriptFile">
-		<echo message="Building complete js file ${exec.js.compile.grammar.parser.generator} for Rhino environment..." />
+		<echo message="Building complete js file &quot;${exec.js.compile.grammar.parser.generator}&quot; for Rhino environment..." />
 		<concat destfile="${exec.js.compile.grammar.parser.generator}" fixlastline="true" outputencoding="UTF-8">
 			<fileset dir="${jsBuildDirBase}rhino" includes="InitRhinoEnv.js" />
 			<fileset dir="${jsBuildDirBase}rhino" includes="InitGrammarGeneratorRhinoEnv.js" />
@@ -629,7 +656,7 @@
 		description="Compile GrammarParserGenerator script with Rhino environment (slow)"
 		unless="${is.up.to.date.grammarjs}">
 
-		<echo message="Running Rhino environment with script file ${exec.js.compile.grammar.parser.generator} and arguments ${grammarDefinitionJsonDir}, ${grammarDefinitionJsonFile}, ${grammarLanguageCode}, ${outDirCompiledGrammar}, ${outFileCompiledGrammar}, ${buildDirLib}r.js, ${execBuildLibDir} ..." />
+		<echo message="Running Rhino environment with script file &quot;${exec.js.compile.grammar.parser.generator}&quot; and argument line &quot;-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.grammar.parser.generator} ${grammarDefinitionJsonDir} ${grammarDefinitionJsonFile} ${grammarLanguageCode} ${outDirCompiledGrammar} ${outFileCompiledGrammar} ${buildDirLib}r.js ${execBuildLibDir}&quot;" />
 		<exec executable="java" failonerror="true">
 			<arg line="-jar ${pathRhinoJar} -opt -1 ${exec.js.compile.grammar.parser.generator} ${grammarDefinitionJsonDir} ${grammarDefinitionJsonFile} ${grammarLanguageCode} ${outDirCompiledGrammar} ${outFileCompiledGrammar} ${buildDirLib}r.js ${execBuildLibDir}" />
         </exec>
@@ -727,7 +754,7 @@
 	</target>
 
 	<target name="createGrammarParserGeneratorScriptFileNodeJs" depends="verifyNodeJsAvailable,createBaseParserScriptFile">
-		<echo message="Building complete js file ${exec.js.compile.grammar.parser.generator} for node.js environment..." />
+		<echo message="Building complete js file &quot;${exec.js.compile.grammar.parser.generator}&quot; for node.js environment..." />
 		<concat destfile="${exec.js.compile.grammar.parser.generator}" fixlastline="true" outputencoding="UTF-8">
 			<fileset dir="${jsBuildDirBase}nodejs" includes="InitNodeJsEnv.js" />
 			<fileset dir="${jsBuildDirBase}nodejs" includes="InitGrammarGeneratorNodeJsEnv.js" />
@@ -743,7 +770,7 @@
 		description="Compile GrammarParserGenerator script with node.js environment (fast)"
 		unless="${is.up.to.date.grammarjs}">
 
-		<echo message="Running node.js environment with script file ${exec.js.compile.grammar.parser.generator} and arguments ${grammarDefinitionJsonDir}, ${grammarDefinitionJsonFile}, ${grammarLanguageCode}, ${outDirCompiledGrammar}, ${outFileCompiledGrammar}, ${execBuildLibDir} ..." />
+		<echo message="Running node.js environment with script file &quot;${exec.js.compile.grammar.parser.generator}&quot; and arguments &quot;${grammarDefinitionJsonDir}&quot;, &quot;${grammarDefinitionJsonFile}&quot;, &quot;${grammarLanguageCode}&quot;, &quot;${outDirCompiledGrammar}&quot;, &quot;${outFileCompiledGrammar}&quot;, &quot;${execBuildLibDir}&quot;" />
 		<exec executable="${exec.nodejs}" failonerror="true">
 			<arg value="${exec.js.compile.grammar.parser.generator}"/>
 			<arg value="${grammarDefinitionJsonDir}"/>

@@ -63,7 +63,9 @@ nodeJsExec=node
 #          it to anything but true will leave this setting disabled)
 #
 #doIgnoreMissingNodeJsPath=true
-#
+
+
+########################## Force / Ignore Generation of Resources ###########################
 #
 # force re-compilation / generation of language grammars 
 # (enable this, if you want to re-compile the JSON grammars 
@@ -74,16 +76,37 @@ nodeJsExec=node
 #
 #forceGrammarGeneration=true
 
+#
+#
+# force re-compilation / generation of JavaScript code for Dialog-/Input-Engine
+# (enable this, if you want to re-compile the SCXML files
+#  regardless of checksum-file status)
+#
+# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
+#          it to anything but true will leave this setting disabled)
+#
+# NOTE: compilation of Dialog-/Input-Engine into JavaScript files is not necessary any more
+#       for running MMIR apps. Compiling these files is strictly for DEBUG purposes, e.g. 
+#       checking if the SCXML file contains syntax errors and getting details information
+#       (line / column) where these errors are located in the file.
+#
+#forceDialogEngineCompilation=true
+#forceInputEngineCompilation=true
 
-########################## JSDoc ###########################
 #
-# set the version for JSDoc that should be used in doc-task
-# (i.e. generating documentation for MMIR framework files)
 #
-# Valid values are:
+# prevent re-compilation / generation of JavaScript code for Dialog-/Input-Engine
+# (enable this, if you want to prevent re-compilation of the SCXML files
+#  even if the checksum-file status signals changed content, or the JavaScript 
+#  files do not exist)
 #
-# X2: jsdoc2
-# X3: jsdoc3
-# 
-# DEFAULT: X2
-jsDocVersion=X2
+# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
+#          it to anything but true will leave this setting disabled)
+#
+# NOTE: compilation of Dialog-/Input-Engine into JavaScript files is not necessary any more
+#       for running MMIR apps. Compiling these files is strictly for DEBUG purposes, e.g. 
+#       checking if the SCXML file contains syntax errors and getting details information
+#       (line / column) where these errors are located in the file.
+#
+#ignoreDialogEngineCompilation=true
+#ignoreInputEngineCompilation=true
