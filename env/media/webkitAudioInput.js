@@ -171,8 +171,22 @@ newMediaPlugin = {
 				console.log('webkitAudioInput: start analysing audio input...');
 				var buffer = 0;
 				var prevDb;
+				
+				//we only need one analysis: if there is one active from a previous start
+				//  -> do stop it, before storing the new inputstream in _currentInputStream
+				if(_currentInputStream){
+					_stopAudioAnalysis();
+				}
 
 				_currentInputStream = inputstream;
+
+				if(_isAnalysisCanceled === true){
+					//ASR was stopped, before the audio-stream for the analysis became available:
+					// -> stop analysis now, since ASR is not active (and close the audio stream without doing anything)
+					_stopAudioAnalysis();
+					return;//////////////// EARLY EXIT //////////////////////
+				}
+				
 				var inputNode = _audioContext.createMediaStreamSource(_currentInputStream);
 
 				///////////////////// VIZ ///////////////////
@@ -256,6 +270,10 @@ newMediaPlugin = {
 			 * @memberOf WebkitAudioInput#
 			 */
 			var _isAnalysisActive = false;
+			/** internal flag: is/should mic-levels analysis be active?
+			 * @memberOf WebkitAudioInput#
+			 */
+			var _isAnalysisCanceled = false;
 			/** HELPER start-up mic-levels analysis (and fire events for registered listeners)
 			 * @memberOf WebkitAudioInput#
 			 */
@@ -263,6 +281,7 @@ newMediaPlugin = {
 				if(_isAnalysisActive === true){
 					return;
 				}
+				_isAnalysisCanceled = false;
 				_isAnalysisActive = true;
 				html5Navigator.__getUserMedia({audio: true}, _startUserMedia, function(e) {
 					console.error("webkitAudioInput: failed _startAudioAnalysis, error for getUserMedia ", e);
@@ -277,13 +296,29 @@ newMediaPlugin = {
 				if(_currentInputStream){
 					var stream = _currentInputStream;
 					_currentInputStream = void(0);
-					stream.stop();
+					//DISABLED: MediaStream.stop() is deprecated -> instead: stop all tracks individually
+//					stream.stop();
+					try{
+						if(stream.active){
+							var list = stream.getTracks(), track;
+							for(var i=list.length-1; i >= 0; --i){
+								track = list[i];
+								if(track.readyState !== 'ended'){
+									track.stop();
+								}
+							}
+						}
+					} catch (err){
+						console.log('webkitAudioInput: a problem occured while stopping audio input analysis: '+err);
+					}
+					_isAnalysisCanceled = false;
 					_isAnalysisActive = false;
 
 					console.log('webkitAudioInput: stopped analysing audio input!');
 				}
 				else if(_isAnalysisActive === true){
 					console.warn('webkitAudioInput: stopped analysing audio input process, but no valid audio stream present!');
+					_isAnalysisCanceled = true;
 					_isAnalysisActive = false;
 				}
 			}
@@ -752,7 +787,7 @@ newMediaPlugin = {
                 	console.debug("[webkitAudioInput.Debug] Audio END");
                 }
 
-                _stopAudioAnalysis();
+//                _stopAudioAnalysis(); MOVED to onend: in some cases, onaudioend will not be triggered, but onend will always get triggered
             };
             /** @memberOf WebkitAudioInput.recognition# */
             recognition.onspeechend = function(event){
@@ -787,6 +822,11 @@ newMediaPlugin = {
                 	console.debug("[webkitAudioInput.Debug] asr END");
                 	console.debug("[webkitAudioInput.Debug] active: " + active);
                 }
+                
+                //NOTE there may be no analysis open, but stopping here (and not e.g. in onaudioen) 
+                //     will ensure that we _always_ remove analysis, if it is present:
+                _stopAudioAnalysis();
+                
                 // TODO: check if it is alright if we stop restarting the asr when reset_counter is greater than 3
                 // --> this would mean, we can never start the asr again in this instance... bad choice
                 if ((aborted === false) && (recording === true)){
@@ -1134,13 +1174,11 @@ newMediaPlugin = {
                                 console.debug("[webkitAudioInput.Debug] " + "final");
                             }
 
-//                            finalResult = event.results[event.resultIndex][0][EVENT_RESULT_FIELD];
-                            
-                            var returnArgs = helper_extract_results(event.results[event.resultIndex]);
-                            
-                            // stop recording - finish after one sentence!
+                            //stop recording - finish after one sentence!
+                            //NOTE do this before calling helper_extract_results(), in order to make the result type FINAL
                             recording = false;
                             
+                            var returnArgs = helper_extract_results(event.results[event.resultIndex]);
                             
                             // TODO: dirty hack - somehow it does not throw end event after recognition if recognize is used
                             self.cancelRecognition();
