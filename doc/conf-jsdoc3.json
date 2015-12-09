@@ -1,0 +1,21 @@
+{
+    "tags": {
+        "allowUnknownTags": true
+    },
+    "source": {
+        "includePattern": ".+\\.js(doc)?$",
+        "excludePattern": "((^|\\/|\\\\)_)|((\\/|\\\\)node_modules)|((\\/|\\\\)vendor)"
+    },
+    "plugins": ["./../../plugins/short-symbolic-links", "./../../plugins/convert-atag-links-in-see-tag"],
+    "templates": {
+        "cleverLinks": true,
+        "monospaceLinks": true,
+        "default": {
+            "outputSourceFiles": true
+        },
+		"navType ": "inline",
+		"linenums": true,
+		"theme": "cerulean",
+		"copyright": "<a href='https://github.com/mmig/mmir'>MMIR Framework</a>, MIT License, Copyright (C) DFKI GmbH, IUI Berlin, www.dfki.de"
+    }
+}
