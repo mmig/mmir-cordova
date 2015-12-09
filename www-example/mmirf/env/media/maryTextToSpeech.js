@@ -48,6 +48,13 @@ newMediaPlugin = {
 			 */
 			var commonUtils = require('commonUtils');
 			
+			/**
+			 * separator char for language- / country-code (specific to TTS service)
+			 *   
+			 * @memberOf MaryTextToSpeech#
+			 */
+			var _langSeparator = void(0);
+			
 			/**  @memberOf MaryTextToSpeech# */
 			var volume = 1.0;
 			
@@ -163,30 +170,21 @@ newMediaPlugin = {
 			 * 
 			 * @memberOf MaryTextToSpeech#
 			 */
-			var EMPTY_SENTENCE = {
-					type: 'empty',
-					disable: function(){},
-					release: function(){},
-					play: function(){
-						
-						//simulate async playing via setTimeout
-						setTimeout(function(){
-							
-							console.log("done playing EMPTY_SENTENCE");
-							console.log("LongTTS play next in "+pauseDuration+ " ms... ");
-							
-							//trigger playing the next entry (after the set pause-duration)
-							setTimeout(playNext, pauseDuration);
-							
-						}, 10);
-						
-					},
-					stop: function(){},
-					enable: function(){},
-					isEnabled: function(){return true;},//never disabled
-					isPaused: function(){return false;},//never paused
-					setVolume: function(){},
-					getDuration: function(){return 0;}//no duration
+			var EMPTY_SENTENCE = mediaManager.createEmptyAudio();
+			EMPTY_SENTENCE.type = 'empty';
+			EMPTY_SENTENCE.play = function(){
+				
+				//simulate async playing via setTimeout
+				setTimeout(function(){
+					
+					console.log("done playing EMPTY_SENTENCE");
+					console.log("LongTTS play next in "+pauseDuration+ " ms... ");
+					
+					//trigger playing the next entry (after the set pause-duration)
+					setTimeout(playNext, pauseDuration);
+					
+				}, 10);
+				
 			};
 			
 			/** 
@@ -202,14 +200,26 @@ newMediaPlugin = {
 			};
 			/**  @memberOf MaryTextToSpeech# */
 			var generateTTSURL = function(text, options){
-				text = encodeURIComponent(text);
-				var lang = options && options.language? options.language : languageManager.getLanguageConfig(_pluginName);
-				//NOTE voice-options may be empty string -> need to check against undefined
-				var voice = options && typeof options.voice !== 'undefined'? options.voice : languageManager.getLanguageConfig(_pluginName, 'voice');
 				
+				text = encodeURIComponent(text);
+				
+				var lang = getLangParam(options);
+				
+				var voice = getVoiceParam(options);
 				var voiceParamStr = voice? '&VOICE='+voice : '';
 				
 				return configurationManager.get([_pluginName, "serverBasePath"])+'process?INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&INPUT_TEXT=' + text + '&LOCALE='+lang + voiceParamStr + '&AUDIO=WAVE_FILE';
+			};
+			
+			/**  @memberOf MaryTextToSpeech# */
+			var getLangParam = function(options){
+				return options && options.language? options.language : languageManager.getLanguageConfig(_pluginName, 'language', _langSeparator);
+			};
+			
+			/**  @memberOf MaryTextToSpeech# */
+			var getVoiceParam = function(options){
+				//NOTE voice-options may be empty string -> need to check against undefined
+				return options && typeof options.voice !== 'undefined'? options.voice : languageManager.getLanguageConfig(_pluginName, 'voice');
 			};
 
 			/**  @memberOf MaryTextToSpeech# */
@@ -251,7 +261,7 @@ newMediaPlugin = {
 				
 				try {
 					isReady = false;		   			
-					ttsMedia = mediaManager.getURLAsAudio(generateTTSURL(text, options), 
+					ttsMedia = createAudio(text, options,
 								function(){
 //									isReady = true;//DISABLED -> EXPERIMENTAL: command-queue feature.
 									if(onEnd){
@@ -347,8 +357,10 @@ newMediaPlugin = {
 					var currSentence = sentenceArray[currIndex];
 					console.log("LongTTS loading "+currIndex+ " "+currSentence);
 					if(currSentence !== EMPTY_SENTENCE){
-						audioArray[currIndex] = mediaManager.getURLAsAudio(generateTTSURL(currSentence, callOptions), 
-								function(){
+						
+						audioArray[currIndex] = createAudio(currSentence, callOptions,
+								
+								function onend(){
 									console.log("LongTTS done playing "+currIndex+ " "+sentenceArray[currIndex]);
 									audioArray[currIndex].release();
 									
@@ -357,10 +369,10 @@ newMediaPlugin = {
 									setTimeout(playNext, pauseDuration);
 									
 									//TODO only invoke this, if previously the test for (loadIndex-playIndex)<= bufferSize) failed ...
-	//								loadNext();
+									//loadNext();
 								},
 	
-								function(){
+								function onerror(){
 									//TODO currently, all pending sentences are aborted in case of an error
 									//     -> should we try the next sentence instead?
 									
@@ -372,7 +384,8 @@ newMediaPlugin = {
 									//EXPERIMENTAL: command-queue feature.
 									processNextInCommandQueue();
 								},
-								function(){
+								
+								function oninit(){
 									console.log("LongTTS done loading "+currIndex+ " "+sentenceArray[currIndex]+ (!this.isEnabled()?' DISABLED':''));
 									isLoading = false;
 									loadNext();
@@ -384,6 +397,7 @@ newMediaPlugin = {
 						);
 					}
 					else {
+						
 						audioArray[currIndex] = EMPTY_SENTENCE;
 						
 						console.log("LongTTS done loading "+currIndex+ " EMPTY_SENTENCE");
@@ -401,6 +415,16 @@ newMediaPlugin = {
 					
 					loadNext();
 				}
+			};
+			
+			/**  @memberOf MaryTextToSpeech# */
+			var createAudio = function(sentence, options, onend, onerror, oninit){
+				
+				return mediaManager.getURLAsAudio(
+						generateTTSURL(sentence, callOptions),
+						onend, onerror, oninit
+				);
+				
 			};
 			
 			/**  @memberOf MaryTextToSpeech# */
@@ -430,51 +454,85 @@ newMediaPlugin = {
 //						return;
 					}
 					isReady = false;
-					if ((typeof parameter) == 'string'){
-						if(parameter.length === 0){
-							isReady = true;
-							errMsg = "Aborted TTS: no text supplied (string has length 0)";
-							if(failureCallback){
-								failureCallback(errMsg);
-							}
-							else {
-								console.error(errMsg);
-							}
-
-							//EXPERIMENTAL: command-queue feature.
-							processNextInCommandQueue();
-							
-							return;/////////////////////////////////// EARLY EXIT /////////////////////////////
-						}
-						ttsSingleSentence(parameter, successCallback, failureCallback, onInit, options);
-					} else if((typeof parameter !== 'undefined')&& commonUtils.isArray(parameter) ){
-						ttsSentenceArray(parameter, successCallback, failureCallback, onInit, options);
-					} else if ((typeof parameter == 'object')){
-						if (parameter.pauseDuration!== null && parameter.pauseDuration>=0){
-							pauseDuration = parameter.pauseDuration;
-							console.log("PauseDuration: "+pauseDuration);
-						} else {
-							var configPause = configurationManager.get('pauseDurationBetweenSentences');
-							if (configPause) {
-								pauseDuration = configPause;
-							}
-							else pauseDuration = 1000;
-						}
-						if ((typeof parameter.text !== 'undefined')&& commonUtils.isArray(parameter.text) ){
+					
+					var text;
+					var isMultiple = false;
+					if (typeof parameter === 'object'){
+						
+						//TODO allow setting custom pause-duration, something like: (NOTE would need to reset pause in case of non-object arg too!)
+//						if (parameter.pauseDuration!== null && parameter.pauseDuration>=0){
+//							pauseDuration = parameter.pauseDuration;
+//							console.log("PauseDuration: "+pauseDuration);
+//						} else {
+//							var configPause = configurationManager.get('pauseDurationBetweenSentences');
+//							if (configPause) {
+//								pauseDuration = configPause;
+//							}
+//							else{
+//								pauseDuration = 500;
+//							}
+//						}
+						
+						if (parameter.text && commonUtils.isArray(parameter.text)){
 							if (parameter.forceSingleSentence){
-								ttsSingleSentence(commonUtils.concatArray(parameter.text),successCallback, failureCallback, onInit);
+								text = commonUtils.concatArray(parameter.text);
 							} else {
-								ttsSentenceArray(parameter.text, successCallback, failureCallback, onInit, options);
+								text = parameter.text;
 							}
-						}
-						if ((typeof parameter.text)== 'string'){
+						} 
+
+						//if text is string: apply splitting, if requested:
+						if (typeof parameter.text === 'string'){
 							if (parameter.split || parameter.splitter){
 								var splitter = parameter.splitter || defaultSplitter;
-								ttsSentenceArray(splitter(parameter.text), successCallback, failureCallback, onInit, options);
+								text = splitter(parameter.text);
 							} else {
-								ttsSingleSentence(parameter.text, successCallback, failureCallback, onInit);
+								text = parameter.text;
 							}
 						}
+						
+						if(!text){
+							text = parameter;
+						}
+						
+						if(!options){
+							options = parameter;
+						}
+						//TODO else: merge parameter into options
+						
+					} else {
+						text = parameter;
+					}
+						
+					if(text && commonUtils.isArray(text)){
+						isMultiple = true;
+					} else if (typeof text !== 'string'){
+						text = typeof text !== 'undefined' && text !== null? text.toString() : '' + text;
+					}
+					
+					if(text.length === 0){
+						isReady = true;
+						errMsg = "Aborted TTS: no text supplied (string has length 0)";
+						if(failureCallback){
+							failureCallback(errMsg);
+						}
+						else {
+							console.error(errMsg);
+						}
+
+						//EXPERIMENTAL: command-queue feature.
+						processNextInCommandQueue();
+						
+						return;/////////////////////////////////// EARLY EXIT /////////////////////////////
+					}
+					
+					if(!isMultiple){
+						
+						ttsSingleSentence(text, successCallback, failureCallback, onInit, options);
+						
+					} else {
+						
+						ttsSentenceArray(text, successCallback, failureCallback, onInit, options);
 					}
 				},
 				/**
@@ -489,6 +547,9 @@ newMediaPlugin = {
 
 						//EXPERIMENTAL: use command-queue in case TTS is currently in use -> empty queue
 						//              TODO should queue stay left intact? i.e. only current TTS canceled ...?
+						//NOTE: if command-queue would not be cleared: need to take care of delayed audio-objects
+						//      where the audio-object is not created immediately but delayed (e.g. via getWAVAsAudio(..)
+						//       as in nuanceHttpTextToSpeech), e.g. by using additional canceled-flag?
 						clearCommandQueue();
 						
 						//prevent further loading:
@@ -497,7 +558,7 @@ newMediaPlugin = {
 						//disable playing for sentence-modus 
 						audioArray.forEach(function (audio){
 							if (audio) {
-								audio.disable();								
+								audio.disable();
 								audio.release();
 							}
 						});
