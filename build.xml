@@ -1,8 +1,120 @@
 <?xml version="1.0"?>
 
-<project name="MMIR build resources" default="copy-resources">
+<project name="MMIR build resources" default="build">
     
-    <target name="copy-resources">
+    <!--
+    	target directory where the build resources will be copied to
+    	(this should be the root directory of the Cordova project)
+     -->
+    <property location="${basedir}/../" name="targetdir"/>
+	
+	<!-- 
+		target directory for scripts/tools that generate the API doc
+		(usually this is located at the project's <root>/doc directory
+	 -->
+	<property location="${basedir}/../doc" name="target.doc.dir"/>
+	
+	
+	<property location="${targetdir}/hooks/before_prepare/build-mmir.js" name="mmir-prepare-script-location"/>
+	<property location="${targetdir}/hooks/before_build/build-mmir.js" name="mmir-build-script-location"/>
+	
+	
+	<!-- #################################################################################### -->
+	
+	<target
+		name="build"
+		description="copy files, reset file permissions, and check for outdated/duplicate scripts"
+		depends="copy-resources,fix-file-permissions,print-copy-info,print-outdated-build-warning">
+
+		
+	</target>
+	
+	<!-- #################################################################################### -->
+	<target
+		name="print-copy-info"
+		description="print some information for Cordova build files/hooks">
+		
+		<echo>
+		            
+  INFO: By default, MMIR build / generation mechanism is triggered for
+  
+    cordova prepare
+  
+  you can change that, e.g. to hook into
+    
+    cordova build
+  
+  instead, by renaming the directory
+  
+    [project root]/hooks/before_prepare
+    
+  to
+  
+    [project root]/hooks/before_build
+  
+  
+  NOTE: previous versions did hook into before_build instead of before_prepare
+        You should make sure that the script /before_XXX/build-mmir.js
+        occurs only in one of those to directories.
+            
+        </echo>
+		
+	</target>
+    
+    
+	<!-- #################################################################################### -->
+    <target
+    	name="check-outdated-build-directory"
+    	description="checks if there are duplicate Cordova hooks for the MMIR build scripts">
+    	
+        <condition property="is.outdated.cordova.build.hook" else="false">
+            <and>
+                
+	            <!-- does mmir-build-script exists in before_build hook? -->
+				<available file="${mmir-build-script-location}"	     property="is.exist.cordova.hook.build" />
+			    
+	        	<!-- does mmir-build-script exists in before_prepare hook? -->
+				<available file="${mmir-prepare-script-location}"	     property="is.exist.cordova.hook.prepare" />
+				
+		    </and>
+        </condition>
+    </target>
+    
+	<!-- #################################################################################### -->
+	<target
+		name="print-outdated-build-warning"
+		description="prints warning for duplicate Cordova hooks"
+		depends="check-outdated-build-directory"
+		if="${is.outdated.cordova.build.hook}">
+
+		<!-- print some information for Cordova build files / hooks -->
+        <echo>
+  WARNING: found multiple copies of script build-mmir.js in
+       
+       /hooks/before_prepare
+        	
+        	and
+
+       /hooks/before_build
+
+            If you did not explicitly add build-mmir.js to /before_build, you
+        	should delete this 2nd copy of build-mmir.js!
+        	(otherwise the build will take longer, because this script gets executed twice)
+        	
+
+  NOTE: previous versions did hook into before_build instead of before_prepare
+        You should make sure that the script /before_XXX/build-mmir.js
+        occurs only in one of those to directories.
+            
+        </echo>
+		
+    </target>
+	
+	<!-- #################################################################################### -->
+    <target
+    	name="copy-resources"
+    	description="copy the resources and build scripts ect"
+    	depends="copy-doc-resources">
         
         <!-- copy resources to parent directory
         	 * ANT scripts and settings
@@ -12,28 +124,7 @@
             <fileset dir="resources"/>
         </copy>
 		
-		<!-- copy files for doc generation -->
-		<echo>
-  Preparing resources for jsdoc generation...
-		</echo>
-		
-		<property location="${basedir}/../doc" name="target.doc.dir"/>
-		
-		<copy todir="${target.doc.dir}" preservelastmodified="true" overwrite="true">
-            <fileset dir="doc" defaultexcludes="false"/>
-        </copy>
-        
-		
-		<!-- print some information for doc generation -->
-		<echo>
-  For generating API docs, see [project root]/doc:
-    ant [jsdoc2 | jsdoc3]
-	
-  See README.md in [project root]/doc for more information
-  on generating docs.
-  
-        </echo>
-		
+    	
         <!-- create settings-file from settingsDefault 
         	 (but only, if it is not exists yet)
         -->
@@ -46,7 +137,7 @@
         <!-- print some information for settings-file -->
         <echo>
             
-  When updating files, mmir-build.xml and mmir-parse.xml may provide some new 
+  INFO: When updating files, mmir-build.xml and mmir-parse.xml may provide some new 
   (default) build options.
   
   Check, if mmir-build.settingsDefault (compared to mmir-build.settings) has
@@ -74,15 +165,41 @@
    information in case of syntax-errors).
             
         </echo>
-        
-        
-        <!-- 
-        	 for setting file permissions for UNIX:
-        	 set executable-flag for scripts (*.js, *.xml)
-         -->
-        
-		<property location="${basedir}/../" name="targetdir"/>
+    </target>
+	
+	<!-- ################################## COPY doc files ####################################### -->
+	<target
+    	name="copy-doc-resources"
+    	description="copy the resources and scripts for generating the API documentation">
 		
+		<copy todir="${target.doc.dir}" preservelastmodified="true" overwrite="true">
+            <fileset dir="doc" defaultexcludes="false"/>
+        </copy>
+        
+		
+		<!-- print some information for doc generation -->
+		<echo>
+  INFO: For generating API docs, see [project root]/doc:
+    ant [jsdoc2 | jsdoc3]
+	
+  See README.md in [project root]/doc for more information
+  on generating docs.
+  
+        </echo>
+		
+	</target>
+	
+
+    <!-- ####################################################################################
+    	 this target tries to re-adjust file permissions for UNIX:
+    	 set executable-flag for scripts (*.js, *.xml)
+    	 
+    	 DEPENDS on property ${targetdir} and in the script's working directory, the /resources sub-directory
+     -->
+	<target
+		name="fix-file-permissions"
+		description="on UNIX systems resets the executable file permissions for the scripts">
+
 		<!-- 
 			only consider files that exist in ./resources/* AND copy-target ./../*:
 			map files names from ./resources/* to ./../*
@@ -105,26 +222,6 @@
 		    <fileset refid="target.script.files"/>
 		</chmod>
 		
-		<!-- print some information for Cordova build files / hooks -->
-        <echo>
-            
-  By default, MMIR build / generation mechanism is triggered for
-  
-    cordova build
-  
-  you can change that, e.g. to hook into
-    
-    cordova prepare
-  
-  instead, by renaming the directory
-  
-    [project root]/hooks/before_build
-    
-  to
-  
-    [project root]/hooks/before_prepare
-            
-        </echo>
-    </target>
+	</target>
     
 </project>
