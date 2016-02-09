@@ -4,7 +4,7 @@
 A skeleton / boilerplate project for the MMIR framework.
 
 This repository contains resources that should be added to newly
-created Cordova 3.x projects, in order to add the MMIR framework.
+created Cordova 5.x projects, in order to add the MMIR framework.
 
 NOTE: the directory `www-example/` contains a somewhat _minimal_
       MMIR-based application.
@@ -32,11 +32,11 @@ For your own project, you should instead use current resources from the [mmir-li
 --
 ### Prerequisites
 
-* Cordova 3 CLI
+* Cordova 5 CLI
 * ANT
 * platform development tools
 
-This guide assumes that Cordova 3.x CLI is installed globally
+This guide assumes that Cordova 5.x CLI is installed globally
 (see Cordova CLI documentation for more details), i.e. that the `cordova` command
 is available on the terminal/command line.
 
@@ -49,7 +49,7 @@ have to be installed.
 
 ### Add MMIR Resources To An Existing Cordova Project
 
-Starting with your Cordova 3 project which should look something like this
+Starting with your Cordova 5 project which should look something like this
 
     hooks/
     merges/
@@ -61,13 +61,13 @@ Starting with your Cordova 3 project which should look something like this
 create a new sub-direcotry `build/`.
 
 Then, copy the the contents of the [MMIR tooling][2] repository into 
-sub-directory ```build/```.
+sub-directory `build/`.
 
 Go into the new sub-directory and execute the default ANT task in
 `build/build.xml` (e.g. execute `ant` in directory `build/`).
 
 This will copy some files into the Cordova-project's root directory
-(as well as some files into `hooks/before_build/`):
+(as well as some files into `hooks/before_prepare/`):
     
     build/
     mmir-build.properties
@@ -82,10 +82,10 @@ _NOTE_: You should replace the contents of `www/mmirf/` with a current version f
 
 ### Create A New Cordova Project (Cordova CLI)
 
-after creating a new Cordova project using ```cordova create DIR PACKAGE+APPNAME APPNAME```,
-change into the newly created project directory ```DIR```.
+after creating a new Cordova project using `cordova create DIR PACKAGE+APPNAME APPNAME`,
+change into the newly created project directory `DIR`.
 
-The contents of ```DIR``` should look something like:
+The contents of `DIR` should look something like:
 
     hooks/
     merges/
@@ -98,25 +98,33 @@ Now, in order to add the MMIR framework, do the following:
 
 1. add platforms, e.g. Android:
 
-   ```cordova platform add android```  
+   `cordova platform add android`
+
+   and you may also want to add the whitelist plugin
+   
+   `cordova-plugin-whitelist` _(the recommended whitelist plugin)__
+   
+   or
+   
+   `cordova-plugin-legacy-whitelist` _(the backwards-compatible whitelist plugin)__
    
 2. add plugin-dependencies 
    (i.e. Cordova plugins required by the MMIR framework; 
     for specific dependency details see below)
     
-   ```cordova plugin add org.apache.cordova.media```
+   `cordova plugin add cordova-plugin-media`
    
-   ```cordova plugin add org.apache.cordova.network-information```
+   `cordova plugin add cordova-plugin-network-information`
    
-   ```cordova plugin add org.apache.cordova.vibration```
+   `cordova plugin add cordova-plugin-vibration`
    
-3. edit ```config.xml```: the ```src``` attribute of the ```content``` tag should
+3. edit `config.xml`: the `src` attribute of the `content` tag should
    be modified to set the query parameter of the URL:
    ```xml
    <content src="index.html?env=cordova" />
    ```  
-  and add / modify other tags in ```config.xml``` as needed, e.g. set CORS filter
-  to allow HTTPS access to domain ```www.some-site.com```:
+  and add / modify other tags in `config.xml` as needed, e.g. set CORS filter
+  to allow HTTPS access to domain `www.some-site.com`:
    ```xml
    <access origin="https://www.some-site.com*"/>
    ``` 
@@ -126,20 +134,20 @@ Now, in order to add the MMIR framework, do the following:
 
   1. add the _SCION queue plugin_
      
-     ```cordova plugin add  https://github.com/mmig/mmir-plugin-scionqueue.git```
+     `cordova plugin add  https://github.com/mmig/mmir-plugin-scionqueue.git`
      
-  2. copy the [MMIR tooling][2] files into sub-directory ```build/```
-     of the newly created Cordova project at ```DIR```
-     * there should not exist a directory ```build/``` yet, so you should create it
-     * after copying the files into ```build/```, go into this new sub-direcotry and
-       exectue the default ANT build task from ```build/build.xml```.
-       This will copy some scripts into ```hooks/before_build``` as well as
-       several ANT build / configuration files into the root directory ```DIR```
-       (these will have the prefix ```mmir-``` in their file name):
+  2. copy the [MMIR tooling][2] files into sub-directory `build/`
+     of the newly created Cordova project at `DIR`
+     * there should not exist a directory `build/` yet, so you should create it
+     * after copying the files into `build/`, go into this new sub-direcotry and
+       exectue the default ANT build task from `build/build.xml`.
+       This will copy some scripts into `hooks/before_prepare` as well as
+       several ANT build / configuration files into the root directory `DIR`
+       (these will have the prefix `mmir-` in their file name):
        
        ```
        ...
-       hooks/before_build/**
+       hooks/before_prepare/**
        mmir-build.properties
        mmir-build.settingsDefault
        mmir-build.xml
@@ -147,46 +155,58 @@ Now, in order to add the MMIR framework, do the following:
        ...
        ```
      
-  3. copy the JavaScript application code and the main ```index.html``` into ```DIR/www```
+  3. copy the JavaScript application code and the main `index.html` into `DIR/www`
      (you can use the 
        [example index.html](https://github.com/mmig/mmir-cordova/blob/master/www-example/index.html) and 
        [app.js](https://github.com/mmig/mmir-cordova/blob/master/www-example/app.js)
       as starting point)
   
-  4. copy the the [MMIR-library][1] files into the sub-directory ```DIR/www/mmirf```
+  4. copy the the [MMIR-library][1] files into the sub-directory `DIR/www/mmirf`
+  
+  5. you may also want to add platform specific _speech modules_ for speech input (recognition)
+     and speech output (synthesis), e.g. the [Android Speech Plugin][4]:
      
-5. build the project for all installed platforms using the command ```cordova build```
+     `cordova plugin add  https://github.com/mmig/mmir-plugin-speech-android.git` 
+     
+    or the [Nuance Speech Plugin][5] (besides Android also supports iOS but
+    requires credentials, i.e. developer account ect.; see the plugin's
+    [README][6] file for more details)
+     
+5. build the project for all installed platforms using the command `cordova build`
 
-   NOTE: You may have to create / configure ```mmir-build.settings``` within the project's root
-         directory ```DIR```. If this file does not exist yet, it will be created automatically
-         as a copy of ```mmir-build.settingsDefault```. You may have to edit 
-         ```mmir-build.settings``` to match your build environment (see comments within the 
+   NOTE: You may have to create / configure `mmir-build.settings` within the project's root
+         directory `DIR`. If this file does not exist yet, it will be created automatically
+         as a copy of `mmir-build.settingsDefault`. You may have to edit 
+         `mmir-build.settings` to match your build environment (see comments within the 
          file for more information).
+         
+   NOTE: If you want to update the platforms (with changes you made in `/www`) without triggering
+         a complete build, you can use the command `cordova prepare`.
 
 --
 ### Use Cordova Platform-Specific Resources
 
 If, after the first build, you want to continue the development with platform-specific
-tools (i.e. only work on / modify resources located under the ```/platform``` directory
+tools (i.e. only work on / modify resources located under the `/platform` directory
 of the Cordova project), you can _transfer_ the build-tools for the MMIR framework / resources
 into the platform-specific sub-directories and use them there (see also the Cordova 
 documentation for more details about platform specific development).
 
 Firstly, copy the ANT build files and settings for MMIR (i.e. the files in the root directory
-with prefix  ```mmir-```) over to the root directory of the platform-specific project, along
-with the ```/build``` directory.
+with prefix  `mmir-`) over to the root directory of the platform-specific project, along
+with the `/build` directory.
 
-You may need to modify the settings in ```build.properties``` to match the platform-specific
+You may need to modify the settings in `build.properties` to match the platform-specific
 file structure.
 
 
 #### Android Platform
 
 For _Android_ you have to copy the files/directories into the
-platform-specific project in ```platform/android/```.
+platform-specific project in `platform/android/`.
 
-The you have to change the property ```baseDir``` in the file ```build.properties```.
-This property specifies the location for the web resources (i.e. the ```/www``` directory):
+The you have to change the property `baseDir` in the file `build.properties`.
+This property specifies the location for the web resources (i.e. the `/www` directory):
 change this from
 
     baseDir=./
@@ -195,13 +215,13 @@ to
 
     baseDir=assets/
     
-in order to specify, that the project's web resources can be found in directory ```assets/www```
+in order to specify, that the project's web resources can be found in directory `assets/www`
 of the platform-specific project.
 
 
 
-For Android, Cordova automatically generates ```build.xml``` and ```custom_rules.xml```. In order
-to integrate the MMIR build process, you can modify ```custom_rules.xml``` by adding the 
+For Android, Cordova automatically generates `build.xml` and `custom_rules.xml`. In order
+to integrate the MMIR build process, you can modify `custom_rules.xml` by adding the 
 following target:
 ```xml
 <target name="-pre-build">
@@ -211,8 +231,8 @@ following target:
 ```
 
 This will trigger the same build processes, as the _hooks_ in the (platform-independent) Cordova
-root project, that are triggered by using the command ```cordova build```
-(i.e. the hooks specified in ```hooks/before_build```).
+root project, that are triggered by using the command `cordova prepare` (or `cordova build`)
+(i.e. the hooks specified in `hooks/before_prepare`).
 
 #### xxxx Platform
 
@@ -220,11 +240,14 @@ TODO
 
 --
 ### License
-If not stated otherwise, files, resources from here are provided under the MIT license.
+If not stated otherwise, files, resources etc. from here are provided under the MIT license.
 
-Copyright (C) DFKI GmbH 2012 - 2014 
+Copyright (C) DFKI GmbH 2012 - 2016 
 
 [0]: https://github.com/mmig/mmir-cordova
 [1]: https://github.com/mmig/mmir-lib
 [2]: https://github.com/mmig/mmir-tooling
 [3]: http://ant.apache.org/
+[4]: https://github.com/mmig/mmir-plugin-speech-android
+[5]: https://github.com/mmig/mmir-plugin-speech-nuance
+[6]: https://github.com/mmig/mmir-plugin-speech-nuance/blob/master/README.md
