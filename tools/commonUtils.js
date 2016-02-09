@@ -367,6 +367,39 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    },
 	
 		    /**
+			 * Get the file path/name for a compiled grammar (executable JavaScript grammars).
+			 * 
+			 * @function
+			 * @param {String} generatedGrammarsPath Path of the grammars which should be loaded, e.g. <b>gen/grammar/</b> 
+			 * @param {String} grammarId the ID (e.g. language code) for the grammar
+			 * @param {Boolean} [isFileNameOnly] OPTIONAL
+			 * 					if TRUE then only the file name will be returned, otherwise the full path is returned
+			 * 
+		     * @returns {String} file path / name for the compiled grammar
+		     *                   (returns an empty string, if there is no compile grammar for the specified grammar ID)
+		     * 
+			 * @public
+	    	 * @memberOf mmir.CommonUtils.prototype
+			 */
+		    getCompiledGrammarPath : function(generatedGrammarsPath, grammarId, isFileNameOnly) {
+		    	var files = instance.getDirectoryContentsWithFilter(generatedGrammarsPath, "*.js");
+		    	if(!files){
+		    		return '';
+		    	}
+		    	var f, index, id;
+		    	for(var i=0,size=files.length; i < size; ++i){
+		    		f = files[i];
+		    		index = f.lastIndexOf('_');
+					if (index !== -1) {
+						id = f.substring(0, index);
+						if(id === grammarId){
+							return isFileNameOnly? files[i] : generatedGrammarsPath + files[i];
+						}
+					}
+		    	}
+		    	return '';
+		    },
+		    /**
 			 * Load all compiled grammars (executable JavaScript grammars).
 			 * 
 			 * @function
@@ -374,6 +407,8 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 			 * @param {Function} cbFunction The function that should be executed after the plugins are loaded. 
 			 * 					 If the execution of following functions is dependent on the presence of the grammars, 
 			 * 					 they should be triggered from inside the callback-function.
+			 * @param {Array<String>} [ignoreGrammarIds] OPTIONAL
+			 * 					grammar IDs that should be ignored, i.e. not loaded, even if there is a file available
 			 * 
 		     * @returns {Promise} a Deferred.promise (see loadImpl())
 		     * 
@@ -383,18 +418,24 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 			 * @public
 	    	 * @memberOf mmir.CommonUtils.prototype
 			 */
-		    loadCompiledGrammars : function(generatedGrammarsPath, cbFunction) {
+		    loadCompiledGrammars : function(generatedGrammarsPath, cbFunction, ignoreGrammarIds) {
 	
 				return instance.loadImpl(
 					generatedGrammarsPath,
 					false,
 					cbFunction,
 					function isGrammarAlreadyLoaded(grammarFileName) {
-						var i = grammarFileName.indexOf('_');
+						var i = grammarFileName.lastIndexOf('_');
 						if (i !== -1) {
-							return require('semanticInterpreter').hasGrammar(
-									grammarFileName.substring(0, i)
-							);
+							var id = grammarFileName.substring(0, i);
+							if(ignoreGrammarIds){
+								for(var p in ignoreGrammarIds){
+									if(ignoreGrammarIds.hasOwnProperty(p) && ignoreGrammarIds[p] == id){
+										return true;
+									}
+								}
+							}
+							return require('semanticInterpreter').hasGrammar(id);
 						} else {
 							return false;
 						}
@@ -404,6 +445,16 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 							if(logger.isInfo()) logger.info('CommonUtils', 'loadCompiledGrammars', 'loaded "'+ fileName + '": ' + msg);
 						}
 						else if (status === 'warning') {
+							
+							//filter "already loaded" warnings for ignored files:
+							if(ignoreGrammarIds && /already loaded/.test(msg)){
+								for(var p in ignoreGrammarIds){
+									if(ignoreGrammarIds.hasOwnProperty(p) && fileName.indexOf(ignoreGrammarIds[p]) === 0){
+										return;/////////////////////// EARLY EXIT ////////////////
+									}
+								}
+							}
+							
 							if(logger.isWarn()) logger.warn('CommonUtils', 'loadCompiledGrammars', 'loading "'+ fileName + '": ' + msg);
 						}
 						else if (status === 'error') {
