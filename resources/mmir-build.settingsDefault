@@ -78,6 +78,16 @@ nodeJsExec=node
 
 #
 #
+# ignore checksums for Grammar files (i.e. "out-of-date" check), i.e. if Grammars will be get compiled if checksum test fails
+# (which checks, if the JSON grammar definition has changed since last time that the checksum has been created)
+# 
+# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
+#          it to anything but true will leave this setting disabled)
+#
+#ignoreGrammarChecksum=true
+
+#
+#
 # force re-compilation / generation of JavaScript code for Dialog-/Input-Engine
 # (enable this, if you want to re-compile the SCXML files
 #  regardless of checksum-file status)

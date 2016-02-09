@@ -39,10 +39,10 @@ When the contents of this repository are located in the sub-directory
 
     /build
 
-of a Cordova 3.x (CLI generated) project, running the ANT task ```build.xml```
+of a Cordova 5.x (CLI generated) project, running the ANT task ```build.xml```
 of this repository (within the sub-directory, i.e. `build/build.xml`) will set
  up the resources (_"tooling"_) for building MMIR-based applications with
- Cordova 3.x:
+ Cordova 5.x:
     
     hooks/before_build/**
     mmir-build.properties

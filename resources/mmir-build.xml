@@ -423,6 +423,9 @@
            
 		    <string>
 		    	
+		    	//export require as requirejs:
+		    	var requirejs = require;
+		    	
 		        //set the framework's src-path from the build-properties file
                 //  (may be different than the default value in mainConfig.js)
                 var appSrcDir = '${jsSrcDirBase}';
@@ -598,18 +601,27 @@
 				<available 
 			    	file="${outDirCompiledGrammar}${grammarLanguageCode}_${outFileCompiledGrammar}"
 			    	property="is.up.to.date.grammarjs" />
-				<!-- 
-					check, if the JSON file has changed by its checksum
+				
+				<or>
+				    
+				    <!-- if ignoreGrammarGeneration is set to true,
+					     then the checksum/out-of-date check will be ignored.
+					-->
+					<istrue value="${ignoreGrammarChecksum}"/>
 					
-					NOTE: this uses the checksum-file that is created by the JavaScript code
-					      (which uses checksumUtils.js creating a file like: MD5<tab char><file size>)
-				-->
-				<checksum  
-			    	file="${grammarDefinitionJsonDir}${grammarLanguageCode}/${grammarDefinitionJsonFile}"
-			    	toDir="${outDirCompiledGrammar}"
-			    	fileExt="_${grammarLanguageCode}.checksum.txt"
-			    	pattern="{0}&#09;"
-			    	verifyProperty="is.up.to.date.grammarjs"/>
+					<!-- 
+						check, if the JSON file has changed by its checksum
+						
+						NOTE: this uses the checksum-file that is created by the JavaScript code
+						      (which uses checksumUtils.js creating a file like: MD5<tab char><file size>)
+					-->
+					<checksum 
+				    	file="${grammarDefinitionJsonDir}${grammarLanguageCode}/${grammarDefinitionJsonFile}"
+				    	toDir="${outDirCompiledGrammar}"
+				    	fileExt="_${grammarLanguageCode}.checksum.txt"
+				    	pattern="{0}&#09;"
+				    	verifyProperty="is.up.to.date.grammarjs"/>
+				</or>
 				
 				<not>
 					<istrue value="${forceGrammarGeneration}"/>
