@@ -37,32 +37,8 @@
 #
 #
 # (3) DEFAULT setting for globally executable NodeJS
-#             NOTE: this may trigger a prompt with a warning in ANT tasks.
-#                   If you want to avoid the prompt, either
-#                   * specify property 
-#                       doIgnoreMissingNodeJsPath
-#                     and set it to true (see below)
-#                   * or configure property
-#                       nodeJsDir
-#                     with the correct path (see examples above).
-#                      Note that in case of Windows you
-#                       also have to specify / add the file
-#                       extension (*.exe) in property 
-#                          nodeJsExec
-#                       when specifying the path.
 nodeJsDir=
 nodeJsExec=node
-
-
-#
-# manually disable check, if NodeJS path is accessible 
-# (enable this, if you have configured NodeJS to be 
-#  executable globally)
-#
-# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
-#          it to anything but true will leave this setting disabled)
-#
-#doIgnoreMissingNodeJsPath=true
 
 
 ########################## Force / Ignore Generation of Resources ###########################
@@ -77,46 +53,22 @@ nodeJsExec=node
 #forceGrammarGeneration=true
 
 #
-#
-# ignore checksums for Grammar files (i.e. "out-of-date" check), i.e. if Grammars will be get compiled if checksum test fails
-# (which checks, if the JSON grammar definition has changed since last time that the checksum has been created)
-# 
-# DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
-#          it to anything but true will leave this setting disabled)
-#
-#ignoreGrammarChecksum=true
-
-#
-#
-# force re-compilation / generation of JavaScript code for Dialog-/Input-Engine
-# (enable this, if you want to re-compile the SCXML files
+# force re-compilation / generation of compiled views
+# (enable this, if you want to re-compile the eHTML views 
 #  regardless of checksum-file status)
 #
 # DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
 #          it to anything but true will leave this setting disabled)
 #
-# NOTE: compilation of Dialog-/Input-Engine into JavaScript files is not necessary any more
-#       for running MMIR apps. Compiling these files is strictly for DEBUG purposes, e.g. 
-#       checking if the SCXML file contains syntax errors and getting details information
-#       (line / column) where these errors are located in the file.
-#
-#forceDialogEngineCompilation=true
-#forceInputEngineCompilation=true
+#forceViewGeneration=true
 
 #
 #
-# prevent re-compilation / generation of JavaScript code for Dialog-/Input-Engine
-# (enable this, if you want to prevent re-compilation of the SCXML files
-#  even if the checksum-file status signals changed content, or the JavaScript 
-#  files do not exist)
+# prevent validation for Dialog-/Input-Engine SCXML files
+# (enable this, if you want to prevent validation of the SCXML files)
 #
 # DEFAULT: setting is disabled (i.e. not defined; alternatively, setting
 #          it to anything but true will leave this setting disabled)
 #
-# NOTE: compilation of Dialog-/Input-Engine into JavaScript files is not necessary any more
-#       for running MMIR apps. Compiling these files is strictly for DEBUG purposes, e.g. 
-#       checking if the SCXML file contains syntax errors and getting details information
-#       (line / column) where these errors are located in the file.
-#
-#ignoreDialogEngineCompilation=true
-#ignoreInputEngineCompilation=true
+#ignoreDialogEngineValidation=true
+#ignoreInputEngineValidation=true

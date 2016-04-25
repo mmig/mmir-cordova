@@ -38,6 +38,7 @@ is missing, you should run `npm install` in `PROJECT_PATH/doc` in order to insta
  * jsdoc3
  * jsdoc2 (node-jsdoc-toolkit)
  * template docstrap for jsdoc3
+ * template jaguarjs for jsdoc3
 
 
 Ideally, you should use the latest jsdoc3 version >= v3.4.0-dev;
