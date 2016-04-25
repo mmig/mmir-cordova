@@ -1,5 +1,5 @@
 ﻿/*
- * 	Copyright (C) 2012-2013 DFKI GmbH
+ * 	Copyright (C) 2012-2016 DFKI GmbH
  * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
  * 	German Research Center for Artificial Intelligence
  * 	http://www.dfki.de
@@ -33,8 +33,8 @@ importScripts('asyncCompileUtil.js');
 var pegjs;
 function _init(url){
 	
-	var libUrl = '../../' + url +'.js';
-	importScripts(libUrl);//'../vendor/libs/peg-0.8.0.js');
+	var libUrl = getPath(url) +'.js';
+	importScripts(libUrl);//'../vendor/libs/peg-x.x.x.js');
 
 	//set global var that holds jison
 	pegjs = PEG;

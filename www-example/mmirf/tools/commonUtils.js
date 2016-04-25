@@ -260,32 +260,13 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    regexHTMLComment : /<!--([\r\n]|.)*?-->/igm,
 	
 		    /**
-		     * Similar to the jQuery.getScript() function - appending a url of a
-		     * javascript-source to the header of the main document.<br>
-		     * This function also calls a callback if the script was loaded.
+		     * Same as <code>getLocalScript</code>
 		     * 
-		     * @function
-		     * @param {String}
-		     *            url source of javascript-file
-		     * @param {Function}
-		     *            callback callback function
-		     * @public
-		     * @async
-		     * @deprecated instead use  #getLocalScript()
+		     * @see #getLocalScript
 	    	 * @memberOf mmir.CommonUtils.prototype
 		     */
-		    loadScript : function(url, callback) {
-				var script = document.createElement("script");
-				script.type = "text/javascript";
-				script.src = url;
-	
-				if (typeof callback === 'function') {
-					/** @ignore */
-					script.onload = function() {
-					callback();
-					};
-				}
-				document.getElementsByTagName("head")[0].appendChild(script);
+		    loadScript : function(url, successCallback, errorCallback) {
+				return this.getLocalScript.apply(this, arguments);
 		    },
 	
 		    /**
@@ -594,7 +575,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 							_defer.resolve();
 						};
 					
-						/// ATTENTION: $.getScript --> mobileDS.CommonUtils.getInstance().getLocalScript
+						/// ATTENTION: $.getScript --> mmir.CommonUtils.getLocalScript
 						/// under Android 4.0 getScript is not wokring properly
 						instance.getLocalScript(librariesPath+fileName, 
 							function(){
@@ -726,7 +707,10 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 				script.onload = function() {
 					if(success){
 						success.apply(this, arguments);
-					} 
+					}
+					else {
+						logger.debug('CommonUtils', 'getLocalScript', 'Successfully loaded script from ' + this.src)
+					}
 				};
 				script.onerror = function(e) {
 					if(fail){
@@ -823,8 +807,8 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		     * This function can be savely run in arbirtray contexts, e.g.
 		     * 
 		     * <pre>
-		     *  var checkArray = mmir.CommonUtils.getInstance().isArray;
-		     * if( checkArray(someObject) ){
+		     *  var checkArray = mmir.CommonUtils.isArray;
+		     *  if( checkArray(someObject) ){
 		     *   ...
 		     * </pre>
 		     * 
@@ -887,118 +871,6 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 						$(box).css('font-size', smallest_font);
 					});
 				});
-		    },
-	
-		    /**
-		     * Converts the object to a valid JSON String value.
-		     * 
-		     * Ensures that the returned value does not contain (un-escaped)
-		     * double-quotes, so that the returned value can be used as a JSON
-		     * value, e.g. </br>
-		     * 
-		     * @function
-		     * @param {Object}
-		     *            theObjectValue the object to convert to a JSON String
-		     *            value. If NULL or UNDEFINED, an EMPTY String will be
-		     *            returned
-		     * @returns {String} the String value
-		     * @public
-	    	 * @memberOf mmir.CommonUtils.prototype
-	    	 * 
-		     * @example
-		     *  var jsonValue = mmir.CommonUtils.toJSONStringValue(someValue);
-		     *  var data = JSON.parse('"theValue":"' + jsonValue + '"');
-		     */
-		    toJSONStringValue : function(theObjectValue) {
-				if (typeof theObjectValue !== 'undefined' && theObjectValue !== null) {
-					if (typeof theObjectValue !== 'string') {
-						theObjectValue = theObjectValue.toString();
-					}
-					theObjectValue = theObjectValue.escapeDoubleQuotes();
-				}
-				else {
-					theObjectValue = '';
-				}
-				return theObjectValue;
-		    },
-	
-		    /**
-		     * Converts the object to a valid JSON String value.
-		     * 
-		     * Ensures that the returned value does not contain (un-escaped)
-		     * double-quotes, so that the returned value can be used as a JSON
-		     * value, also does replace all newlines with the HTML-equivalent
-		     * '&lt;br/&gt;', e.g.
-		     * 
-		     * @function
-		     * @param {Object}
-		     *            theObjectValue the object to convert to a JSON String
-		     *            value. If NULL or UNDEFINED, an EMPTY String will be
-		     *            returned
-		     * @returns {String} the String value
-		     * @public
-	    	 * @memberOf mmir.CommonUtils.prototype
-	    	 * 
-		     * @example 
-		     *  var jsonValue = mmir.CommonUtils.convertJSONStringValueToHTML(someValue);
-		     *  var data = JSON.parse('"theValue":"' + jsonValue + '"');
-		     *  ...
-		     */
-		    convertJSONStringValueToHTML : function(str) {
-				if (typeof str !== 'undefined' && str !== null) {
-				
-					if (typeof str !== 'string') {
-						str = str.toString();
-					}
-					// escape double-quotes, if necessary
-					// replace (all variants of) newlines with HTML-newlines
-					str = str.escapeDoubleQuotes().replaceAll('\r\n', '<br/>')
-							.replaceAll('\n', '<br/>')
-							.replaceAll('\r', '<br/>');
-				} else {
-					str = '';
-				}
-				return str;
-	
-		    },
-	
-		    /**
-		     * Converts the object's direct properties to a valid JSON String
-		     * (i.e. no recursion for Object properties).
-		     * 
-		     * @function
-		     * @param {Object}
-		     *            _o the object to convert to a JSON String.
-		     * @returns {String} the String value
-		     * @public
-	    	 * @memberOf mmir.CommonUtils.prototype
-		     */
-		    convertJSONStringToHTML : function(_o) {
-				// var parse = function(_o){
-				var a = new Array(), t;
-				for ( var p in _o) {
-					if (_o.hasOwnProperty(p)) {
-						t = _o[p];
-						if (t != null) {
-							if (t && typeof t == "object") {
-								a[a.length] = p + ":{ " + arguments.callee(t).join(", ") + "}";
-							}
-							else {
-								if (typeof t == "string") {
-									a[a.length] = [ p + ": \"" + t.toString() + "\"" ];
-								} 
-								else {
-									a[a.length] = [ p + ": " + t.toString() ];
-								}
-							}
-						}
-					}
-				}
-				// return a;
-				// };
-				// return "{" + parse(o).join(", ") + "}";
-	
-				return "{" + a.join(", ") + "}";
 		    },
 	
 		    /**
@@ -1158,38 +1030,24 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    
 			init: function(success, errorFunc){
 				
-				return this.loadDirectoryStructure.apply(this, arguments);
+				var initPromise;
 				
-//				var _defer = $.Deferred();
-//				var self = this;
-//				
-//				if(success){
-//					_defer.done(success);
-//				}
-//				if(errorFunc){
-//					_defer.fail(errorFunc);
-//				}
-//				
-//				window.plugins.directoryListing.getDirectoryStructure(
-//					directoriesToParse,
-//					function(dirStruct){
-//						
-//						self.directoryStructure = dirStruct;
-//						
-//						if (!success){
-//							logger.info("[getDirectoryStructure] finished: " + JSON.stringify(dirStruct));//debug
-//						}
-//						_defer.resolve(instance);
-//					}, 
-//					function(e){
-//						if (!errorFunc){
-//							logger.error("ERROR [getDirectoryStructure]: " + e);
-//						}
-//						_defer.fail(e);
-//					}
-//				);
-//				
-//				return _defer.promise();
+				//use the Deferred from load-dir-struct, since this is the only async initialization atm:
+				initPromise = this.loadDirectoryStructure.apply(this, arguments);
+				
+				//replace init so that we do not ivoke load-dir-struct multiple times
+				this.__initDeferred = initPromise;
+				this.init = function initCompleted(onsuccess, onerror){
+					if(onsuccess){
+						this.__initDeferred.done(success);
+					}
+					if(onerror){
+						this.__initDeferred.fail(errorFunc);
+					}
+					return this.__initDeferred;
+				};
+				
+				return initPromise;
 			}
 		    
 		    /**
