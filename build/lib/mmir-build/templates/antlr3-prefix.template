@@ -1,0 +1,16 @@
+
+	//for some reason, nodejs will fail, because these namespaces are not created in time (i.e. before accessed)
+	var org = org || {};
+	if (typeof org.antlr === "undefined" || !org.antlr) {
+		org.antlr = {};
+	}
+	if (typeof org.antlr.runtime == "undefined" || !org.antlr.runtime) {
+		org.antlr.runtime = {};
+	}
+	if (typeof org.antlr.runtime.tree == "undefined" || !org.antlr.runtime.tree) {
+		org.antlr.runtime.tree = {};
+	}
+	
+	//NOTE parsingResult is a "named" dependency for this module 
+	//     -> use initializer for making this module available in parsingResult
+	parsingResult._nsParserInit(org);

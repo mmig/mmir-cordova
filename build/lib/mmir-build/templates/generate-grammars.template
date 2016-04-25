@@ -1,0 +1,110 @@
+
+{!InitNodeJsEnv|s!}
+{!InitGrammarGeneratorNodeJsEnv|s!}
+{!NodeJsFileHandler|s!}
+
+{ChecksumHandler|s}
+
+//export require as requirejs:
+var requirejs = require;
+
+//set the framework's src-path from the build-properties file
+//  (may be different than the default value in mainConfig.js)
+var appSrcDir = '{jsSrcDirBase|s|url}';
+require.config({
+	baseUrl: './' + appSrcDir,
+	paths: {'core': 'core'}
+});
+
+require(['core'], function(core){
+
+//	//define "auto-start" module for starting the template processing
+//	// (gets triggered after main-config for requirejs is was applied)
+//	definejs('doStartBuildProc', function(){
+//		//now: do start the build process:
+//		doStartGrammarBuildEnv();
+//	});
+//	core.startModule = 'doStartBuildProc';
+	
+	//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
+	core.logTrace = false;
+	
+	//load main-config for requirejs
+	// (also triggers the auto-start module)
+	doLoadAppConfig();
+});
+
+//apply main-config for requirejs 
+// (need to pass in requirejs' define as argument "define")
+function doLoadAppConfig(){
+
+	require.config({_buildConfig|s});
+	
+	require(['core', 'logger'], function(core){
+//		require([core.startModule]);
+		doStartGrammarBuildEnv();
+	});
+
+}
+
+
+////setup and init Jison
+//var _bnf;
+//(function(){
+//	
+//{!jison|s!}
+//	
+//	_bnf = bnf;
+//	definejs('jison',  function(){ return Jison; });
+//						
+//})();
+
+//encapsule build-process (gets triggered after build-paths are configured; see above)
+function doStartGrammarBuildEnv(){
+
+	definejs('jsonlint', function(){
+
+{!-- ... and an AMD module for the jsonlint parser ... !}
+{jsonlint_parser|s}
+
+		return jsl.parser;
+	});
+					
+	var checksumUtils;	    		
+	var jsl;
+	
+	// * load dependencies (SemanticInterpreter, jQuery) 
+	// * setup JSON parser (for creating detailed error messages)
+	// * initialize checksum-utils (with loaded dependencies)
+	require(['constants', 'jqueryajax'], function(constants){
+
+		//fix base-dir location (since we do not execute from the main web-directory)
+		constants.init('{baseDir|s|url}www/');
+
+		require(['md5', 'jison', 'jsonlint', 'jquery', 'checksumUtils', 'pegjs', 'semanticInterpreter','configurationManager'], function(md5Impl, jison, jsonlint, jquery, checksumUtils){
+			
+			
+//			var bnf = _bnf;
+			var Jison = jison;
+			
+			jsl = {
+				parser: jsonlint
+			};
+			
+			//load deferred-impl. via node's require function:
+			var jqueryDeferred = jqueryDeferred || requiren(jqueryDeferredModuleUri);
+			
+			//attach deferred-impl. to jquery:
+			jqueryDeferred.extend(jquery, jqueryDeferred);
+			
+//			checksumUtils = require('checksumUtils');
+			checksumUtils.init( md5Impl );
+			
+			//start the standalone-grammar parser / generator: 
+			
+{StandaloneSemanticParserCompileExec|s}
+
+		});
+	});
+	
+}//END: doStartBuild(){..

@@ -108,7 +108,7 @@ function saveToFile(str, path, doNotOverWrite, doCreateMissingDirectories){
 	
 	if(isDebugOutput) console.log('writing: file exists (overwriting)? '+FILE_SYSTEM.existsSync(path));
 	
-	if(doNotOverWrite && FILE_SYSTEM.existsSync(path)){
+	if(doNotOverWrite && fileExists(path)){
 		return false;//////////////////////// EARLY EXIT ///////////////////////
 	}
 	
@@ -128,6 +128,11 @@ function saveToFile(str, path, doNotOverWrite, doCreateMissingDirectories){
 	
 	console.log('wrote String (len '+str.length+') to file: '+path);
 	return true;
+}
+
+
+function fileExists(path){
+	return FILE_SYSTEM.existsSync(path);
 }
 
 if(typeof definejs !== 'undefined'){
