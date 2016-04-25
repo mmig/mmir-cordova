@@ -40,7 +40,7 @@ var mmirf_config = {
  	    , 'main': 'main'
  	    
 	    // lib
- 	    , 'jquery': 'vendor/libs/jquery-2.1.3'
+ 	    , 'jquery': 'vendor/libs/jquery-2.2.3'
  	    , 'scion': 'vendor/libs/scion-amd'
 	    
 	    // globals and AMDs
@@ -76,7 +76,7 @@ var mmirf_config = {
 	    , 'jqmViewEngine': 'env/view/jqmViewEngine'
 	    
 	    //dependencies for the jqmViewEngine (NOTE these may not be loaded, if jqmViewEngine is not loaded)
-		, 'jqm' : 			'vendor/libs/jquery.mobile-1.4.3'
+		, 'jqm' : 			'vendor/libs/jquery.mobile-1.4.5'
 		, 'jqmSimpleModal':	'vendor/libs/jquery.simplemodal-1.4.4'
 		
 		, 'waitDialog':		'tools/stdlne-wait-dlg'
@@ -130,7 +130,7 @@ var mmirf_config = {
 		, 'asyncGrammar': 'semantic/asyncGrammar'
 		, 'jscc':  'vendor/libs/jscc-amd'
 		, 'jison': 'vendor/libs/jison'
-		, 'pegjs': 'vendor/libs/peg-0.8.0'
+		, 'pegjs': 'vendor/libs/peg-0.9.0'
 		, 'asyncGen': 'env/grammar/asyncGenerator'
 		, 'jsccGen': 'env/grammar/jsccGenerator'
 		, 'jsccAsyncGen': 'env/grammar/jsccAsyncGenerator'
@@ -147,6 +147,7 @@ var mmirf_config = {
 		//utility function for loading LINK tags (i.e. CSS files) into the current document
 		, 'loadCss' : 'tools/loadCss'
 
+		, 'jsonUtils' : 'tools/extensions/JsonUtils'
 	    , 'commonUtilsCompatibility' : 'tools/extensions/CommonUtilsCompatibility'
 	    , 'languageManagerCompatibility' : 'tools/extensions/LanguageManagerCompatibility'
 	    
@@ -155,20 +156,20 @@ var mmirf_config = {
 	shim : {
 		
 		/** @memberOf mmir.require.config.shim */
-	    'antlr3':         {exports : 'org'}
+	    'antlr3':			{deps: ['parsingResult'], exports : 'org'}
 		
 		, 'md5':            {exports : 'CryptoJS'}
 		
 		, 'pegjs':       	{exports: 'PEG'}
 		
-		, 'ES3Lexer':       {deps: ['antlr3'], exports: 'ES3Lexer'}
-		, 'ES3Parser':      {deps: ['antlr3'], exports: 'ES3Parser'}
-    	, 'scriptLexer':    {deps: ['antlr3'], exports: 'MmirScriptLexer'}
-    	, 'scriptParser':   {deps: ['antlr3'], exports: 'MmirScriptParser'}
-    	, 'contentLexer':   {deps: ['antlr3'], exports: 'MmirScriptContentLexer'}
-    	, 'contentParser':  {deps: ['antlr3'], exports: 'MmirScriptContentParser'}
-    	, 'templateLexer':  {deps: ['antlr3'], exports: 'MmirTemplateLexer'}
-    	, 'templateParser': {deps: ['antlr3'], exports: 'MmirTemplateParser'}
+		, 'ES3Lexer':       {deps: ['antlr3'], init: function(org){ return ES3Lexer;} }
+		, 'ES3Parser':      {deps: ['antlr3'], init: function(org){ return ES3Parser;} }
+    	, 'scriptLexer':    {deps: ['antlr3'], init: function(org){ return MmirScriptLexer;} }
+    	, 'scriptParser':   {deps: ['antlr3'], init: function(org){ return MmirScriptParser;} }
+    	, 'contentLexer':   {deps: ['antlr3'], init: function(org){ return MmirScriptContentLexer;} }
+    	, 'contentParser':  {deps: ['antlr3'], init: function(org){ return MmirScriptContentParser;} }
+    	, 'templateLexer':  {deps: ['antlr3'], init: function(org){ return MmirTemplateLexer;} }
+    	, 'templateParser': {deps: ['antlr3'], init: function(org){ return MmirTemplateParser;} }
     	
     	//dependencies for jqmViewEngine (may not be loaded if jqmViewEngine is not loaded)
     	, 'jqm': ['jquery']
