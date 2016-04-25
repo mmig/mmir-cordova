@@ -25,5 +25,7 @@ fs.readFile(jsdoc2Run, 'utf8', function (err, data) {
   fs.writeFile(jsdoc2Run, result, 'utf8', function (err) {
      if (err) return console.log(err);
   });
+
+  console.log('fixed '+jsdoc2Run+'.\n');
   
 });

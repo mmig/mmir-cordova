@@ -1,5 +1,5 @@
-Mozilla Rhino (majority of code is under Mozilla Public License 2.0)
-* js-14.jar
+Mozilla Rhino (majority of code is under Mozilla Public License 2.0); version 1.7r5
+* js.jar
 
 ANTLR
 * antlr-3.3-complete.jar
@@ -18,9 +18,23 @@ Apache Batik (Apache License 2.0)
 requirejs (MIT and/or BSD license: cf. comment/license notice in file)
 * r.js
 
-jquery-deferred for NodeJS (MIT license: cf. Readme.md file)
+jquery-deferred for Node.js (MIT license: cf. Readme.md file)
 * nodejs-jquery-deferred/*
 
 jsonlint (MIT license: cf. comments in *.js files)
 * jsonlint.parser.js
 * jsonlint.parser.min.js
+
+dust for Node.js (MIT license: cf. LICENSE file)
+* nodejs-dust/*
+  (NOTE: slightly modified by DFKI/russa file /lib/server.js; original file included at /lib/server.js_ORIGINAL)
+
+properties for Node.js (MIT license: cf. LICENSE file)
+* nodejs-properties/*
+
+xmldom for Node.js (MIT license: cf. LICENSE file)
+* nodejs-xmldom/*
+  (NOTE with modification see https://github.com/mmig/xmldom/tree/fix-empty-line-parsing)
+
+esprima for Node.js (BSD license: cf. LICENSE.BSD file)
+* nodejs-esprima/*

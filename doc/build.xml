@@ -64,6 +64,12 @@
 		<delete file="${dir.out.jsdoc}3"/>
 	</target>
 	
+	<target name="cleanDepDoc" description="delete (temporary) dependency documentation files">
+		<echo>Clearing files for dependency documentations</echo>
+		<delete file="${dep.doc.working.dir}${dep.doc.temp.config.file}"/>
+		<delete file="${dep.doc.working.dir}${dep.doc.output.file}"/>
+	</target>
+	
 	<!-- ############# Execute JSDoc ############# -->
 	
 	<target name="jsdoc2" 
@@ -99,4 +105,22 @@
 		
 	</target>
     
+	<!-- ############# Create Dependency (HTML) Doc File ############# -->
+	
+	<target name="docdep" 
+		depends="init,cleanDepDoc" 
+		description="Create HTML file for documenting (file) dependencies">
+		
+	    
+
+		<echo message="Running dependo script ${dep.doc.generator.script} with arguments " />
+		<exec executable="${exec.nodejs}" dir="${dep.doc.working.dir}" failonerror="true">
+			<arg line="${dep.doc.generator.script}"/>
+			<arg line="${dep.doc.mmirf.base.dir}"/>
+            <arg line="${dep.doc.target.dir}"/>
+            <arg line="${dep.doc.temp.config.file}"/>
+			<arg line="${dep.doc.output.file}"/>
+        </exec>
+		
+	</target>
 </project>
