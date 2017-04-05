@@ -6,8 +6,8 @@
 * the same context.
 * 
 *
-* This looks in @description and @classdesc tags only.
-* In addition, @see tags are either processed as 
+* This looks in @description (and @param's description) and @classdesc tags only.
+* In addition, @see tags and @fires (and type of @param) are either processed as 
 * "single links" (i.e. '#x', '.x', or '~x') or as
 * "description text" (i.e. containing {@link #x}).
 * 
@@ -19,7 +19,7 @@ var path = require('path');
 function expandLinks (text, scope) {
 
 	var isModified = false;
-	var returnValue = text.replace(/\{\s*@link\s+([#.~])([\w$]+)\s*\}/g, function (m, mod, name) {
+	var returnValue = text.replace(/\{\s*@link\s+([#.~])([\w$:]+)\s*\}/g, function (m, mod, name) {
 		isModified = true;
         return "{@link " + scope + mod + name + "|" + name + "}";
     });
@@ -43,7 +43,7 @@ function expandSeeTagPath(text, scope) {
 	// #some
 	// .some
 	// ~some
-	var returnValue = text.replace(/(^|\s)([#.~])([\w$]+)($|\s)/g, function (m, s1, mod, name, s2) {
+	var returnValue = text.replace(/(^|\s)([#.~])([\w$:]+)($|\s)/g, function (m, s1, mod, name, s2) {
 		isModified = true;
 //		//return "plain" expanded path:
 //        return s1 + scope + mod + name + s2;
@@ -67,8 +67,19 @@ function getScope(doclet){
 	return '';
 }
 
+// (doclet, p, scope) where p is index/name of target in doclet
+// (text, scope)
 function processDescriptionText(doclet, p, scope){
-	var t = doclet[p];
+	
+	var t;
+	if(typeof doclet === 'string'){
+		t = doclet;
+		//shift argument:
+		scope = p;
+	} else {
+		t = doclet[p];
+	}
+	
 	var isModified = false;
 	var modText;
 	if (t) {
@@ -81,24 +92,13 @@ function processDescriptionText(doclet, p, scope){
 	return isModified;
 }
 
-exports.handlers = {};
-exports.handlers.newDoclet = function (e) {
-
-    var doclet = e.doclet;
-	var scope = getScope(doclet);
-	if(!scope){
-		return; /////////// EARLY EXIT ////////////////
-	}
-	
-	var modText, t, ts;
-	processDescriptionText(doclet, 'description', scope);
-	processDescriptionText(doclet, 'classdesc', scope);
-	
-	//see-tag:
+function processLineTag(tagName, doclet, scope, preprocFunc){
+	//line tag (e.g. @see):
 	// * process Array of Strings
 	// * process either as comment text (i.e. text with {@link} elments
 	// * ... or process see-tag as "single symbolic path" (i.e. no free text, only a symbolic link / path)
-	t = doclet['see'];
+	var modText, ts, text;
+	var t = doclet[tagName];
 	if (t) {
 		
 		if(typeof t !== 'string'){
@@ -117,19 +117,81 @@ exports.handlers.newDoclet = function (e) {
 			return; /////////// EARLY EXIT ////////////
 		}
 		
-		doclet['see'] = ts;
+		doclet[tagName] = ts;
 		
 		for(var i=0,size=ts.length; i < size; ++i){
-			if( ! processDescriptionText(ts, i, scope)){
-				modText = expandSeeTagPath( ts[i], scope );
+			text = preprocFunc? preprocFunc(ts[i]) : ts[i];
+			if( ! processDescriptionText(text, scope)){
+				modText = expandSeeTagPath(text, scope);
 				if(modText){
-					doclet['see'][i] = modText;
+					doclet[tagName][i] = modText;
 				}
 			}
 		}
-		
-		
 	}
+}
+
+function processParamsTag(params, scope){
+	
+//	params: Array of
+//	  {
+//        "type": { "names": [ STRING ] },
+//        "description": STRING
+//        "name": STRING
+//    }
+	
+	var param, modText, j, len, types;
+	var t = params;
+	if (params && params.length > 0) {
+			
+		for(var i=0,size=params.length; i < size; ++i){
+			
+			param = params[i];
+			
+			//1. description
+			processDescriptionText(param, 'description', scope);
+			
+			//2. type
+			if(param.type && param.type.names){
+				types = param.type.names;
+				for(j=0, len = types.length; j < len; ++j){
+					modText = expandSeeTagPath(types[j], scope);
+					if(modText){
+						types[j] = modText;
+					}
+				}
+			}
+		}
+	}
+}
+
+exports.handlers = {};
+exports.handlers.newDoclet = function (e) {
+
+    var doclet = e.doclet;
+	var scope = getScope(doclet);
+	if(!scope){
+		return; /////////// EARLY EXIT ////////////////
+	}
+	
+	var modText, t, ts;
+	processDescriptionText(doclet, 'description', scope);
+	processDescriptionText(doclet, 'classdesc', scope);
+	
+	//process line-tags with links (e.g. see, fire, ...):
+	// * process Array of Strings
+	// * process either as comment text (i.e. text with {@link} elements
+	// * ... or process line-tag as "single symbolic path" (i.e. no free text, only a symbolic link / path)
+	processLineTag('see', doclet, scope);
+	processLineTag('fires', doclet, scope, function preprocess(text){
+		if(/^event:/.test(text)){
+			return '#' + text;
+		}
+		return text;
+	});
+	
+	//process params
+	processParamsTag(doclet.params, scope);
 	
 	//original impl.:
     // ['description', 'classdesc', 'see'].forEach(function (p) {
@@ -142,9 +204,3 @@ exports.handlers.newDoclet = function (e) {
     // });
 
 };
-
-////FIXM DEBUG and TEST:
-//console.log('initialized plugin for short symbolic names...');
-//try{
-//	throw new Error('debug');//<- use this to catch the Error in the debugger...
-//} catch(e){}

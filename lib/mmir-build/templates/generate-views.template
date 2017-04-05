@@ -23,7 +23,7 @@ var mmir;
 //set the framework's src-path from the build-properties file
 //  (may be different than the default value in mainConfig.js)
 var appSrcDir = '{jsSrcDirBase|s|url}';
-require.config({
+var reqInstance = require.config({
 	baseUrl: './' + appSrcDir,
 	paths: {'core': 'core'}
 });
@@ -49,7 +49,10 @@ core.LanguageManager = {};
 core.LanguageManager.getInstance = function dummyLangMang (){ return core.LanguageManager; };
 core.LanguageManager.getText = function dummyGetText (id) {return 'dummy-text-'+id;};
 core.LanguageManager.getLanguage = function dummyGetLang () {return 'NA';};
-					
+
+core.require = reqInstance;
+//core._define = define;
+
 doLoadAppConfig(require.define);
 });
 

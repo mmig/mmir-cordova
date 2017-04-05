@@ -11,7 +11,7 @@ var requirejs = require;
 //set the framework's src-path from the build-properties file
 //  (may be different than the default value in mainConfig.js)
 var appSrcDir = '{jsSrcDirBase|s|url}';
-require.config({
+var reqInstance = require.config({
 	baseUrl: './' + appSrcDir,
 	paths: {'core': 'core'}
 });
@@ -28,6 +28,9 @@ require(['core'], function(core){
 	
 	//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
 	core.logTrace = false;
+	
+	core.require = reqInstance;
+	//core._define = define;
 	
 	//load main-config for requirejs
 	// (also triggers the auto-start module)
@@ -79,7 +82,7 @@ function doStartGrammarBuildEnv(){
 	require(['constants', 'jqueryajax'], function(constants){
 
 		//fix base-dir location (since we do not execute from the main web-directory)
-		constants.init('{baseDir|s|url}www/');
+		constants.init('{appRootDir|s|url}');
 
 		require(['md5', 'jison', 'jsonlint', 'jquery', 'checksumUtils', 'pegjs', 'semanticInterpreter','configurationManager'], function(md5Impl, jison, jsonlint, jquery, checksumUtils){
 			

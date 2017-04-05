@@ -6,7 +6,12 @@
         "includePattern": ".+\\.js(doc)?$",
         "excludePattern": "((^|\\/|\\\\)_)|((\\/|\\\\)node_modules)|((\\/|\\\\)vendor)"
     },
-    "plugins": ["./../../plugins/short-symbolic-links", "./../../plugins/convert-atag-links-in-see-tag"],
+    "plugins": [
+	    "./../../plugins/short-symbolic-links",
+	    "./../../plugins/convert-atag-links-in-see-tag",
+	    "./../../plugins/copydoc-tag-def",
+	    "./../../plugins/copydoc-process"
+	],
     "templates": {
         "cleverLinks": true,
         "monospaceLinks": true,
