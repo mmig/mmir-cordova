@@ -27,8 +27,13 @@ var getModuleHacks = require('./../nodejs/GetModuleHacks.js');
 //to project's root (which contains /www, /build etc)
 var rootPath = path.join(__dirname, '..', '..', '..', '..');//<- 4 steps up, since this file is located at <root>/bin/lib/mmir-build/nodejs
 
+var webAppSubDir = '/www/mmirf/';//<- default value
+if(process.argv.length >= 3){
+	webAppSubDir = process.argv[2].trim();//<- use first argument as webAppSubDir
+}
+
 //path to the mmir framework (from project's root)
-var baseUrl = rootPath + '/www/mmirf/';
+var baseUrl = path.join(rootPath, webAppSubDir).replace(/\\/, '/') + '/';//<- normalize baseUrl, so that / is used as separator and so it ends with /
 var configFileName = 'mainConfig.js';
 //path where the "converted shims", i.e. AMD modularized versions of the libraries should be stored
 var buildUrl = rootPath + '/build/lib/mmir-build/mod/';
@@ -39,7 +44,7 @@ var nl = '\n';
 
 ///////////////////////////////// start conversion code: //////////////////////////////////
 
-var config = getConfig(baseUrl + configFileName);
+var config = getConfig( path.join(baseUrl, configFileName) );
 
 //console.log(config.shim);
 

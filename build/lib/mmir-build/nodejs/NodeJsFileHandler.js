@@ -132,7 +132,12 @@ function saveToFile(str, path, doNotOverWrite, doCreateMissingDirectories){
 
 
 function fileExists(path){
-	return FILE_SYSTEM.existsSync(path);
+	try{
+		FILE_SYSTEM.statSync(path);
+		return true;
+	} catch(err){
+		return false;
+	}
 }
 
 if(typeof definejs !== 'undefined'){

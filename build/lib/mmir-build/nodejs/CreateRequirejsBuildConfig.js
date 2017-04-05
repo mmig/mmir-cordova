@@ -6,14 +6,12 @@ var getConfig = require('./../nodejs/GetRequirejsConfig.js');
 
 var rootPath = path.join(__dirname, '..', '..', '..', '..');//<- 4 steps up, since this file is located at <root>/bin/lib/mmir-build/nodejs
 
-var baseUrl = rootPath + '/www/mmirf/';
+var _apply = function(srcDir, buildPaths, buildLibUri){
+	
+	var requireConfPath = path.join(rootPath, srcDir);
 var buildSubDir = 'mod/';
 
-//console.log(config.shim);
-
-var _apply = function(buildPaths, buildLibUri){
-	
-	var config = getConfig(baseUrl + 'mainConfig.js');
+	var config = getConfig(path.join(requireConfPath, 'mainConfig.js'));
 	
 	var uri, fileName;
 	for(var name in config.shim){
@@ -61,7 +59,9 @@ var _getBuildPaths = function(buildLibDir){
 module.exports = function(buildLibDir, srcDir){
 
 	var paths = _getBuildPaths(buildLibDir);
-	var config = _apply(paths, buildLibDir);
+	var config = _apply(srcDir, paths, buildLibDir);
+
+	//adjust the baseUrl:
 	config.baseUrl = srcDir;
 	
 	config.config.logger = {

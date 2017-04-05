@@ -1,5 +1,5 @@
 /*
- * 	Copyright (C) 2012-2013 DFKI GmbH
+ * 	Copyright (C) 2012-2016 DFKI GmbH
  * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
  * 	German Research Center for Artificial Intelligence
  * 	http://www.dfki.de
@@ -44,6 +44,8 @@
 var $ = require('jquery');
 var commonUtils = require('commonUtils');
 
+var ctrlCtx = window;//FIXME set correct context, not just the global context
+
 //"export" isArray to dummy jQuery:
 $.isArray = commonUtils.isArray;
 
@@ -72,8 +74,8 @@ commonUtils.getLocalScript = function (scriptUrl, success, fail){
 			var i = scriptUrl.lastIndexOf('/');
 			var name = scriptUrl.substring(i+1, scriptUrl.length-3);
 			name = name[0].toUpperCase() + name.substring(1);
-			window[name] = eval(name);
-			//console.log('trying to export Controller: '+ window[name] );
+			ctrlCtx[name] = eval(name);
+			//console.log('trying to export Controller: '+ ctrlCtx[name] );
 		}
 	} catch (exc){
 		if(fail) fail(exc);
@@ -115,7 +117,7 @@ var MmirScriptContentParser = require('contentParser');
 		parserPrintError 	= function() { parserPrintErrorImpl.apply(context, arguments); };
 		//parserCreatePrintMessage = function() { return parserCreatePrintMessageImpl.apply(context, arguments); }
 
-	    MmirTemplateLexer.prototype.emitErrorMessageRRR = function(msg) {
+	    MmirTemplateLexer.prototype.emitErrorMessage = function(msg) {
 	    	console.error( parserCreatePrintMessage('[ERROR] TemplateLexer: ',msg) );
 		};
 	//	MmirTemplateParser.prototype.emitErrorMessage = function(msg) {
@@ -164,7 +166,7 @@ var configurationManager = require('configurationManager');
 //force view-generation (i.e. disable change-check for compiled views)
 configurationManager.set('usePrecompiledViews', 'false');
 
-console.log('------------------------------------------------ completed initialization, start parsing *.ehtml files... ---------------------------');
+console.log('------------------------------------- completed initialization, start parsing *.ehtml files... -------------------');
 
 var controllerManager = require('controllerManager');
 
@@ -179,10 +181,10 @@ Controller.prototype.__loadHelper = Controller.prototype.loadHelper;
 Controller.prototype.loadHelper = function(name, helperPath){
 	
 	//create stub class for the helper:
-	eval.call(window, 'window.'+name+' = function(){};');
+	ctrlCtx[name] = eval(name+' = function(){};'+name);
 
 	//initialize the helper for the controller:
-	this.helper =   new Helper(this, name);
+	this.helper =   new Helper(this, name, ctrlCtx);
 	
 };
 
@@ -197,7 +199,7 @@ commonUtils.loadImpl = function _loadStubCtrlImpl(librariesPath, isSerial, compl
 		
 		
 		//mock loading controller implementation files: use stubs instead
-		var list = commonUtils.getDirectoryContentsWithFilter(librariesPath, "*.js");
+		var list = commonUtils.listDir(librariesPath, /^.*\.js$/ig);
 		
 		var fn;
 		for(var i=0,size=list.length; i < size; ++i){
@@ -208,7 +210,7 @@ commonUtils.loadImpl = function _loadStubCtrlImpl(librariesPath, isSerial, compl
 				fn = fn[1].charAt(0).toUpperCase() + fn[1].substring(1);
 				
 				//create stub class for controller:
-				eval.call(window, 'window.'+fn+' = function(){ this.on_page_load = function(){}; };');
+				ctrlCtx[fn] = eval(fn+' = function(){ this.on_page_load = function(){}; };'+fn);
 				
 				//simulate callback invocations of original loadImpl():
 				if(statusCallback){
@@ -264,7 +266,7 @@ function _generateCompiledViews(options){
 	//trigger parsing of templates by initializing the presentationManager:
 	commonUtils.init().then(function(){
 		
-		controllerManager.init().then(function afterLoadingControllers(ctrlManager){
+		controllerManager.init(ctrlCtx).then(function afterLoadingControllers(ctrlManager){
 			
 			//TODO make isForceGeneration this thread-safe(?)
 			var usePrecompiledViewsVal = isForceGeneration? 'false' : 'true';
@@ -312,7 +314,7 @@ function _generateCompiledViews(options){
 					throw(new Error('Encountered errors while reading templates files: abort parsing!'+msg));
 				}
 			    
-			    console.log('------------------------------------------------------- finished parsing *.ehtml templates -----------------------------------------');
+			    console.log('--------------------------------------------- finished parsing *.ehtml templates --------------------------------');
 			    
 			    var storageBasePath = compiledViewGenPath;
 			    
@@ -320,13 +322,13 @@ function _generateCompiledViews(options){
 			    var Partial = require('partial');
 			    var Layout = require('layout');
 			    
-			    console.log(' \n ');
-			    console.log(
-			    	'--------------------------- writing to "'
-			    		+storageBasePath
-			    		+'" compiled *.ehtml templates (as JavaScript files)...'
-			    		+' --------------------------'
-			    );
+//			    console.log(' \n ');
+//			    console.log(
+//			    	'--------------------------- writing to "'
+//			    		+storageBasePath
+//			    		+'" compiled *.ehtml templates (as JavaScript files)...'
+//			    		+' --------------------------'
+//			    );
 			    
 			    var wroteFileCounter = 0;
 
@@ -340,10 +342,11 @@ function _generateCompiledViews(options){
 			    
 			    var constants = require('constants');
 			    
-				var viewList = utils.getDirectoryContents('views');
+				var viewList = utils.listDir('views');
 				
 				//prepare view-list and compute total count of views that will be compiled
 				var counter = 0;
+				var unchangedCounter = 0;
 				var total = 0;
 				for(var i=0, size=viewList.length; i < size; ++i){
 					
@@ -353,7 +356,7 @@ function _generateCompiledViews(options){
 						continue;
 					}
 					
-					var views = utils.getDirectoryContents('views/'+name);
+					var views = utils.listDir('views/'+name);
 					
 					viewList[i] = {
 						name: name,
@@ -374,7 +377,7 @@ function _generateCompiledViews(options){
 					var name = viewEntry.name;
 					
 					if(!name){
-						console.error('Invalid view-directory in directory-structure at views/['+i+']!');
+						console.error('Invalid view-directory at views/['+i+']!');
 						continue;
 					}
 					
@@ -399,7 +402,7 @@ function _generateCompiledViews(options){
 						var viewFileName = views[j];
 						
 						if(!viewFileName){
-							console.error('Invalid view-name in directory-structure at views/'+name+'/['+j+']!');
+							console.error('Invalid view-name at views/'+name+'/['+j+']!');
 							continue;
 						}
 						
@@ -414,8 +417,7 @@ function _generateCompiledViews(options){
 						}
 						regExprFileExt.lastIndex = 0;
 						
-						console.log(' ');
-						console.log('preparing view (ehtml) in directory-structure at views/'+name+'/'+viewName+' for storage...');
+						console.log('  processing view (ehtml) at views/'+name+'/'+viewName+'...');
 						
 						var isPartial = isPartialView(viewName);
 						
@@ -454,6 +456,8 @@ function _generateCompiledViews(options){
 						var rawViewContent = loadLocalFile(viewEHtmlPath, 'text');
 						
 						if(!isForceGeneration && !_isNeedCompile(rawViewContent, path + '.js', path, true)){
+							
+							++unchangedCounter;
 							
 							if(isDebugOutput) console.log('----------------------------------- did nothing: view is unchanged! ---------------------------');
 							
@@ -500,9 +504,11 @@ function _generateCompiledViews(options){
 					}//END: for( view-subdir-list )
 					
 				}//END: for( views-list )
-				
-				console.log(' ');
-				console.log('------------------------------------------------ wrote '+wroteFileCounter+' file(s) to '+storageBasePath+' ---------------------------');
+
+				console.log('  ----');
+				console.log('  processed views (updated / total): '+ (total-unchangedCounter)+ ' / ' + total);
+				console.log('  wrote '+wroteFileCounter+' file(s) to '+storageBasePath);
+				console.log('----------------------------------------------- finished processing views ---------------------------------------\n');
 				
 		    });//END:  presentationManager.init().then(...
 		    

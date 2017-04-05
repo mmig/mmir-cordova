@@ -19,11 +19,12 @@ later updates from this repository can be fetched from wihtin the referencing pr
 
 ### Dependencies
 
-The current build process requires the **[MMIR-lib][4] version 3.7.2 or later**
+The current build process requires the **[MMIR-lib][4] version 3.7.6 or later**
 
 By default the build process will assume that the MMIR-based application is
 located at `www/` and the MMIR-library files at `www/mmirf/`:
 
+    build/<this directory>
     ...
     www/mmirf/*
     www/controller/*
@@ -39,10 +40,10 @@ When the contents of this repository are located in the sub-directory
 
     /build
 
-of a Cordova 5.x (CLI generated) project, running the ANT task ```build.xml```
+of a Cordova >= 5.x (CLI generated) project, running the ANT task ```build.xml```
 of this repository (within the sub-directory, i.e. `build/build.xml`) will set
  up the resources (_"tooling"_) for building MMIR-based applications with
- Cordova 5.x:
+ Cordova >= 5.x:
     
     hooks/before_build/**
     mmir-build.properties
@@ -50,10 +51,80 @@ of this repository (within the sub-directory, i.e. `build/build.xml`) will set
     mmir-build.xml
     mmir-parse.xml
 
---
-##### License
+### Development
 
-If not stated otherwise, the files, resources etc. are provided under the MIT license
+NOTE this section is only relevant for working/developing the MMIR library (or its tooling) itself
+     (e.g. modifying contents of `www/mmirf/*`), i.e. it can be safely ignored, if the MMIR 
+     library is only used.
+
+
+In general, the build process will load/extract the "raw" requirejs configuration-object (i.e. the JSON-like
+object containing the paths, shims etc.) from `mainConfig.js` and do some additional initialization that
+is specific to the execution environment (e.g. nodejs, Rhino etc).
+Changes in `mainConfig.js` that are not contained in the JSON-like configuration object probably require
+changes in the build scripts `build/lib/mmir-build/templates/generate-[grammars|views].template`.
+
+
+#### Prerequisites
+
+The following sections/descripts assume that the build-scripts have been installed as described in the
+section [Installation](#installation), where the contents of this directory (i.e. the mmir-tooling sources)
+have been placed in the directory `/build` and the mmir-library has been placed in the directory `/www/mmirf`:
+
+    ...
+    /build/<contents of this directory>
+    /www/mmirf/<contents of mmir-library>
+    ...
+
+and the ANT script `/build/build.xml` has been executed.
+
+#### Adding New Libraries
+
+After adding new libraries and/or modules, the build process may need to be updated too.
+
+This will probably be necessary, if there are changes in `mainConfig.js`, especially if the
+new library is not nodejs compatible (may need to add/implement a dummy-module that is used during build)
+or is not an AMD module and needs a requirejs shim configuration (see also section below).
+
+##### Updating Build Scripts
+
+After changing a (nodejs) build script, e.g. for processing view-template or for processing grammars, in
+`build/lib/mmir-build/templates/`
+the helper script
+
+    node build/lib/mmir-build/scripts/generateAntGenScripts.js
+    
+should be executed, which will create/update the Rhino/Java-based build scripts in
+`build/lib/mmir-build/spec/`
+
+
+##### Adding New Vendor Libraries
+
+Vendor libraries should be "requirejs compatible" (i.e. an AMD module):
+This can be achieved either by the library itself being an AMD module, or by adding
+a requirejs shim configuration in `mainConfig.js` (see documentation of requirejs for more details).
+
+If a vendor library is added with a shim configuration, then the helper script(*)
+
+    node build/lib/mmir-build/scripts/processRequirejsShimConfig.js
+     
+must be executed which will create an AMD module for the library in `build/lib/mmir-build/mod/`. 
+This AMD library will then be used during build (i.e. `cordova prepare`) in the nodejs environment 
+(since requirejs shims do not work in nodejs).
+
+NOTE: if the license of the added libraries allow it, you could also use the AMD modules instead
+      of the original library and remove the shim configuration
+      
+> (*): if the web-app root directory is different than `<project dir>/www`, then the direcotry needs
+>    to be added as an argument, e.g. if its located in `<project dir>/src/assets`, then run the script with
+>
+>     node build/lib/mmir-build/scripts/processRequirejsShimConfig.js src/assets
+
+--
+### License
+
+If not stated otherwise, the files, resources etc. are provided under the MIT license (see also details in
+[library_origins.txt](lib/library_origins.txt))
 
 
 [1]: https://github.com/mmig/mmir-tooling

@@ -37,7 +37,7 @@ define(['jquery', 'loadLocalFile'], function($, loadLocalFile){
 		//      (otherwise we would need to implement them differently!)
 		this.success = function(cb){ if(isSuccess) cb(content); };
 		this.fail = function(cb){ if(!isSuccess) cb(theError); };
-		this.then = function(cb1,cb1){ if(isSuccess) cb1(content); else cb2(content); };
+		this.then = function(cb1,cb2){ if(isSuccess) cb1(content); else cb2(theError); };
 		
 		this.done = this.success;
 		this.error = this.fail;

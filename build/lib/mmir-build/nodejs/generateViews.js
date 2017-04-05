@@ -73,6 +73,7 @@ viewGen.run(function(){
 		
 		global.mmir.nodejs.config.view.jsLibPath = config.execBuildLibDir;
 		global.mmir.nodejs.config.view.basePath = config.baseDir;
+		global.mmir.nodejs.config.view.appRootDir = config.appRootDir;
 		//need callback since the exec-script is initialized asynchronously
 		// (i.e. exports are not available immediately)
 		global.mmir.nodejs.config.view.onModuleInit = function(){

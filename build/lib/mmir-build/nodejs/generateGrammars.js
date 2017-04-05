@@ -136,6 +136,7 @@ grammarGen.run(function(){
 					global.mmir.nodejs.config.grammar = global.mmir.nodejs.config.grammar || {};
 					
 					global.mmir.nodejs.config.grammar.jsLibPath = config.execBuildLibDir;
+					global.mmir.nodejs.config.grammar.appRootDir = config.appRootDir;
 					//need callback since the exec-script is initialized asynchronously
 					// (i.e. exports are not available immediately)
 					global.mmir.nodejs.config.grammar.onModuleInit = function(){
