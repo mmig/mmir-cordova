@@ -27,9 +27,9 @@
 
 
 define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'//DISABLED: now loaded on-demand (see init()) -> 'renderUtils'
-         , 'layout', 'view', 'partial', 'dictionary', 'checksumUtils', 'languageManager'
-         , 'jquery', 'core'//, 'module'
-         , 'stringExtension', 'parserModule'
+         , 'layout', 'view', 'partial', 'dictionary', 'checksumUtils', 'languageManager', 'logger'
+         , 'jquery', 'core', 'module'
+         , 'stringExtension', 'parserModule'//<- loaded, but not directly used
     ],
     
     /**
@@ -48,8 +48,8 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
      *  
      */
     function ( controllerManager, constants, commonUtils, configurationManager//, renderUtils
-    		, Layout, View, Partial, Dictionary, checksumUtils, languageManager
-            , $, core//, module
+    		, Layout, View, Partial, Dictionary, checksumUtils, languageManager, Logger
+            , $, core, module
 ) {
 	
 	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
@@ -91,6 +91,24 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 	 var DEFAULT_LAYOUT_NAME = 'Default';
 	 
 	 /**
+	  * Name of the configuration property that specifies a custom name for the default layout.
+	  * 
+	  * <p>
+	  * NOTE: if FALSY (other than <code>undefined</code>) no default layout will be loaded.
+	  *       Rendering views may fail, if they rely on a {@link Layout}!
+	  * 
+	  * @type String
+	  * @private
+	  * @constant
+	  * @memberOf mmir.PresentationManager#
+	  * 
+	  * @example var defaultLayout = mmir.Constants.get(CONFIG_DEFAULT_LAYOUT_NAME);
+	  * 
+	  */
+	 var CONFIG_DEFAULT_LAYOUT_NAME = 'defaultLayoutName';//TODO move this to somewhere else (collected config-vars?)? this should be a public CONSTANT...
+	 
+	 
+	 /**
 	  * Name of the configuration property that specifies whether or not to use 
 	  * pre-compiled views, i.e. whether to use generated JavaScript files
 	  * instead of parsing & compiling the "raw" templates (eHTML files).
@@ -114,6 +132,15 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 	 var CONFIG_PRECOMPILED_VIEWS_MODE = 'usePrecompiledViews';//TODO move this to somewhere else (collected config-vars?)? this should be a public CONSTANT...
 	 
 	 // private members
+	 /**
+	  * The logger for the PresentationManager.
+	  * 
+	  * @private
+	  * @type Logger
+	  * @memberOf mmir.PresentationManager#
+	  */
+	var logger = Logger.create(module);//initialize with requirejs-module information
+		
 	 /**
 	  * Array of layouts of the application
 	  * 
@@ -279,19 +306,19 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
     		  *            [data] optional data for the view.
     		  */
     		 render: function(ctrlName, viewName, view, ctrl, data){
-    			 console.error('PresentationManager.render: no rendering engine set!');
+    			 logger.error('PresentationManager.render: no rendering engine set!');
     		 },
     		 showDialog: function(ctrlName, dialogId, data) {
-    			 console.error('PresentationManager.showDialog: no rendering engine set!');
+    			 logger.error('PresentationManager.showDialog: no rendering engine set!');
     		 },
     		 hideCurrentDialog: function(){
-    			 console.error('PresentationManager.hideCurrentDialog: no rendering engine set!');
+    			 logger.error('PresentationManager.hideCurrentDialog: no rendering engine set!');
     		 },
     		 showWaitDialog: function(text, data) {
-    			 console.error('PresentationManager.showWaitDialog: no rendering engine set!');
+    			 logger.error('PresentationManager.showWaitDialog: no rendering engine set!');
     		 },
     		 hideWaitDialog: function() {
-    			 console.error('PresentationManager.hideWaitDialog: no rendering engine set!');
+    			 logger.error('PresentationManager.hideWaitDialog: no rendering engine set!');
     		 }
      };
 	 /**
@@ -345,7 +372,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
                         layout = _instance.getLayout(DEFAULT_LAYOUT_NAME, false);
                     }
                     else {
-                        console.error('[PresentationManager.getLayout]: could not find layout "' + layoutName +'"')
+                        logger.error('[PresentationManager.getLayout]: could not find layout "' + layoutName +'"')
                         return false;
                     }
                 }
@@ -381,7 +408,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
                 view = _views.get(viewName);
 
                 if (!view) {
-                    console.error('[PresentationManager.getView]: could not find view "' + viewName + '"');
+                    logger.error('[PresentationManager.getView]: could not find view "' + viewName + '"');
                     return false;
                 }
                 return view;
@@ -418,14 +445,14 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
                     partialKey = createPartialKey(controllerName, partialName);
                 }
                 else {
-                    console.error('[PresentationManager.getPartial]: requested partial "' + partialName + '" for unknown controller: "' + (controllerName ? (controllerName.getName? controllerName.getName(): controllerName) : 'undefined')
+                    logger.error('[PresentationManager.getPartial]: requested partial "' + partialName + '" for unknown controller: "' + (controllerName ? (controllerName.getName? controllerName.getName(): controllerName) : 'undefined')
                             + '"');
                     return false;
                 }
 
                 partial = _partials.get(partialKey);
                 if (!partial) {
-                    console.error('[PresentationManager.getPartial]: could not find partial "' + partialName + '" for controller "' + (controllerName ? (controllerName.getName? controllerName.getName(): controllerName) : 'undefined') + '"!');
+                    logger.error('[PresentationManager.getPartial]: could not find partial "' + partialName + '" for controller "' + (controllerName ? (controllerName.getName? controllerName.getName(): controllerName) : 'undefined') + '"!');
                     return false;
                 }
                 return partial;
@@ -530,7 +557,13 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
                 var ctrl = controllerManager.getController(ctrlName);
 
                 if (ctrl != null) {
+                	
                     var view = this.getView(ctrlName, viewName);
+
+                    if(!view){
+                    	logger.error('PresentationManager.renderView: could not find view "'+viewName+'" for controller "'+ctrlName+'"');
+                    	return;
+                    }
                     
                     _renderEngine.render.call(this, ctrlName, viewName, view, ctrl, data);
 
@@ -547,7 +580,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 					_currentView.data=data;
                 }
                 else {
-                	console.warn('PresentationManager.renderView: could not retrieve controller "'+ctrlName+'"');
+                	logger.error('PresentationManager.renderView: could not retrieve controller "'+ctrlName+'"');
                 }
             },
 
@@ -566,7 +599,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
             reRenderView : function() {
                 if (_currentView) {
                     if (_currentView.ctrlName && _currentView.viewName) {
-                        require('dialogManager').render(_currentView.ctrlName, _currentView.viewName, _currentView.data);
+                        core.require('dialogManager').render(_currentView.ctrlName, _currentView.viewName, _currentView.data);
                     }
                 }
             },
@@ -587,7 +620,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
             renderPreviousView : function() {
                 if (_previousView) {
                     if (_previousView.ctrlName && _previousView.viewName) {
-                    	require('dialogManager').render(_previousView.ctrlName, _previousView.viewName, _previousView.data);
+                    	core.require('dialogManager').render(_previousView.ctrlName, _previousView.viewName, _previousView.data);
                     }
                 }
             },        
@@ -707,9 +740,15 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 	
 	function init () {
 
-		/** @scope mmir.MediaManager.prototype */
+		/** @scope mmir.PresentationManager.prototype */
 
 		delete _instance.init;//FIXME should init be deleted?
+		
+		// determine if default-layout has a custom name (or is disabled, in it was set to null)
+		var defLayoutName = configurationManager.get(CONFIG_DEFAULT_LAYOUT_NAME, true, void(0));
+		if(typeof defLayoutName !== 'undefined'){
+			DEFAULT_LAYOUT_NAME = defLayoutName;
+		}
 
 		/**
 		 * Checks if a pre-compiled view is up-to-date:
@@ -721,7 +760,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @async
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @param {String} rawViewData
 		 * 					the text content of the view template (i.e. content of a eHTML file "as is")
@@ -737,11 +776,11 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		function loadPrecompiledView(rawViewData, targetpath, success, fail){
 
 			//NOTE: stored template require the renderUtils:
-			require(['renderUtils'], function(){
+			core.require(['renderUtils'], function(){
 				
 				if(! isUpToDate(rawViewData, targetpath)){
 					if(fail) fail('Precompiled view file is outdated!');
-					else console.warn('Outdated pre-compiled view at: '+targetpath);
+					else logger.warn('Outdated pre-compiled view at: '+targetpath);
 					
 					//-> do not load the pre-compiled view, instead let fail-callback handle re-parsing for the view
 					return;/////////////////////// EARLY EXIT /////////////////////
@@ -765,7 +804,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * @default
 		 * @type Boolean
 		 * @default false: use templates files (*.ehtml) and compile them (freshly) on-the-fly
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 */
 		var isUsePreCompiledViews = configurationManager.getBoolean(CONFIG_PRECOMPILED_VIEWS_MODE, true, false);
 
@@ -779,7 +818,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 *    
 		 * @sync the checksum file is loaded in synchronous mode
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @param {String} viewContent
 		 * 						the content of the view template (i.e. loaded eHTML file)
@@ -804,16 +843,17 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			$.ajax({
 				async: false,//<-- use "SYNC" modus here (NOTE: we win nothing with async here, because the following step (loading/not loading the pre-compiled view) strictly depends on the result of this)
 				dataType: "text",
-				url: viewVerificationInfoPath,
-				success: function(data){
+				url: viewVerificationInfoPath
+			}).then(function onSuccess(data){
 
-					//compare raw String to checksum-data from file
-					isCompiledViewUpToDate = checksumUtils.isSame(viewContent, data);
-				}
-			}).fail(function(jqxhr, status, err){
+				//compare raw String to checksum-data from file
+				isCompiledViewUpToDate = checksumUtils.isSame(viewContent, data);
+				
+			}, function onError(jqxhr, status, err){
+				
 				// print out an error message
 				var errMsg = err && err.stack? err.stack : err;
-				console.error("[" + status + "] Could not load '" + viewVerificationInfoPath + "': "+errMsg); //failure
+				logger.error("[" + status + "] On checking up-to-date, could not load '" + viewVerificationInfoPath + "': "+errMsg); //failure
 			});
 
 			return isCompiledViewUpToDate;
@@ -825,7 +865,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @function
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @returns {Promise} a Deferred.promise that gets resolved upon loading all layouts; fails/is rejected, if not at least 1 layout was loaded
 		 */
@@ -835,14 +875,14 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			/**
 			 * @type jQuery.Deffered
 			 * @private
-			 * @memberOf mmir.MediaManager.init.loadLayouts
+			 * @memberOf mmir.PresentationManager.init.loadLayouts
 			 */
 			var defer = $.Deferred();
 			
 			/**
 			 * @type String
 			 * @private
-			 * @memberOf mmir.MediaManager.init.loadLayouts
+			 * @memberOf mmir.PresentationManager.init.loadLayouts
 			 */
 			var ctrlNameList = controllerManager.getControllerNames();
 			
@@ -850,7 +890,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			 * HELPER object for tracking the loading-status of the layouts
 			 * 
 			 * @private
-			 * @memberOf mmir.MediaManager.init.loadLayouts
+			 * @memberOf mmir.PresentationManager.init.loadLayouts
 			 */
 			var loadStatus = {
 					loader: defer,
@@ -860,14 +900,16 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 					//additional property for keeping track on how many layouts were load overall
 					// NOTE: this additional counter is necessary, since currentLoadCount
 					//       keeps only track of how many controller's were checked. But since
-					//       a controller may not have a layout-defintion of its own, we have
-					//       to use another counter to keep track of actually loaded layouts.
+					//       a controller may not have a layout-definition of its own, we have
+					//       to use another counter to keep track of the actually loaded layouts.
 					loadedLayoutsCount: 0,
 
 					//need a custom function for checking the load status: if no layout was loaded, 
 					//                                                     the Derred will be rejected
 					onCompletionImpl: function(status){
-						if(status.loadedLayoutsCount < 1){
+						
+						//if there is a default-layout specified, but no layout was loaded -> fail
+						if(status.loadedLayoutsCount < 1 && DEFAULT_LAYOUT_NAME){
 
 							//there must be at least on layout-file for the default-controller:
 							status.loader.reject( 'Could not load any layout! At least one layout must be present at '
@@ -896,7 +938,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			/**
 			 * HELPER object for loading/creating the layouts
 			 * @private
-			 * @memberOf mmir.MediaManager.init.loadLayouts
+			 * @memberOf mmir.PresentationManager.init.loadLayouts
 			 */
 			var createLayoutConfig = {
 					constructor: Layout,
@@ -908,7 +950,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			 * helper for loading a single layout-file
 			 * 
 			 * @private
-			 * @memberOf mmir.MediaManager.init.loadLayouts
+			 * @memberOf mmir.PresentationManager.init.loadLayouts
 			 */
 			var doLoadLayout = function(index, ctrlName, theDefaultLayoutName){
 
@@ -947,7 +989,13 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			};//END: doLoadLayout(){...
 
 			//load the default layout:
-			doLoadLayout(null, null, DEFAULT_LAYOUT_NAME);
+			if(DEFAULT_LAYOUT_NAME){
+				doLoadLayout(null, null, DEFAULT_LAYOUT_NAME);
+			} else {
+				logger.info('The name for the default Layout was set to "'+DEFAULT_LAYOUT_NAME+'", no default Layout will be loaded!');
+				--loadStatus.remainingCtrlCount;
+				checkCompletion(loadStatus);
+			}
 
 			//load layouts for controllers (there may be none defined)
 			$.each(ctrlNameList, doLoadLayout);
@@ -965,7 +1013,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * @function
 		 * @private
 		 * @async
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @returns {Promise} a Deferred.promise that gets resolved upon loading all views
 		 * 
@@ -1001,7 +1049,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * @function
 		 * @private
 		 * @async
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @returns {Promise} a Deferred.promise, that resolves after all partials have been loaded
 		 * 					NOTE: loading failures will generate a warning message (on the console)
@@ -1040,7 +1088,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @private
 		 * @function
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @param {PlainObject} status
 		 * 		the object for managing the laoding status.
@@ -1066,7 +1114,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @private
 		 * @function
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @param {PlainObject} status
 		 * 		the object for managing the laoding status:
@@ -1101,7 +1149,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @private
 		 * @function
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @param {Controller} controller
 		 * 		the controller to which the template files belong.
@@ -1139,7 +1187,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		var doParseTemplate = function(controller, templateName, config, templateContent, status){
 
 			//NOTE need to request renderUtils here too, since it is needed during parsing!
-			require(['parseUtils', 'renderUtils'], function(){
+			core.require(['parseUtils', 'renderUtils'], function(){
 
 				var templateObj;
 				if(controller){
@@ -1185,7 +1233,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * @function
 		 * @private
 		 * @async
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 * 
 		 * @see #doLoadTemplateFile
 		 * 
@@ -1203,14 +1251,14 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			/**
 			 * @type jQuery.Deferred
 			 * @private
-			 * @memberOf mmir.MediaManager.init.doProcessTemplateList
+			 * @memberOf mmir.PresentationManager.init.doProcessTemplateList
 			 */
 			var defer = $.Deferred();
 			
 			/**
 			 * @type String
 			 * @private
-			 * @memberOf mmir.MediaManager.init.doProcessTemplateList
+			 * @memberOf mmir.PresentationManager.init.doProcessTemplateList
 			 */
 			var ctrlNameList = controllerManager.getControllerNames();
 			
@@ -1218,7 +1266,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			 * HELPER object for tracking the loading-status of the views
 			 * 
 			 * @private
-			 * @memberOf mmir.MediaManager.init.doProcessTemplateList
+			 * @memberOf mmir.PresentationManager.init.doProcessTemplateList
 			 */
 			var loadStatus = {
 					loader: defer,
@@ -1303,7 +1351,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * @function
 		 * @private
 		 * @async
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 */
 		var doLoadTemplateFile = function(controller, templateInfo, createConfig, loadStatus){
 			++loadStatus.currentLoadCount;
@@ -1311,40 +1359,39 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 			$.ajax({
 				async: true,
 				dataType: "text",
-				url: templateInfo.path,
-				success: function(data){
+				url: templateInfo.path
+			}).then(function onSuccess(data){
 
-					if(isUsePreCompiledViews){
+				if(isUsePreCompiledViews){
 
-						loadPrecompiledView(data, templateInfo.genPath, function(){
+					loadPrecompiledView(data, templateInfo.genPath, function(){
 
-							updateLoadStatus(loadStatus);
+						updateLoadStatus(loadStatus);
 
-						}, function(err){
+					}, function(err){
 
-							console.warn('Could not load precompiled '+createConfig.typeName+' from '
-									+templateInfo.genPath+'", because: '+err
-									+', compiling template instead: '
-									+templateInfo.path
-							);
+						logger.warn('Could not load precompiled '+createConfig.typeName+' from '
+								+templateInfo.genPath+'", because: '+err
+								+', compiling template instead: '
+								+templateInfo.path
+						);
 
-							doParseTemplate(controller, templateInfo.name, createConfig , data, loadStatus);
+						doParseTemplate(controller, templateInfo.name, createConfig , data, loadStatus);
 
-						});
+					});
 
-					}
-					else {
-
-						doParseTemplate(controller, templateInfo.name, createConfig, data, loadStatus);
-
-					}
 				}
+				else {
 
-			}).fail(function(jqxhr, status, err){
+					doParseTemplate(controller, templateInfo.name, createConfig, data, loadStatus);
+
+				}
+				
+			}, function onError(jqxhr, status, err){
 
 				// print out an error message
 				var errMsg = err && err.stack? err.stack : err;
-				console.error("[" + status + "] Could not load '" + templateInfo.path + "': "+errMsg); //failure
+				logger.error("[" + status + "] Could not load eHTML file '" + templateInfo.path + "': "+errMsg); //failure
 
 				updateLoadStatus(loadStatus, true);
 			});
@@ -1361,7 +1408,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * 
 		 * @type jQuery.Deferred
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 */
 		var defer = $.Deferred();
 
@@ -1375,7 +1422,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * Checks if all other loading-functions have finished, and if so, resolves the init-promise.
 		 * 
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 */
 		var checkResolved = function(){
 			if(isLayoutsLoaded && isViewsLoaded && isPartialsLoaded && isViewEngineLoaded){
@@ -1387,7 +1434,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		 * rejects/fails the init-promise.
 		 * 
 		 * @private
-		 * @memberOf mmir.MediaManager.init
+		 * @memberOf mmir.PresentationManager.init
 		 */
 		var failPromise = function(msg){
 			defer.reject(msg);
@@ -1412,7 +1459,7 @@ define([ 'controllerManager', 'constants', 'commonUtils', 'configurationManager'
 		);
 		
 		//MOD modularize view-engine jqm: load viewEngine (default is based on jQuery Mobile)
-		require([core.viewEngine], function(viewEngineInit){
+		core.require([core.viewEngine], function(viewEngineInit){
 			viewEngineInit.then(
 				function(viewEngine){
 					_instance.setRenderEngine(viewEngine);

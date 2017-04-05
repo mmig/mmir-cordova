@@ -72,7 +72,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	 *     		"browser": ["html5AudioOutput",
 	 *     		            "html5AudioInput",
 	 *     		            {"mod": "webAudioTextToSpeech", "config": "webttsMaryImpl"},
-	 *     		            {"mod": "webkitAudioInput",     "ctx": "chrome"}
+	 *     		            {"mod": "webspeechAudioInput",     "ctx": "chrome"}
 	 *     		],
 	 *     		"cordova": ["cordovaAudioOutput",
 	 *     		            "nuanceAudioInput",
@@ -93,7 +93,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     var _defaultPlugins = {
 		'browser': ['waitReadyIndicator',
 		            'html5AudioOutput',
-		            'webkitAudioInput',
+		            'webspeechAudioInput',
 		            {mod: 'webAudioTextToSpeech', config: 'webttsMaryImpl'}
 		],
 		'cordova': ['waitReadyIndicator',
@@ -120,7 +120,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
      */
     var _pluginsConfig = {
     	'marytexttospeech.js': {mod: 'webAudioTextToSpeech', config: 'webttsMaryImpl'},
-    	'html5audioinput.js':  {mod: 'webAudioInput', config: 'webasrGooglev1Impl'}
+    	'html5audioinput.js':  {mod: 'webAudioInput', config: 'webasrGooglev1Impl'},
+    	'webkitaudioinput.js':  {mod: 'webspeechAudioInput'}
     };
     
     /**
@@ -658,6 +659,20 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     				}
     			},
     			/**
+    			 * Play audio file from the specified URL or WAV data.
+    			 * 
+    			 * Convenience function for {@link #playWAV} and {@link #playURL}:
+    			 * if first argument is a String, then <code>playURL</code> will be invoked,
+    			 * otherwise <code>playWAV</code>
+    			 */
+    			play: function(urlOrData, onPlayedCallback, failureCallBack){
+    				if(typeof urlOrData === 'string'){
+    					return this.playURL.apply(this, arguments);
+    				} else {
+    					return this.playWAV.apply(this, arguments);
+    				}
+    			},
+    			/**
     			 * Get an audio object for the audio file specified by URL.
     			 * 
     			 * The audio object exports the following functions:
@@ -697,6 +712,22 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     				}
     				else {
     					console.error("Audio Output: create audio from URL is not supported.");
+    				}
+    			},
+    			/**
+    			 * Get an audio object for the audio file specified by URL URL or by WAV data.
+    			 * 
+    			 * NOTE that getWAVAsAudio may not be supported by all modules!
+    			 * 
+    			 * Convenience function for {@link #getURLAsAudio} and {@link #getWAVAsAudio}:
+    			 * if first argument is a String, then <code>getURLAsAudio</code> will be invoked,
+    			 * otherwise <code>getWAVAsAudio</code> (if the module supports this function).
+    			 */
+    			getAudio: function(urlOrData, onPlayedCallback, failureCallBack, onLoadedCallBack){
+    				if(typeof urlOrData === 'string'){
+    					return this.getURLAsAudio.apply(this, arguments);
+    				} else {
+    					return this.getWAVAsAudio.apply(this, arguments);
     				}
     			},
     			/**
@@ -1438,15 +1469,9 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			defer.reject();
     		};
         	
-    		
-        	if(successCallback){
-        		defer.done(successCallback);
+        	if(successCallback || failureCallback){
+        		defer.then(successCallback, failureCallback);
         	}
-        	
-        	if(deferredFailure){
-        		defer.fail(failureCallback);
-        	}
-        	
         	
             if (instance === null) {
             	jQuery.extend(true,this,constructor());
@@ -1459,7 +1484,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
                 }
                 
             	var pluginConfig = getPluginsToLoad();
-                loadAllPlugins(pluginConfig,deferredSuccess, deferredFailure);
+                loadAllPlugins(pluginConfig, deferredSuccess, deferredFailure);
 
             }
             else if(listenerList){

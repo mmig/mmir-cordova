@@ -344,6 +344,9 @@ define (['commonUtils', 'languageManager', 'controllerManager', 'presentationMan
 	    		//create "buffer" if necessary:
 	    		var renderResult = getRenderingBuffer(renderingBuffer);
 	    		
+	    		//initialize the contentElement with the current rendering-data object:
+	    		contentElement.setRenderData(data);
+	    		
 	    		var pos = 1;
 	    		//iterate over elements, and render them into the "buffer":
 	    		for(var i=0, size = contentElement.allContentElements.length; i < size; ++i){
@@ -436,7 +439,6 @@ define (['commonUtils', 'languageManager', 'controllerManager', 'presentationMan
 		    		//        in for the corresponding yield-declaration element.
 	    			logger.warn('ParseUtil.renderElement: encountered YIELD_CONTENT for '+elem.name+' -> this sould be handled by renderYieldDeclaration!');
 	    		}
-	    		
 
 	    		else if(type === parser.element.IF){
 	    			return renderIf(elem, renderingMode, rawTemplateText, renderingBuffer, data, containingContentElement);
@@ -831,22 +833,31 @@ define (['commonUtils', 'languageManager', 'controllerManager', 'presentationMan
 	    		
 	    		var varName = rawTemplateText.substring(elem.getStart(),elem.getEnd());
 	    		
-	    		//TODO should there be a check included -> for var-existance?
-	    		//     --> currently: on assignment, if var does not exists, it will be created
-	    		//     --> change (?), so that there is a check first, and if var does not exists an ReferenceError is thrown (?)
-	    		renderingBuffer.push(DATA_NAME);
-	    		renderingBuffer.push('["');
+	    		//handle "import"/"export" of call/args-data
+	    		if(varName === PARAM_DATA_NAME || varName === PARAM_ARGS_NAME){
 	    		
-	    		if(renderingMode === RENDER_MODE_JS_SOURCE_FORCE_VAR_PREFIX){
-	    			//ensure that the replacement variable-name starts with an @:
-	    			if( ! varName.startsWith('@')){
-	    				varName = '@' + varName;
-	    			}
+		    		//TODO should there be a check included -> for var-existance?
+		    		//     --> currently: on assignment, if var does not exists, it will be created
+		    		//     --> change (?), so that there is a check first, and if var does not exists an ReferenceError is thrown (?)
+		    		renderingBuffer.push(DATA_NAME);
+		    		renderingBuffer.push('["');
+		    		
+		    		if(renderingMode === RENDER_MODE_JS_SOURCE_FORCE_VAR_PREFIX){
+		    			//ensure that the replacement variable-name starts with an @:
+		    			if( ! varName.startsWith('@')){
+		    				varName = '@' + varName;
+		    			}
+		    		}
+		    		
+		    		//extract var-name from original source-code (NOTE this var must start with @)
+		    		renderingBuffer.push(varName);
+		    		renderingBuffer.push('"]');
+	    		
+
+	    		} else {
+	    			//render variable (without leading @ symbol)
+	    			renderingBuffer.push(varName.startsWith('@')? varName.substring(1) : varName);
 	    		}
-	    		
-	    		//extract var-name from original source-code (NOTE this var must start with @)
-	    		renderingBuffer.push(varName);
-	    		renderingBuffer.push('"]');
 	    		
 	    		return renderingBuffer;
 	    	}

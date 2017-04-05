@@ -26,47 +26,55 @@
 
 newMediaPlugin = {
 
-		/**  @memberOf WebkitAudioInput# */
-		initialize: function(callBack, mediaManager, logvalue){
+		/**  @memberOf WebspeechAudioInput# */
+		initialize: function(callBack, mediaManager, ctxId, moduleConfig){
 			
-			/** @memberOf WebkitAudioInput# */
-			var _pluginName = 'webkitAudioInput';
+			/** @memberOf WebspeechAudioInput# */
+			var _pluginName = 'webspeechAudioInput';
 			/**
 			 * @type mmir.LanguageManager
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
 			 */
 			var languageManager = require('languageManager');
+			/**
+			 * @type mmir.ConfigurationManager
+			 * @memberOf WebspeechAudioInput#
+			 */
+			var config = require('configurationManager');
+			/**
+			 * @type mmir.Logger
+			 * @memberOf WebspeechAudioInput#
+			 */
+			var logger = require('logger').create(_pluginName);
 
 			/** @type SpeechRecognition
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var SpeechRecognitionImpl;
 			
             //detect feature avaibility:
 			if(typeof webkitSpeechRecognition !== 'undefined'){
 				SpeechRecognitionImpl = webkitSpeechRecognition;
-			} else if(typeof mozSpeechRecognition === 'undefined'){
-				SpeechRecognitionImpl = mozSpeechRecognition;
-			} else if(typeof SpeechRecognition === 'undefined'){
+			} else if(typeof SpeechRecognition !== 'undefined'){
 				SpeechRecognitionImpl = SpeechRecognition;
 			}
 			
 			if(!SpeechRecognitionImpl){
 				//... browser does NOT support this speech-input-module: create warning message and dummy functions for the MediaManager
 				
-				console.warn('Could not load webkitAudioInput plugin: API SpeechRecognition is not available!');
+				logger.error('Could not load '+_pluginName+' plugin: API SpeechRecognition is not available!');
 				
 				//FIXME this error message is a quick an dirty hack -- there should be a more general way for defining the error message...
 				var msg = 'Unfortunately, your internet browser'
 							+'\ndoes not support Web Speech Recognition.'
 							+'\n\nPlease use Google Chrome,'
 							+'\nif you want to use speech input.'
-							+'\n\nhttp://www.google.com/chrome';
+							+'\n\nhttps://www.google.com/chrome';
 				
 				//invoke the passed-in initializer-callback and export the public functions:
 				callBack( {
 					/**
 					 * @public
-					 * @memberOf WebkitAudioInput.dummy.prototype
+					 * @memberOf WebspeechAudioInput.dummy.prototype
 					 * @see mmir.MediaManager#startRecord
 					 */
 					startRecord: function(successCallback, failureCallback){
@@ -76,7 +84,7 @@ newMediaPlugin = {
 					}
 					/**
 					 * @public
-					 * @memberOf WebkitAudioInput.dummy.prototype
+					 * @memberOf WebspeechAudioInput.dummy.prototype
 					 * @see mmir.MediaManager#startRecord
 					 */
 					, stopRecord: function(successCallback,failureCallback){
@@ -86,7 +94,7 @@ newMediaPlugin = {
 					}
 					/**
 					 * @public
-					 * @memberOf WebkitAudioInput.dummy.prototype
+					 * @memberOf WebspeechAudioInput.dummy.prototype
 					 * @see mmir.MediaManager#startRecord
 					 */
 					, recognize: function(successCallback,failureCallback){
@@ -96,13 +104,13 @@ newMediaPlugin = {
 					}
 					/**
 					 * @public
-					 * @memberOf WebkitAudioInput.dummy.prototype
+					 * @memberOf WebspeechAudioInput.dummy.prototype
 					 * @see mmir.MediaManager#startRecord
 					 */
 	    			, cancelRecognition: function(successCallBack,failureCallBack){
 	    				alert(msg);
-	    				if(failureCallback)
-	    					failureCallback();
+	    				if(failureCallBack)
+	    					failureCallBack();
 	    			}
 				});
 				return;////////////////////// EARLY EXIT ///////////////////////////
@@ -110,15 +118,15 @@ newMediaPlugin = {
 			
 			/**
 			 * @constant 
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var EVENT_RESULT_FIELD = "transcript";
 			/**
 			 * @constant
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var EVENT_SCORE_FIELD = "confidence";
 			/**
 			 * @constant
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var UNSTABLE_LIMIT = 0.01;
 			
 			/**
@@ -126,7 +134,7 @@ newMediaPlugin = {
 			 * 
 			 * @type Enum
 			 * @constant
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
 			 */
 			var RESULT_TYPES = {
 				"FINAL": 				"FINAL",
@@ -137,55 +145,51 @@ newMediaPlugin = {
 				"RECORDING_DONE": 		"RECORDING_DONE"
 			};
 			
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
 			var micLevelsImplFile = 'webMicLevels';
 			
 			/** @type SpeechRecognition
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var recognition = new SpeechRecognitionImpl();
 			/** @type Function
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var currentSuccessCallback;
 			/** @type Function
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
 			var currentFailureCallback;
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
             var final_recognition_result = "";
 			/** @type Function
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
             var default_error_function;
 			/** @type Function
-			 * @memberOf WebkitAudioInput# */
+			 * @memberOf WebspeechAudioInput# */
             var helper_error_handler;
             
             
             // flags
 
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
             var recording = false;
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
             var active = false;
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
             var aborted = false;
 //            var restart_counter = 0;
-			/** @memberOf WebkitAudioInput# */
+			/** @memberOf WebspeechAudioInput# */
             var intermediate_results = false;
             
 
-			/** @memberOf WebkitAudioInput# */
-            // loglevel - shows:
-            // 0 - errors
-            // 1 - warning, errors
-            // 2 - info, warning, errors
-            // 3 - logs, info, warning, errors
-            // 4 - debugs, logs, info, warning, errors
-            var loglevel = 4;//FIXME logvalue | 0;
+            var loglevel = config.get([_pluginName, 'log'], true);
+						if(typeof loglevel !== 'undefined'){
+							logger.setLevel(loglevel);
+						}
 
 			/** 
 			 * field for storing the previous (main) recontion result
 			 * (this is used for calculating "unstable" parts, see {@link #helper_extract_results})
 			 * @type String
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
 			 */
             var _prevResult;
             /**
@@ -196,10 +200,10 @@ newMediaPlugin = {
              * 			Number score, 
              * 			String type ["INTERIM" | "FINAL" ], 
              * 			Array<Results> alternatives,		//OPTIONAL
-             * 			String unstable						//OPTIONAL (NOTE: not supported by this plugin, i.e. webkitSpeechInput)
+             * 			String unstable						//OPTIONAL
              * 		]
              * 
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
              */
             var helper_extract_results = function(eventResultsObject){
             	var res = [];
@@ -244,7 +248,7 @@ newMediaPlugin = {
 
             	// [4]: UNSTABLE part for main result
 
-            	//NOTE "unstable" part of ASR result is not supported by webkitSpeechInput...
+            	//NOTE "unstable" part of ASR result is not "natively" supported by webkitSpeechInput...
             	//HACK: detect unstable for non-final results:
             	//      * set to unstable if confidence is lower than UNSTABLE_LIMIT
             	//      * otherwise (ie. result is basically STABLE), try 
@@ -277,7 +281,7 @@ newMediaPlugin = {
             				//add REST to detected PREFIX as "unstable":
             				res.push(_prevResult.substring(prefixIndex+1));
 
-            				console.info('found unstable ASR part: "'+_prevResult.substring(prefixIndex+1)+'"');
+            				if(logger.isi()) logger.info('found unstable ASR part: "'+_prevResult.substring(prefixIndex+1)+'"');
             			}
             			else {
             				// -> we have relatively stable result, that has no unstable postfix -> reset _prevResult;
@@ -324,7 +328,7 @@ newMediaPlugin = {
 			 * 
 			 * @see #error_counter
 			 * 
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
 			 * @default 5
 			 */
 			var max_error_retry = 5;
@@ -341,7 +345,7 @@ newMediaPlugin = {
              * 		 (i.e. return false for unknown errors; these should be handled by 
              *        the invoking code of this helper function)
              *        
-			 * @memberOf WebkitAudioInput#
+			 * @memberOf WebspeechAudioInput#
              */
             helper_error_handler = function(event) {
             	
@@ -349,8 +353,8 @@ newMediaPlugin = {
             	
             	switch(type){
             	case "no-speech":
-                    if (loglevel >= 1){
-                        console.info("[webkitAudioInput.Warn] event " + type);
+                    if (logger.isi()){
+                        logger.info("event " + type);
                     }
                     // no errorcallback, just restart (if in RECORD mode)...
                     return true;
@@ -401,8 +405,8 @@ newMediaPlugin = {
             	case "language-not-supported":
                     // do not automatically restart!, change the language
                     aborted = true;
-                    if (loglevel >= 1){
-                        console.warn("[webkitAudioInput.Warn] event " + type);
+                    if (logger.isw()){
+                        logger.warn("event " + type);
                     }
                     currentFailureCallback && currentFailureCallback(event.error);
                     return true;
@@ -416,7 +420,7 @@ newMediaPlugin = {
             	return false;
             }; //END: helper_error_handler(event){...
             
-            /** @memberOf WebkitAudioInput# */
+            /** @memberOf WebspeechAudioInput# */
             default_error_function = function(event){
             	
             	++error_counter;
@@ -429,7 +433,7 @@ newMediaPlugin = {
                     if (currentFailureCallback){
                         currentFailureCallback(event.error);
                     } else {
-                        console.error("[webkitAudioInput.Error] event " + event.error);
+                        logger.error("event " + event.error);
                     }
                 }
             };
@@ -443,7 +447,7 @@ newMediaPlugin = {
              * 
              * starts audio-analysis (if listeners are registered for mic-levels-changed event)
              * 
-             * @memberOf WebkitAudioInput.recognition#
+             * @memberOf WebspeechAudioInput.recognition#
              */
             recognition.onaudiostart = function(event){
                 active = true;
@@ -451,50 +455,50 @@ newMediaPlugin = {
                 // so: reset counter
                 // TODO: check if this is really correct
 //                restart_counter=0;
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Audio START");
-                	console.debug("[webkitAudioInput.Debug] active: " + active);
+                if (logger.isd()){
+                	logger.debug("Audio START");
+                	logger.debug("active: " + active);
                 }
                 
                 mediaManager.micLevelsAnalysis.start();
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onspeechstart = function(event){
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Speech START");
+                if (logger.isd()){
+                	logger.debug("Speech START");
                 }
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onsoundstart  = function(event){
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Sound  START");
+                if (logger.isd()){
+                	logger.debug("Sound  START");
                 }
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onaudioend = function(event){
                 active = false;
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Audio END");
+                if (logger.isd()){
+                	logger.debug("Audio END");
                 }
 
 //                mediaManager.micLevelsAnalysis.stop();// MOVED to onend: in some cases, onaudioend will not be triggered, but onend will always get triggered
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onspeechend = function(event){
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Speech END");
+                if (logger.isd()){
+                	logger.debug("Speech END");
                 }
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onsoundend  = function(event){
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] Sound  END");
+                if (logger.isd()){
+                	logger.debug("Sound  END");
                 }
             };
-            /** @memberOf WebkitAudioInput.recognition# */
+            /** @memberOf WebspeechAudioInput.recognition# */
             recognition.onstart  = function(event){
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] asr START");
+                if (logger.isd()){
+                	logger.debug("Recognition START");
                 }
             };
             /**
@@ -504,13 +508,12 @@ newMediaPlugin = {
              * 
              * re-starts recognition if in "recoring" mode OR calls stopped-callback
              * 
-             * @memberOf WebkitAudioInput.recognition#
+             * @memberOf WebspeechAudioInput.recognition#
              */
             recognition.onend  = function(event){
                 active = false;
-                if (loglevel >= 4){
-                	console.debug("[webkitAudioInput.Debug] asr END");
-                	console.debug("[webkitAudioInput.Debug] active: " + active);
+                if (logger.isd()){
+                	logger.debug("Recognition END (active: "+active+")");
                 }
                 
                 //NOTE there may be no analysis open, but stopping here (and not e.g. in onaudioen) 
@@ -535,7 +538,7 @@ newMediaPlugin = {
             
             /** 
              * @type function
-             * @memberOf WebkitAudioInput.recognition#
+             * @memberOf WebspeechAudioInput.recognition#
              */
             recognition.onerror = default_error_function;
             
@@ -546,16 +549,16 @@ newMediaPlugin = {
              * TODO make this configurable
              * 
              * @type Number
-             * @memberOf WebkitAudioInput.recognition#
+             * @memberOf WebspeechAudioInput.recognition#
              */
             recognition.maxAlternatives = 1;
             
-            /** @type webkitSpeechAudioInput
-			 * @memberOf WebkitAudioInput# */
+            /** @type webspeechAudioInput
+			 * @memberOf WebspeechAudioInput# */
             var pluginExports = {
 				/**
 				 * @public
-				 * @memberOf WebkitAudioInput.prototype
+				 * @memberOf WebspeechAudioInput.prototype
 				 * @see mmir.MediaManager#startRecord
 				 */
 				startRecord: function(successCallback, failureCallback, intermediateResults){
@@ -564,18 +567,16 @@ newMediaPlugin = {
 					var errMsg;
                     if (active == true){
                     	
-                    	errMsg = "[webkitAudioInput.Warn] Voice recognition already running.";
+                    	errMsg = "[webspeechAudioInput.Warn] Voice recognition already running.";
                         
                         if(failureCallback){
                         	
                         	failureCallback(errMsg);
                         	
-                        	if (loglevel >= 1){
-                                console.warn(errMsg);
-                            }
+                        	logger.warn(errMsg);
                         }
                         else {
-                        	console.warn(errMsg);
+                        	logger.warn(errMsg);
                         }
                         return;
                     }
@@ -590,7 +591,7 @@ newMediaPlugin = {
                     final_recognition_result = "";
                     
                     // set intermediate_results - for access by stopRecord
-                    intermediate_results = intermediateResults;
+                    intermediate_results = !!intermediateResults;
                     
                     // set recognition language
                     var langStr = languageManager.getLanguageConfig(_pluginName);
@@ -604,7 +605,7 @@ newMediaPlugin = {
                     recognition.continuous = true;
                     
                     // get results continuously
-                    recognition.interimResults = (loglevel >= 4) ? true : false;
+                    recognition.interimResults = !!intermediateResults;//(loglevel >= 4) ? true : false;//FIXME make settable/argument
 
 					currentFailureCallback = failureCallback;
 					currentSuccessCallback = successCallback;
@@ -621,16 +622,16 @@ newMediaPlugin = {
                         error_counter = 0;
 
                         var evtResults = event.results[event.resultIndex];
-                        if (loglevel >= 4){
-//                            console.debug("[webkitAudioInput.Debug] " + "interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD] + " ("+event.results[event.resultIndex][0].confidence+")");
+                        if (logger.isd()){
+//                            logger.debug("interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD] + " ("+event.results[event.resultIndex][0].confidence+")");
                             
-                            console.debug("[webkitAudioInput.Debug]  interim: " + JSON.stringify(event.results));
+                            logger.debug("interim: " + JSON.stringify(event.results));
                         }
 
                         // if event.results[event.resultIndex].isFinal is true, then there is a pause.
                         if (evtResults.isFinal) {
-                            if (loglevel >= 4){
-                                console.debug("[webkitAudioInput.Debug]  final");
+                            if (logger.isd()){
+                                logger.debug("final result");
                             }
 
                             finalResult = evtResults[0][EVENT_RESULT_FIELD];
@@ -672,24 +673,22 @@ newMediaPlugin = {
                     	
                     } catch (exc){
                     	
-                    	errMsg = "[webkitAudioInput.Error] Could not start voice recognition: "+ exc;
+                    	errMsg = "[webspeechAudioInput.Error] Could not start voice recognition: "+ exc;
                         
                         if(failureCallback){
                         	
                         	failureCallback(errMsg,exc);
 
-                            if (loglevel >= 1){
-                                console.error(errMsg, exc);
+                            logger.error(errMsg, exc);
                             }
-                        }
                         else {
-                        	console.error(errMsg, exc);
+                        	logger.error(errMsg, exc);
                         }
                     }
 				},
 				/**
 				 * @public
-				 * @memberOf WebkitAudioInput.prototype
+				 * @memberOf WebspeechAudioInput.prototype
 				 * @see mmir.MediaManager#stopRecord
 				 */
 				stopRecord: function(successCallback,failureCallback){
@@ -706,15 +705,15 @@ newMediaPlugin = {
                         recognition.onresult = function (event) {
                             var finalResult = '';
 
-                            if (loglevel >= 4){
-                                console.debug("[webkitAudioInput.Debug] interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD]);
+                            if (logger.isd()){
+                                logger.debug("interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD]);
                             }
                             
                             var evtResults = event.results[event.resultIndex];
                             // if event.results[event.resultIndex].isFinal is true, then there is a pause.
                             if (evtResults.isFinal) {
-                                if (loglevel >= 4){
-                                    console.debug("[webkitAudioInput.Debug] final");
+                                if (logger.isd()){
+                                    logger.debug("final result");
                                 }
 
                                 finalResult = evtResults[0][EVENT_RESULT_FIELD];
@@ -732,7 +731,7 @@ newMediaPlugin = {
                                     
                                     if(successCallback){
                                     	if(isSuccessTriggered){
-                                    		console.warn('stopRecord: success callback was already triggered!');//FIXME debug
+                                    		logger.info('stopRecord: success callback was already triggered!');
                                     	}
                                     	isSuccessTriggered = true;
                                     	successCallback.call(self, final_recognition_result);
@@ -757,7 +756,7 @@ newMediaPlugin = {
                     //		(NOTE: the onstop()-listener does not seem to get called ...)
                     recognition._stopRecordCallback = function(evt){
                     	if(successCallback && !isSuccessTriggered){
-//                    		console.debug('stopRecord: calling success callback onstop (without last ASR result)');//FIXM debug
+//                    		logger.debug('stopRecord: calling success callback onstop (without last ASR result)');//FIXM debug
                     		isSuccessTriggered = true;
                         	successCallback.call(self,'', -1, 'RECORDING_DONE');
                         }
@@ -769,18 +768,16 @@ newMediaPlugin = {
                     	
                     } catch (exc){
                     	
-                    	var errMsg = "[webkitAudioInput.Error] Could not stop voice recognition: "+ exc;
+                    	var errMsg = "[webspeechAudioInput.Error] Could not stop voice recognition: "+ exc;
                         
                         if(failureCallback){
                         	
                         	failureCallback(errMsg);
                         	
-                        	if (loglevel >= 1){
-                                console.error(errMsg, exc);
+                        	logger.error(errMsg, exc);
                             }
-                        }
                         else {
-                        	console.error(errMsg, exc);
+                        	logger.error(errMsg, exc);
                         }
                     }
 				},
@@ -795,26 +792,24 @@ newMediaPlugin = {
 				 * NOTE:  no end event, if recognize() is stopped via stopRecord()
 				 * 
 				 * @public
-				 * @memberOf WebkitAudioInput.prototype
+				 * @memberOf WebspeechAudioInput.prototype
 				 * @see mmir.MediaManager#recognize
 				 */
-				recognize: function(successCallback,failureCallback){
+				recognize: function(successCallback, failureCallback, intermediateResults){
 					
                     var errMsg;
                     if (active == true){
                     	
-                    	errMsg = "[webkitAudioInput.Warn] Voice recognition already running.";
+                    	errMsg = "[webspeechAudioInput.Warn] Voice recognition already running.";
                         
                         if(failureCallback){
                         	
                         	failureCallback(errMsg);
                         	
-                        	if (loglevel >= 1){
-                                console.warn(errMsg);
-                            }
+                        	logger.warn(errMsg);
                         }
                         else {
-                        	console.warn(errMsg);
+                        	logger.warn(errMsg);
                         }
                         return;
                     }
@@ -827,7 +822,7 @@ newMediaPlugin = {
                     
                     // flush any old results
                     final_recognition_result = "";
-                    
+
                     // recognition.lang = "en-US";
                     var langStr = languageManager.getLanguageConfig(_pluginName);
                     if(!langStr){
@@ -841,7 +836,7 @@ newMediaPlugin = {
                     
                     // not needed for recognize
                     // // set intermediate_results - for access by stopRecord
-                    recognition.interimResults = (loglevel >= 4) ? true : false;
+                    recognition.interimResults = !!intermediateResults;//(loglevel >= 4) ? true : false;//FIXME make settable/argument
 
 					currentFailureCallback = failureCallback;
 					currentSuccessCallback = successCallback;
@@ -853,14 +848,14 @@ newMediaPlugin = {
                     recognition.onresult = function (event) {
 //                        var finalResult = '';
 
-                        if (loglevel >= 4){
-                            console.debug("[webkitAudioInput.Debug] " + "interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD]);
+                        if (logger.isd()){
+                            logger.debug("interim: " + event.results[event.resultIndex][0][EVENT_RESULT_FIELD]);
                         }
 
                         // if event.results[event.resultIndex].isFinal is true, then there is a pause.
                         if (event.results[event.resultIndex].isFinal) {
-                            if (loglevel >= 4){
-                                console.debug("[webkitAudioInput.Debug] " + "final");
+                            if (logger.isd()){
+                                logger.debug("final result");
                             }
 
                             //stop recording - finish after one sentence!
@@ -882,24 +877,22 @@ newMediaPlugin = {
                     	
                     } catch (exc){
                     	
-                    	errMsg = "[webkitAudioInput.Error] Could not start voice recognition: "+ exc;
+                    	errMsg = "[webspeechAudioInput.Error] Could not start voice recognition: "+ exc;
                         
                         if(failureCallback){
                         	
                         	failureCallback(errMsg, exc);
 
-                            if (loglevel >= 1){
-                                console.error(errMsg, exc);
+                          logger.error(errMsg, exc);
                             }
-                        }
                         else {
-                        	console.error(errMsg, exc);
+                        	logger.error(errMsg, exc);
                         }
                     }
 				},
 				/**
 				 * @public
-				 * @memberOf WebkitAudioInput.prototype
+				 * @memberOf WebspeechAudioInput.prototype
 				 * @see mmir.MediaManager#cancelRecognition
 				 */
                 cancelRecognition: function(successCallback,failureCallback){
@@ -928,20 +921,21 @@ newMediaPlugin = {
                 /**
                  * for debugging - NOTE use with caution, be removed in the future
 				 * @private
-				 * @memberOf WebkitAudioInput.prototype
+				 * @see see Logger#getLevel
+				 * @memberOf WebspeechAudioInput.prototype
 				 */
                 getLoglevel: function(){
-                    return loglevel;
+                    return logger.getLevel();
                 },
                 /**
                  * for debugging - NOTE use with caution, be removed in the future
-                 * @default 0: set loglevel to 0
+                 * @default 'warning' (see {@link Logger#setLevel})
 				 * @private
-				 * @memberOf WebkitAudioInput.prototype
+				 * @memberOf WebspeechAudioInput.prototype
 				 */
                 setLoglevel: function(logvalue){
-                    loglevel = logvalue | 0;
-                    return loglevel;
+                    logger.setLevel(logvalue);
+                    return logger.getLevel();
                 }
 			};
 			
@@ -956,31 +950,31 @@ newMediaPlugin = {
 				// since mic-levels-analysis should be used as singleton
 				mediaManager.loadFile(micLevelsImplFile, function success(){
 					
-					console.debug('initialized microphone-levels analysis for '+_pluginName);
+					logger.debug('initialized microphone-levels analysis for '+_pluginName);
 					
 					//invoke the passed-in initializer-callback and export the public functions:
 					callBack(pluginExports);
 					
 				}, function error(err){
 
-					console.error('ERROR: using stub implementation  for microphone-levels analysis, because loading the implementation file '+implPath+' failed: '+err);
+					logger.error('ERROR: using stub implementation  for microphone-levels analysis, because loading the implementation file '+implPath+' failed: '+err);
 					
 					mediaManager.micLevelsAnalysis = {
-						/** @memberOf WebkitAudioInput.MicLevelsAnalysisStub */
+						/** @memberOf WebspeechAudioInput.MicLevelsAnalysisStub */
 						_active: false,
 						start: function(){
-							console.info('STUB::micLevelsAnalysis.start()');
+							logger.info('STUB::micLevelsAnalysis.start()');
 						},
 						stop: function(){
-							console.info('STUB::micLevelsAnalysis.stop()');
+							logger.info('STUB::micLevelsAnalysis.stop()');
 						},
 						enable: function(enable){
-							console.info('STUB::micLevelsAnalysis.enable('+(typeof enable === 'undefined'? '': enable)+') -> false');
+							logger.info('STUB::micLevelsAnalysis.enable('+(typeof enable === 'undefined'? '': enable)+') -> false');
 							return false;
 						},
 						active: function(active){
 							this._active = typeof active === 'undefined'? this._active: active;
-							console.info('STUB::micLevelsAnalysis.active('+(typeof active === 'undefined'? '': active)+') -> ' + this._active);
+							logger.info('STUB::micLevelsAnalysis.active('+(typeof active === 'undefined'? '': active)+') -> ' + this._active);
 							return active;
 						}
 					};

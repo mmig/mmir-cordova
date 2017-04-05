@@ -64,7 +64,7 @@ function initMmir() {
 	 * @memberOf mmir.internal
 	 * @private
 	 */
-	function deqExex (func) {
+	function deqExec (func) {
 		if(!func){
 			func = dequeue();
 		}
@@ -322,7 +322,7 @@ function initMmir() {
 				
 				//execute all callbacks in queue
 				while(!isEmpty()){
-					deqExex();
+					deqExec();
 				}
 			},
 			
@@ -343,7 +343,7 @@ function initMmir() {
 		
 				//SPECIAL MODE: if already active, execute the callback 
 				//				(if queue is not empty yet: queue function call in order to preserve the execution ordering)
-				if(_isReady && ! isEmpty()){
+				if(_isReady && isEmpty()){
 					deqExec(func);
 				}
 				else {
@@ -563,7 +563,48 @@ function initMmir() {
 			 * @see mmir.debug
 			 * @see mmir.logLevel
 			 */
-			logTrace: true	//{trace: true, depth: 'full'}
+			logTrace: true,	//{trace: true, depth: 'full'},
+			
+			/**
+			 * Attached require-function that is used by the framework to load dependencies.
+			 * 			 
+			 * @memberOf mmir
+			 * @name require
+			 * @type Function
+			 * @default requirejs
+			 * @public
+			 * 
+			 * @see https://requirejs.org/
+			 */
+			require: null,//is intialized in mainConfig.js
+			/**
+			 * Attached define-function for "declaring" modules that is used by the framework.
+			 * 
+			 * See requirejs documentation on details about the <code>define</code> function.
+			 * 			 
+			 * @memberOf mmir
+			 * @name _define
+			 * @type Function
+			 * @default define
+			 * @protected
+			 * 
+			 * @see https://requirejs.org/
+			 */
+			_define: null,//is intialized in mainConfig.js
+			
+			/**
+			 * The (relative) path pointing to the mmir-lib, in case the library is located
+			 * somewhere other than <code>mmirf/</code> (relative to the main HTML page).
+			 * 
+			 * Normally, it should not be necessary to change this.
+			 * 			 
+			 * @memberOf mmir
+			 * @name _mmirLibPath
+			 * @type String
+			 * @default undefined (will use the default configuration for the path)
+			 * @protected
+			 */
+			_mmirLibPath: void(0)
 	};
 	
 	if(typeof define === 'function'){

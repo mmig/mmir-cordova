@@ -25,7 +25,7 @@
  */
 
 
-define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', 'module'],
+define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', 'module', 'require'],
 	/**
 	 * A Utility class to support various functions.<br>
 	 * 
@@ -39,6 +39,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 	 * @requires StringExtensions
 	 * @requires Constants (optionally: jQuery)
 	 * @requires mmir.SemanticInterpreter (in {@link mmir.CommonUtils#loadCompiledGrammars})
+	 * @requires require
 	 * 
      * @requires jQuery.isArray	 in #isArrayHelper
      * @requires jQuery.Deferred	 in #loadImpl, #loadDirectoryStructure, #setToCompatibilityMode
@@ -52,7 +53,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 	 * 
 	 */
 	function(
-		constants, stringExt, $, paramsParseFunc, Logger, module
+		constants, stringExt, $, paramsParseFunc, Logger, module, require
 ) {
 	/** @scope mmir.CommonUtils.prototype *///for jsdoc2
 	
@@ -152,8 +153,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		/**
 		 * Array of Directories (Strings) to parse at the starting process<br>
 		 * those directories are then accessable by the functions
-		 * {@link mmir.CommonUtils#getDirectoryContents} and
-		 * {@link mmir.CommonUtils#getDirectoryContentsWithFilter}
+		 * {@link mmir.CommonUtils#listDir}
 		 * 
 		 * TODO read from properties (implement mechanism such that
 		 * \build.settings and this refer to the same resource)
@@ -162,22 +162,21 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		 * @private
 		 */
 		var directoriesToParse = [
-			 "www/controllers", 
-			 "www/views", 
-			 "www/models", 
-			 "www/config", 
-			 "www/mmirf/plugins", 
-			 "www/helpers"
+			 "controllers", 
+			 "views", 
+			 "models", 
+			 "config", 
+			 "mmirf/plugins", 
+			 "helpers"
 		 ];
 	
 		/** @lends mmir.CommonUtils.prototype */
 		return {
 			
 		    /**
-		     * This function is used by
-		     * {@link mmir.CommonUtils#getDirectoryContents} and
-		     * {@link mmir.CommonUtils#getDirectoryContentsWithFilter} to strip the
-		     * pathname parameter
+		     * Helper function for
+		     * {@link mmir.CommonUtils#listDir}
+		     * to clear-up/normalize the pathname parameter
 		     * 
 		     * @function
 		     * @private
@@ -363,7 +362,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 	    	 * @memberOf mmir.CommonUtils.prototype
 			 */
 		    getCompiledGrammarPath : function(generatedGrammarsPath, grammarId, isFileNameOnly) {
-		    	var files = instance.getDirectoryContentsWithFilter(generatedGrammarsPath, "*.js");
+		    	var files = instance.listDir(librariesPath, /^.*\.js$/ig);//get *.js files
 		    	if(!files){
 		    		return '';
 		    	}
@@ -505,13 +504,13 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    	var _defer = $.Deferred();
 				
 				if(completedCallback){
-					_defer.always(completedCallback);
+					_defer.then(completedCallback, completedCallback);
 				}
 				
 				var isPath = true;//TODO use this for creating absolute paths (-> in case librariesPath is an Array)!
 				var theFileList;
 				if(typeof librariesPath === 'string'){
-					theFileList = instance.getDirectoryContentsWithFilter(librariesPath, "*.js");
+					theFileList = instance.listDir(librariesPath, /^.*\.js$/ig);//get *.js files
 				}
 				else {
 					isPath = false;
@@ -724,87 +723,202 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    },
 	
 		    /**
-		     * This function returns an array of strings with the contents of a
-		     * directory.
-		     * 
-		     * @function
-		     * @param {String}
-		     *            pathname Path of the directory which contents should
-		     *            be returned
-		     * @public
-		     * @returns {Array} Array of Strings which contains the contents of
-		     *          the directory
-		     *          
+		     * @copydoc #listDir
+		     * @deprecated use {@link #listDir} instead
 	    	 * @memberOf mmir.CommonUtils.prototype
 		     */
 		    getDirectoryContents : function(pathname) {
-				var retValue;
-	
-				pathname = this.stripPathName(pathname);
-	
-				try {
-					retValue = this.directoryStructure[pathname];
-				} catch (e) {
-					logger.error(e);
-					retValue = null;
-				}
-				return retValue;
+				return this.getDirectoryContentsWithFilter(pathname);
+		    },
+		    /**
+		     * @copydoc #listDir
+		     * @deprecated use {@link #listDir} with RegExp for filter instead (see example for converting pseudo-wildcard string to RegExp)
+	    	 * @memberOf mmir.CommonUtils.prototype
+	    	 * 
+	    	 * @example 
+	    	 * //convert pseudo-wildcard string to RegExp
+	    	 * var filterStr = '^' + filter.replace('.', '\\.').replace('*', '.*').replace('\$', '\\$') + '$'; // e.g.,// '^.*\.js$'
+		     * var regexpr = new RegExp(filterStr, 'gi');
+	    	 * mmir.CommonUtils.listDir(pathname, regexpr); 
+	    	 * 
+		     */
+		    getDirectoryContentsWithFilter : function(pathname, filter) {
+		    	
+		    	if(filter){
+		    		var filterStr = '^' + filter.replace('.', '\\.').replace('*', '.*').replace('\$', '\\$') + '$'; // e.g.,// '^.*\.js$'
+		    		filter = new RegExp(filterStr, 'gi');
+		    	}
+		    	
+				return this.listDir(pathname, filter);
 		    },
 	
 		    /**
-		     * This function returns an array of strings with the contents of a
-		     * directory, giving only those files which match the filter.
+		     * This function returns an array of strings (file names) with the contents of 
+		     * the directory <code>pathname</code>.
+		     * 
+		     * The <code>pathname</code> must be one of the directories (or sub-directories)
+		     * of the framework's parsed folders, see {@link #directoriesToParse}.
+		     * 
+		     * If a <code>filter</code> is use, only files which's names match
+		     * the filter are included in the returned list.
 		     * 
 		     * @function
 		     * @param {String} pathname
 		     *            Path of the directory which's contents should be
 		     *            returned
-		     * @param {String} filter
-		     *            Filter for file-names which may contain a wildcard, 
-		     *            e.g.: <b>*.js</b>, <b>*</b> or <b>*.ehtml</b>
+		     * @param {String|RegExp|Function} [filter]
+		     *            Filter for file-names:
+		     *              if <code>String</code> the file-name may contain the wildcard <code>*</code> 
+		     *                (comparison is <b>not case-sensitive</b>), 
+		     *                e.g.: <b>*.js</b>, <b>*</b> or <b>*.ehtml</b>
+		     *              if <code>RegExp</code> the file-name must match the regular expression, 
+		     *                e.g.: <b>/.*\.js/ig</b> or <b>/^.*\.ehtml$/ig</b>
+		     *              if <code>Function</code> the file-name is included, if the function returns <code>true</code>,
+		     *                where the function signature is <code>function(fileName: String) : Boolean</code>,
+		     *                note that argument <code>fileName</code> will have been transformed to lower-case characters
+		     *              
 		     * @public
 		     * @returns {Array} Array of Strings which contains the contents of
 		     *          the directory.
-		     *          Or <code>null</code>, if no matching contents could be
-		     *          found.
+		     *          Or <code>null</code>, if <code>pathname</code> is not one of the framework's
+		     *          parsed folders.
 		     *          
 	    	 * @memberOf mmir.CommonUtils.prototype
 		     */
-		    getDirectoryContentsWithFilter : function(pathname, filter) {
+		    listDir : function(pathname, filter) {
 		    	
-				var retValue = [];
-	
-				var tmpfilter = '^' + filter.replace('.', '\\.').replace('*', '.*').replace('\$', '\\$') + '$'; // e.g.,// '^.*\.js$'
-	
-				var filterRegExp = new RegExp(tmpfilter, 'gi');
-	
-				pathname = this.stripPathName(pathname);
-	
-				try {
-					var tmp = this.directoryStructure[pathname];
-					if (typeof tmp === 'undefined') {
-						if(logger.isInfo()) logger.info('CommonUtils', 'getDirectoryContentsWithFilter', '[' + pathname + ' | ' + filter + ']  not found.');
-						retValue = null;
-					} 
-					else {
-						for (var i = 0; i < tmp.length; i++) {
-							if (tmp[i].match(filterRegExp)) {
-								retValue.push(tmp[i]);
+		        pathname = this.stripPathName(pathname);
+
+		        try {
+		            var tmp = this.directoryStructure[pathname];
+		            if (typeof tmp === 'undefined') {
+		            	
+		                logger.debug('CommonUtils', 'listDir', 'path "' + pathname + '" not found.');
+		                
+		                return null;////////////////// EARLY EXIT ///////////////////////////////
+		            } 
+		            else {
+
+		                var i, size, retValue;
+		                if(filter && typeof filter !== 'string'){//evaluate filter as RegExp or Function
+		                	
+		                	retValue = [];
+		                	var isFunc = typeof filter === 'function';
+		                	
+		                	//reset search-position for RegExp
+		                	isFunc || (filter.lastIndex = 0);
+		            		
+		            		for (i = 0, size = tmp.length; i < size; ++i) {
+								if((isFunc && filter(tmp[i])) || (!isFunc && filter.test(tmp[i]))) {
+									retValue.push(tmp[i]);
+								}
+								isFunc || (filter.lastIndex = 0);
 							}
-						}
-					}
-				} catch (e) {
-					logger.error('CommonUtils', 'getDirectoryContentsWithFilter', '[' + pathname + ' | ' + filter + '] ', e);
-					retValue = null;
-				}
-				return retValue;
+		            		return retValue;////////////////// EARLY EXIT ///////////////////////////////
+		            	}
+		            	
+				        var pattern = typeof filter === 'string'? filter.split('*') : null;
+
+		                if(!pattern || pattern.length === 0){
+		                	//no filter or invalid/all-allowing wildcard filter -> return complete result
+		                    return tmp;////////////////// EARLY EXIT ////////////////////////////////////
+		                }
+
+		            	//evaluate filter as wildcard-string
+
+		                //ASSERT pattern.length >= 1
+
+		                for (i = 0, size = pattern.length; i < size; ++i) {
+		                    pattern[i] = pattern[i].toLowerCase();
+		                }
+
+		                var e, elen, j, index, part, doAdd, isStartWc;
+		                var plen = pattern.length;
+		                
+	                	retValue = [];
+		                for (i = 0, size = tmp.length; i < size; ++i) {
+
+		                    e = tmp[i].toLowerCase();
+
+		                    if(e){
+
+		                        //ASSERT e.length >= 1
+		                        
+		                        elen = e.length;
+		                        
+		                        doAdd = true;
+		                        index = 0;
+		                        isStartWc = false;
+
+		                        //match all entries of pattern-list (or exclude e from retValue)
+		                        for(j=0; j < plen; ++j){
+		                            
+		                            part = pattern[j];
+		                            
+		                            if(!part){
+		                                if(j===0){
+		                                    //-> very first pattern-part is a wildcard
+		                                    isStartWc = true;
+		                                } else if(j=== plen-1) {
+		                                    //-> very last pattern-part is a wildcard
+		                                    break;
+		                                } else {
+		                                    //-> double wildcard, i.e. '**' ... just ignore, and continue with next part
+		                                    continue;
+		                                }
+		                            }
+
+		                            index = e.indexOf(part, index);
+		                            if(index === -1){
+		                                doAdd = false;
+		                                break;
+		                            } else {
+
+		                                //special case j==0: matching for part must be at index 0, 
+		                                // if pattern does not start with a wildcard
+		                                if(j===0 && index!==0 && !isStartWc){
+		                                    doAdd = false;
+		                                    break;
+		                                }
+
+		                                //continue matching for next pattern-part at pos+1
+		                                index += part.length;
+
+		                                if(j === plen-1 && index < elen){
+
+		                                    //if last pattern-part (and it is not a wildcard),
+		                                    //then it must match the remaining string, otherwise
+		                                    //exclude e from retValue
+		                                    doAdd = false;
+		                                }
+		                            }
+		                            
+		                        }//END for(j in pattern)
+
+		                        if(doAdd){
+		                            retValue.push(tmp[i]);
+		                        }
+		                        
+		                    }//END if(e)
+		                    
+		                }//END for(i in tmp)
+		                
+		                return retValue;////////////////// EARLY EXIT ///////////////////////////////
+		                
+		            }//END else tmp
+		            
+		        } catch (e) {
+		            logger.error('CommonUtils', 'listDir', '[' + pathname + ' | ' + filter + '] ', e);
+		        }
+		        
+		        return null;
 		    },
 	
 		    /**
 		     * Checks if an object is an <code>Array</code>.
 		     * 
 		     * <p>
-		     * This function can be savely run in arbirtray contexts, e.g.
+		     * This function can be safely run in arbitrary contexts, e.g.
 		     * 
 		     * <pre>
 		     *  var checkArray = mmir.CommonUtils.isArray;
@@ -973,7 +1087,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		    },
 		    
 			/**
-			 * Parses the directory structure - paths given by property {@link mmir.CommonUtils-constructor-directoriesToParse} - and storing the result in the class-property {@link mmir.CommonUtils-directoryStructure}
+			 * Parses the directory structure and stores the result in the class-property {@link mmir.CommonUtils-directoryStructure}
 			 * 
 			 * @function
 			 * @param {Function} [success] The function that should be executed after the diretories are parsed - it's best to include all following functions inside the callback-function.
@@ -986,11 +1100,8 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 				var _defer = $.Deferred();
 				var self = this;
 				
-				if(success){
-					_defer.done(success);
-				}
-				if(errorFunc){
-					_defer.fail(errorFunc);
+				if(success || errorFunc){
+					_defer.then(success, errorFunc);
 				}
 
 				var directoryFileUrl = constants.getDirectoriesFileUrl();
@@ -1021,7 +1132,7 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 							logger.error('CommonUtils', 'loadDirectoryStructure', msg);
 						}
 						
-						_defer.fail(msg);
+						_defer.reject(msg);
 					}
 				});
 				
@@ -1038,11 +1149,8 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 				//replace init so that we do not ivoke load-dir-struct multiple times
 				this.__initDeferred = initPromise;
 				this.init = function initCompleted(onsuccess, onerror){
-					if(onsuccess){
-						this.__initDeferred.done(success);
-					}
-					if(onerror){
-						this.__initDeferred.fail(errorFunc);
+					if(onsuccess || onerror){
+						this.__initDeferred.then(success, onerror);
 					}
 					return this.__initDeferred;
 				};
@@ -1068,6 +1176,12 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		     * @param {Function} [success]
 		     * 				a callback function that is invoked, after compatibility mode
 		     * 				was set (alternatively the returned promise can be used).
+		     * @param {Function} [requireFunction]
+		     * 				the require-function that is configured for loading the compatibility module/file.
+		     * 				Normally, this would be the function <code>mmir.require</code>.
+		     * 				If omitted, the default (local dependency) <code>require</code> function will be used.
+		     * 				NOTE: this argument is positional, i.e. argument <code>success</code> must be present, if
+		     * 				      you want to specify this argument
 		     * @returns {jQuery.Promise}
 		     * 				a Deffered.promise that is resolved, after compatibility mode
 		     * 				was set
@@ -1077,14 +1191,15 @@ define(['constants', 'stringExtension', 'jquery', 'paramsParseFunc', 'logger', '
 		     * @see mmir.CommonUtils.setToCompatibilityModeExtension
 		     * 
 		     */
-		    , setToCompatibilityMode : function(success) {
+		    , setToCompatibilityMode : function(success, requireFunction) {
 		    	
 		    	var defer = $.Deferred();
 		    	if(success){
-		    		defer.always(success);
+		    		defer.then(success, success);
 		    	}
-		    	
-		    	require(['commonUtilsCompatibility'],function(setCompatibility){
+
+		    	requireFunction = requireFunction || require;
+		    	requireFunction(['commonUtilsCompatibility'],function(setCompatibility){
 		    		
 		    		setCompatibility(instance);
 		    		

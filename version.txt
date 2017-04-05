@@ -1,5 +1,5 @@
 ﻿
-version notes for MMIR framework code (v 3.7.2)
+version notes for MMIR framework code (v 3.7.6)
 
  * using Cordova 5.x.x - 6.x.x library
  * using jQuery 2.1.x library
@@ -23,6 +23,144 @@ version notes for MMIR framework code (v 3.7.2)
  Change Log
  --------------
 
+##################
+ Version 3.7.6
+##################
+
+MODFIFICATIONS:
+ * MODIFICATION env/media/webspeechAudioInput.js: enabled (optional) intermediate-results argument for recognize()
+ * MODIFICATION env/media/webAudioTextToSpeech: improved error handling
+ * IMPROVE env/media/webMicLevels: improve calculation for RMS and dB
+ * FIX env/media/webspeechAudioInput: replace internal "loglevel + console.log" mechanism with logger
+
+BUGFIX:
+ * BUGFIX core: for queuing/dequeuing ready() callbacks
+ * BUGFIX manager/notificationManager: check availability of fireError before usage (if there was an error during initialization, this function might not be available)
+ * BUGFIX env/media/webAudioTextToSpeech.cancelSpeech(): only call success-callback, if one is present
+ 
+##################
+ Version 3.7.5
+##################
+
+MODFIFICATIONS:
+ * ADDITION core.js: added property mmir._mmirLibPath which allows to set the (relative) path to the mmir-lib (if it is different than the default path mmirf/); DEFAULT VALUE: undefined
+ * ADDITION tools/constants.js: allow manual configuration via requirejs' config() of basePath:
+     usually the basePath is automatically detected depending on platform/environment, but in case the mmir-lib
+     but in case the mmir-lib and the framework files (controllers, views etc) are located somewhere different
+     than the default location, the this configuration can be used:
+     
+     Example
+     [before the framework initializes: set base-path to resources (controllers, models etc.) to assets/]
+     
+     mmir.config({config: {'constants': {
+       basePath: 'assets/'
+     }}});
+ * ADDITION presentationManager.js: added configuration value defaultLayoutName for setting a custom default-layout (or disabling the default-layout, in case a FALSY-value other than undefined is set)
+     
+     Example (in config/configuration.json): disabling default value
+     {
+     ... 
+	   "defaultLayoutName": null,
+	 ...
+	 }
+	 
+	      
+     Example (in config/configuration.json): use views/layouts/custom.ehtml as default layout
+     {
+     ... 
+	   "defaultLayoutName": "custom",
+	 ...
+	 }
+ * MODIFICATION tools/commonUtils.js: getDirectoryContents() is now an alias for getDirectoryContentsWithFilter(), both with optional second parameter
+ * REFACTOR tools/commonUtils.js: renamed functions (and made old name depricated):
+   * getDirectoryContents() -> listDir
+   * getDirectoryContentsWithFilter() -> listDir
+ * REFACTOR normalized use of Promises/jQuery.Deferred: always use Promise/A+ standard then() function (instead of jQuery alternatives like done(), fail(), always() etc)
+
+ 
+BUGFIX:
+ * BUGFIX env/media/jqmViewEngine.js: use basePath for loading CSS stylesheet
+ * BUGFIX tools/constants.js: prepend basePath to worker's sub-path
+ * BUGFIX presentationManager.js: abort, if on rendering a view cannot be found
+ * BUGFIX controllerManager.js: handle case that no (default) layout is present without provoking an exception
+ * BUGFIX tools/commonUtils.js: in getDirectoryContentsWithFilter() and getDirectoryContents() do wildcard matching without RegExpr, in order to avoid potential problems with special regex-characters in filenames
+ * BUGFIX fixed wrong use of jQuery.Deferred.fail(), when reject() should be used 
+
+##################
+ Version 3.7.4
+##################
+
+MODFIFICATIONS:
+
+ * ADDITION main.js: exports now the mmir object in its module definition, i.e. you can use: require('main') for retrieving mmir core
+ * REFACTOR controller.js, helper.js: renamed (internal) field 'script' -> 'impl', and marked 'script' field as deprecated
+ * ADDITION mediaManager: added short-cut functions play() (for playWAV() and playURL()) and getAudio() (for getWAVAsAudio() and getURLAsAudio())
+ * REFACTOR mainConfig.js: all module IDs and their (file) paths are now contained (statically) in mainConfig.js::mmir_config.paths (now, the only mmir framework related module IDs that are added dynamically, as aliases to existing module IDs/paths)
+
+ * REFACTOR MmirTemplateLexer: removed dependency of require() (using attached field to lexer class instead)
+ * REFACTOR template parsing: moved paser/lexer class extensions from templateProcessor to templateParseUtils
+  * attach templateProcessor's augment-function to template lexer class
+ * REFACTOR templateProcessor:
+  * in class extension: replaced (hidden/private) closure variable with this-reference
+  * export augment/extend-function instead of object for augmenting/extending
+
+ * ADDITION attached requirejs' define to core-object as <core module instance>._define (i.e. mmir._define)
+ * REFACTOR added require() as explicit dependency
+ * REFACTOR use require/define functions attached to the core-object instead of global-object
+ 
+ * ADDITION contentElement: allow usage of template-variables without prefixing them @ within javascript code
+   * implement "import" / "export" for data argument that makes the template variables accessible
+   * "auto declare" variables in for(in)-expressions as template variables if necessary
+   * when parsing ContentElements from template text, add/use reference to parent ContentElement (if they are not directly contained in a view, but in another ContentElement)within js code
+   
+ * REFACTOR [parsingResult, templateRenderUtils, contentElement] changed creation of script-eval functions:
+   instead of creating each function on its own and import & exporting data-vars, now all script-eval functions are gathered and are created within a closure together with the data-vars
+
+
+BUGFIX:
+  * FIX MmirTemplateLexer: removed lexing for string-types (which is only relevant within content/scripts lexers)
+
+##################
+ Version 3.7.3
+##################
+
+MODFIFICATIONS:
+
+ * ADDITION: added a Controller-argument to initialization constructor for controller (and helper) implementations.
+   For example, for the controller implementation in file application.js, this argument is passed to the constructor function:
+   ...
+      var Application = function ApplicationConstructor(ctrl){
+        this.ctrlRef = ctrl;
+        ...
+      };
+   ...
+   NOTE that during the initialization (i.e. in the controller/helper implementation's constructor) there should 
+        be made no calls to the Controller/Helper object, since it is not fully initialized during that time.
+      
+ * ADDITION added optional context configuration for controller (and helper) implementations and for model implementations:
+   set these contexts/namespaces in config/configuration.json:
+   ...
+     "controllerContext": "some.namespace",
+     "modelContext": "some.other.namespace",
+   ...
+   this would mean that, for example, the implementation for the controller application.js should be done in namespace
+   some.namespace, i.e. in application.js:
+   ...
+     some.namespace.Application = function ApplicationConstructor(){
+   ...
+   NOTE that these contexts/namespaces are created during intialization, before the controllers/helpers/models are
+        initialized. If you are using these contexts/namespaces in your own code, you should take care not to
+        "override" them.
+     
+ * env/media/webkitAudioInput.js
+  * REFACTOR renamed file to webspeechAduioInput.js (and module name to "webspeechAudioInput")
+  * added auto-configuration to mediaManager for backwards compatibility (i.e. "webkitAudioInput" configuration will be automatically mapped to the new module name "webspeechAudioInput") 
+
+BUGFIX
+ * env/media/webkitAudioInput.js: avoid ReferenceErrors when checking for SpeechRecognition implementation in browsers other than Chrome
+ 
+ 
+ 
 ##################
  Version 3.7.2
 ##################

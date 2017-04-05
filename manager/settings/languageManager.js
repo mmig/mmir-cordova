@@ -157,7 +157,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		        var retValue = false;
 
 		        if (lang != null) {
-		            langFiles = commonUtils.getDirectoryContents(constants.getLanguagePath() + lang);
+		            langFiles = commonUtils.listDir(constants.getLanguagePath() + lang);
 		            if (langFiles != null) {
 		                if (langFiles.indexOf(constants.getGrammarFileName()) > -1) {
 		                    retValue = true;
@@ -406,7 +406,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		        		
 
 				        // get all the languages/dictionaries by name
-				        languages = commonUtils.getDirectoryContents(constants.getLanguagePath());
+				        languages = commonUtils.listDir(constants.getLanguagePath());
 
 				        if (logger.isDebug()) logger.debug("[LanguageManager] Found dictionaries for: " + JSON.stringify(languages));// debug
 
@@ -472,7 +472,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		                var retValue = false;
 
 		                if (lang != null) {
-		                    langFiles = commonUtils.getDirectoryContents(constants.getLanguagePath() + lang);
+		                    langFiles = commonUtils.listDir(constants.getLanguagePath() + lang);
 		                    if (langFiles != null) {
 		                        if (langFiles.indexOf(constants.getDictionaryFileName()) > -1) {
 		                            retValue = true;
@@ -500,7 +500,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		                var retValue = false;
 
 		                if (lang != null) {
-		                    langFiles = commonUtils.getDirectoryContents(constants.getLanguagePath() + lang);
+		                    langFiles = commonUtils.listDir(constants.getLanguagePath() + lang);
 		                    if (langFiles != null) {
 		                        if (langFiles.indexOf(constants.getSpeechConfigFileName()) > -1) {
 		                            retValue = true;
@@ -807,20 +807,26 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 				     * @param {Function} [success]
 				     * 				a callback function that is invoked, after compatibility mode
 				     * 				was set (alternatively the returned promise can be used).
+				     * @param {Function} [requireFunction]
+				     * 				the require-function that is configured for loading the compatibility module/file.
+				     * 				Normally, this would be the function <code>mmir.require</code>.
+				     * 				If omitted, the global <code>require</code> function will be used.
+				     * 				NOTE: this argument is positional, i.e. argument <code>success</code> must be present, if
+				     * 				      you want to specify this argument
 				     * @returns {Promise}
 				     * 				a Deffered.promise that is resolved, after compatibility mode
 				     * 				was set
 				     * 
 				     * @see mmir.LanguageManager.setToCompatibilityModeExtension
 		             */
-		            , setToCompatibilityMode : function(success) {
+		            , setToCompatibilityMode : function(success, requireFunction) {
 		            	
 		            	var defer = $.Deferred();
 				    	if(success){
-				    		defer.always(success);
+				    		defer.then(success, success);
 				    	}
-				    	
-				    	require(['languageManagerCompatibility'],function(setCompatibility){
+				    	requireFunction = requireFunction || require;
+				    	requireFunction(['languageManagerCompatibility'],function(setCompatibility){
 				    		
 				    		setCompatibility(instance);
 				    		
