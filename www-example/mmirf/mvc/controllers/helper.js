@@ -32,6 +32,7 @@ define(
 	 * 
 	 * @param {Controller} ctrl Controller instance / object
 	 * @param {String} name Name of the Helper
+	 * @param {Object} [ctx] OPTIONAL the context for the helper implementation (DEFAULT: global context, i.e. window)
 	 * 
 	 * @name Helper
 	 * @class
@@ -50,21 +51,10 @@ define(
 	 * @constructs Helper
 	 * @param {Controller} ctrl Controller instance / object
 	 * @param {String} name Name of the Helper
+	 * @param {Object} ctx the context for the helper implementation, i.e. where the constructor exists: ctx.<helper name>()
 	 */
-	function Helper(ctrl, name){
-	    /**
-	     * The definition of the helper object, containing all properties and functions of the controller.<br>
-	     * A method of the controller can be called via:
-
-		this.script.methodController(parameter);
-
-	     * 
-	     * @type Object
-	     * @public
-	     */
-		// this can only be invoked, if a function with the name "name" exists
-		this.script = new window[name]();
-
+	function Helper(ctrl, name, ctx){
+		
 		/**
 	     * The name of the helper. 
 	     * 
@@ -81,6 +71,26 @@ define(
 	     */
 		this.controller = ctrl;
 
+	    /**
+	     * The definition of the helper object, i.e. its implementation, 
+	     * containing all properties and functions of the controller.<br>
+	     * 
+	     * A method of the helper can be called via:
+		 * <pre>
+		 * 	this.impl.method(parameter);
+		 * </pre>
+	     * 
+	     * @type Object
+	     * @public
+	     */
+		// this can only be invoked, if a function with the name "name" exists in the object/context ctx
+		this.impl = new ctx[name](this);
+		
+		/**
+	     * @deprecated use {@link #impl} instead
+	     * @protected
+	     */
+	    this.script = this.impl;
 	}
 
 
@@ -98,10 +108,10 @@ define(
 //		if(logger.isv()) logger.v("should perform '" + actionName + "' of '" + this.name + "'" + ((typeof data !== 'undefined' && data !== null)? " with data: "+JSON.stringify(data): ""));//debug
 		
 		if(arguments.length > 2){
-		    return this.script[actionName](this.controller, data, arguments[2]);
+		    return this.impl[actionName](this.controller, data, arguments[2]);
 		}
 		else {
-		    return this.script[actionName](this.controller, data);
+		    return this.impl[actionName](this.controller, data);
 		}
 	};
 
