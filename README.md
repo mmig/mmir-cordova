@@ -7,7 +7,7 @@ combination with Cordova.
 
 The repository is meant be included as a "sub-project":
 for example, this repository is included as a GIT _subtree_ in [MMIR-cordova][2]
-and [MMIR-StarterKit][3] as directory ```/build``` using
+and [MMIR-StarterKit][3] as directory `/build` using
 
     git subtree add --prefix build https://github.com/mmig/mmir-tooling master --squash
 
@@ -19,7 +19,7 @@ later updates from this repository can be fetched from wihtin the referencing pr
 
 ### Dependencies
 
-The current build process requires the **[MMIR-lib][4] version 3.7.6 or later**
+The current build process requires the **[MMIR-lib][4] version 4.0.0 or later**
 
 By default the build process will assume that the MMIR-based application is
 located at `www/` and the MMIR-library files at `www/mmirf/`:
@@ -31,25 +31,33 @@ located at `www/` and the MMIR-library files at `www/mmirf/`:
     www/views/*
     ...
 
+### Installation Prerequisites
+
+These prerequisites are required for automatically installing/setting-up the _mmir-tooling_
+in a MMIR project (see section _Installation_ below)
+
+ * Node.js
+ * Gulp CLI (command line interface)  
+   `npm install -g gulp-cli`
+   
 ### Installation
 
-Running the ANT task ```build.xml``` will copy the contents of directory 
-```/resources``` into the parent directory, i.e. to ```../```.
+
+Running `npm install` and then `gulp` will copy the contents of directory 
+`/resources` into the parent directory, i.e. to `../`.
 
 When the contents of this repository are located in the sub-directory
 
     /build
 
-of a Cordova >= 5.x (CLI generated) project, running the ANT task ```build.xml```
-of this repository (within the sub-directory, i.e. `build/build.xml`) will set
+of a Cordova >= 5.x (CLI generated) project, running `gulp`
+of this repository (within the sub-directory, i.e. `/build`) will set
  up the resources (_"tooling"_) for building MMIR-based applications with
  Cordova >= 5.x:
     
     hooks/before_build/**
     mmir-build.properties
     mmir-build.settingsDefault
-    mmir-build.xml
-    mmir-parse.xml
 
 ### Development
 
@@ -60,7 +68,7 @@ NOTE this section is only relevant for working/developing the MMIR library (or i
 
 In general, the build process will load/extract the "raw" requirejs configuration-object (i.e. the JSON-like
 object containing the paths, shims etc.) from `mainConfig.js` and do some additional initialization that
-is specific to the execution environment (e.g. nodejs, Rhino etc).
+is specific to the execution environment (e.g. nodejs).
 Changes in `mainConfig.js` that are not contained in the JSON-like configuration object probably require
 changes in the build scripts `build/lib/mmir-build/templates/generate-[grammars|views].template`.
 
@@ -76,7 +84,7 @@ have been placed in the directory `/build` and the mmir-library has been placed 
     /www/mmirf/<contents of mmir-library>
     ...
 
-and the ANT script `/build/build.xml` has been executed.
+and `gulp` has been executed in `/build/`.
 
 #### Adding New Libraries
 
@@ -85,17 +93,6 @@ After adding new libraries and/or modules, the build process may need to be upda
 This will probably be necessary, if there are changes in `mainConfig.js`, especially if the
 new library is not nodejs compatible (may need to add/implement a dummy-module that is used during build)
 or is not an AMD module and needs a requirejs shim configuration (see also section below).
-
-##### Updating Build Scripts
-
-After changing a (nodejs) build script, e.g. for processing view-template or for processing grammars, in
-`build/lib/mmir-build/templates/`
-the helper script
-
-    node build/lib/mmir-build/scripts/generateAntGenScripts.js
-    
-should be executed, which will create/update the Rhino/Java-based build scripts in
-`build/lib/mmir-build/spec/`
 
 
 ##### Adding New Vendor Libraries

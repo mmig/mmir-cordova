@@ -12,22 +12,13 @@ var requirejs = require;
 //  (may be different than the default value in mainConfig.js)
 var appSrcDir = '{jsSrcDirBase|s|url}';
 var reqInstance = require.config({
-	baseUrl: './' + appSrcDir,
-	paths: {'core': 'core'}
+	baseUrl: './' + appSrcDir.replace(/mmirf\/$/, '/')
 });
 
-require(['core'], function(core){
-
-//	//define "auto-start" module for starting the template processing
-//	// (gets triggered after main-config for requirejs is was applied)
-//	definejs('doStartBuildProc', function(){
-//		//now: do start the build process:
-//		doStartGrammarBuildEnv();
-//	});
-//	core.startModule = 'doStartBuildProc';
+require(['mmirf/core'], function(core){
 	
-	//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
-	core.logTrace = false;
+	//set dummy renderer/viewEngine
+	core.viewEngine = 'mmirf/build/viewEngine';
 	
 	core.require = reqInstance;
 	//core._define = define;
@@ -43,24 +34,11 @@ function doLoadAppConfig(){
 
 	require.config({_buildConfig|s});
 	
-	require(['core', 'logger'], function(core){
-//		require([core.startModule]);
+	require(['mmirf/core', 'mmirf/logger'], function(core){
 		doStartGrammarBuildEnv();
 	});
 
 }
-
-
-////setup and init Jison
-//var _bnf;
-//(function(){
-//	
-//{!jison|s!}
-//	
-//	_bnf = bnf;
-//	definejs('jison',  function(){ return Jison; });
-//						
-//})();
 
 //encapsule build-process (gets triggered after build-paths are configured; see above)
 function doStartGrammarBuildEnv(){
@@ -79,12 +57,12 @@ function doStartGrammarBuildEnv(){
 	// * load dependencies (SemanticInterpreter, jQuery) 
 	// * setup JSON parser (for creating detailed error messages)
 	// * initialize checksum-utils (with loaded dependencies)
-	require(['constants', 'jqueryajax'], function(constants){
+	require(['mmirf/constants', 'mmirf/build/jqueryajax'], function(constants){
 
 		//fix base-dir location (since we do not execute from the main web-directory)
 		constants.init('{appRootDir|s|url}');
 
-		require(['md5', 'jison', 'jsonlint', 'jquery', 'checksumUtils', 'pegjs', 'semanticInterpreter','configurationManager'], function(md5Impl, jison, jsonlint, jquery, checksumUtils){
+		require(['jsonlint', 'jquery', 'mmirf/md5', 'mmirf/jison', 'mmirf/checksumUtils', 'mmirf/pegjs', 'mmirf/semanticInterpreter','mmirf/configurationManager'], function(jsonlint, jquery, md5Impl, jison, checksumUtils){
 			
 			
 //			var bnf = _bnf;
@@ -100,7 +78,6 @@ function doStartGrammarBuildEnv(){
 			//attach deferred-impl. to jquery:
 			jqueryDeferred.extend(jquery, jqueryDeferred);
 			
-//			checksumUtils = require('checksumUtils');
 			checksumUtils.init( md5Impl );
 			
 			//start the standalone-grammar parser / generator: 

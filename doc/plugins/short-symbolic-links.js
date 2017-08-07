@@ -17,6 +17,10 @@
 var path = require('path');
 
 function expandLinks (text, scope) {
+	
+	if(typeof text !== 'string'){
+		return text;
+	}
 
 	var isModified = false;
 	var returnValue = text.replace(/\{\s*@link\s+([#.~])([\w$:]+)\s*\}/g, function (m, mod, name) {
@@ -31,6 +35,10 @@ function expandLinks (text, scope) {
 }
 
 function expandSeeTagPath(text, scope) {
+	
+	if(typeof text !== 'string'){
+		return text;
+	}
 
 	//do not proceed, if there is link-tag:
 	if(/\{\s*@link\s+\S+\s*\}/g.test(text)){
@@ -177,6 +185,7 @@ exports.handlers.newDoclet = function (e) {
 	var modText, t, ts;
 	processDescriptionText(doclet, 'description', scope);
 	processDescriptionText(doclet, 'classdesc', scope);
+	processDescriptionText(doclet, 'deprecated', scope);
 	
 	//process line-tags with links (e.g. see, fire, ...):
 	// * process Array of Strings

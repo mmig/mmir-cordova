@@ -1,6 +1,6 @@
 {
   "name": "mmir-doc",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "API doc generation for the MMIR framework.",
   "keywords": [
     "documentation",
@@ -19,8 +19,13 @@
 	"dependo": "~0.1.6",
 	"esprima": "~2.7.2"
   },
+  "devDependencies": {
+    "del": "^2.2.2",
+    "gulp": "^3.9.1",
+    "gulp-sequence": "^0.4.6",
+    "gulp-util": "^3.0.8"
+  },
   "scripts": {
     "postinstall": "node scripts/fix-node-jsdoc-toolkit.js & patch node_modules/jsdoc/cli.js scripts/patch_jsdoc_3.5.dev_cli.patch"
-  },
-  "devDependencies": {}
+  }
 }
