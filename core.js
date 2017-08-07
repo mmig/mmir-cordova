@@ -7,7 +7,7 @@
  * If called multiple times, the existing module instance is returned.
  * 
  * If a function <code>require</code> exists, the module tries to registers itself
- * according to the <em>RequireJS</em> interface (using the default as its module name, i.e. "core").
+ * according to the <em>RequireJS</em> interface (using the default as its module name, i.e. "mmirf/core").
  * 
  * @name mmir
  * @export initMmir as mmir
@@ -17,7 +17,7 @@
  * @returns the module instance <code>mmir</code>
  * 
  */
-function initMmir() {
+function initMmir(window) {
 	
 	/**
 	 * the name of the global variable which will hold the core-module
@@ -35,6 +35,14 @@ function initMmir() {
 			return window[CORE_NAME];
 		}
 	}
+	
+	/**
+	 * the version of mmir-lib
+	 * 
+	 * @memberOf mmir.internal
+	 * @private
+	 */	
+	var CORE_VERSION = "4.0.0";
 	
     
 	/**
@@ -69,8 +77,27 @@ function initMmir() {
 			func = dequeue();
 		}
 
-		//run function in context of the document (whith jQuery as argument)
+		//run function in context of the document (with library reference as argument)
 		func.call(mmir);
+	};
+	
+
+	/**
+	 * HELPER apply requirejs configuration
+	 * 
+	 * @param {PlainObject} [configuration]
+	 *			the requirejs configuration value
+	 * @param {requirejs} [reqInstance] OPTIONAL
+	 * 			the requirejs instance, with attached <code>config</code> function
+	 * @memberOf mmir.internal
+	 * @private
+	 */
+	function _reqConfig (configuration, reqInstance) {
+		var req = reqInstance? reqInstance : (mmir && mmir.require? mmir.require : (typeof requirejs !== 'undefined'? requirejs : require));
+		if(!req.config){
+			req = req('requirejs');
+		}
+		return req.config(configuration);
 	};
 	
 	/**
@@ -97,7 +124,7 @@ function initMmir() {
 	 * 
 	 * @see #mergeModuleConfigs
 	 */
-	function applyConfigs(mainConfig){
+	function applyConfigs(mainConfig, reqInstance){
 		
 		if(typeof require === 'undefined'){
 			return;
@@ -125,7 +152,7 @@ function initMmir() {
 				}
 			}
 			
-			require.config( conf );
+			mmir.require = _reqConfig( conf, reqInstance );
 		}
 		
 		//if there were non-merged conf.config-values:
@@ -141,7 +168,7 @@ function initMmir() {
 			}
 			
 			//now apply all conf.config-values (including mainConfig.config-values):
-			require.config( {config: confConfig} );
+			mmir.require = _reqConfig( {config: confConfig}, reqInstance );
 		}
 		
 	}
@@ -263,6 +290,64 @@ function initMmir() {
         return true;
 	}
 	
+	/**
+     * Check if the version number corresponds to the most significant (right-most)
+     * part of the mmir-lib's version number, i.e. check
+     * 
+     * "is <code>version</code> <code>comp</code> than the mmir-lib version?"
+     * 
+     * <br>
+     * NOTE: changing the {@link mmir.version} field will have no effect on this function
+     *       (i.e. it will use the original value of <code>version</code>)
+     * 
+     * @param {Number} version
+     * 			the version number to check against
+     * @param {String} [comp] OPTIONAL
+     * 			the comparison type, e.g. <code> ">" | "<" | ">=" | "<=" | "==" | "===" | "!=" | "!==" </code>
+     * 			<br>Will be used as follows: <code>{mmir-lib version} {comp} {version}</code>
+     * 			<br>DEFAULT: "==="
+     * 			<br>NOTE: "=" will be interpreted as "=="
+     * 
+     * @returns {Boolean|Void} returns the result of the comparison to most the significant part
+     *                         of the mmir-lib version number,
+     *                         or <code>VOID</code> if the mmir-lib version number is not available.
+     * 
+	 * @memberOf mmir.internal
+	 * @private
+     */
+    var _isVersion = function(version, comp){
+    	
+    	var ver = CORE_VERSION;
+    	if(ver){
+    		var sigNum = /^.*?(\d+)\./.exec(ver);
+    		sigNum = parseInt(sigNum[1], 10);
+    		if(isFinite(sigNum)){
+    			
+    			switch(comp){
+    			case '>=':
+    				return sigNum >= version;
+    			case '<=':
+    				return sigNum <= version;
+    			case '>':
+    				return sigNum > version;
+    			case '<':
+    				return sigNum < version;
+    			case '!=':
+    				return sigNum != version;
+    			case '!==':
+    				return sigNum !== version;
+    			case '='://
+    			case '==':
+    				return sigNum == version;
+    			case '===':
+				default:
+    				return sigNum === version;
+    			}
+    		}
+    	}
+    	return void(0);
+    };
+	
 	//DISABLED: un-used for now
 //	/**
 //	 * Helper for detecting array type.
@@ -383,10 +468,10 @@ function initMmir() {
 			 * mmir.config({config: { 'moduleName': {logLevel: 'warn'}}});
 			 * 
 			 * //modify default log-levels for dialogManager and inputManager:
-			 * mmir.config({config: { 'dialogManager': {logLevel: 'warn'}, 'inputManager': {logLevel: 'warn'}}});
+			 * mmir.config({config: { 'mmirf/dialogManager': {logLevel: 'warn'}, 'mmirf/inputManager': {logLevel: 'warn'}}});
 			 * 
 			 * //... or using alternative SCXML definition for dialog-engine:
-			 * mmir.config({config: { 'dialogManager': {scxmlDoc: 'config/statedef/example-view_transitions-dialogDescriptionSCXML.xml'});
+			 * mmir.config({config: { 'mmirf/dialogManager': {scxmlDoc: 'config/statedef/example-view_transitions-dialogDescriptionSCXML.xml'});
 			 * 
 			 * //overwrite module location (BEWARE: you should know what you are doing, if you use this)
 			 * mmir.config({paths: {'jquery': 'content/libs/zepto'}};
@@ -397,7 +482,7 @@ function initMmir() {
 			 */
 			config: function(options){
 				if(_isApplied && typeof require !== 'undefined'){
-					require.config(options);
+					_reqConfig(options, this.require);
 				}
 				else {
 					_configList.push(options);
@@ -431,6 +516,15 @@ function initMmir() {
 			applyConfig: applyConfigs,
 			
 			/**
+			 * @copydoc mmir.internal._isVersion
+			 * @memberOf mmir
+			 * @name isVersion
+			 * @function
+			 * @public
+			 */
+			isVersion: _isVersion,
+			
+			/**
 			 * The name of the (this) the core module:
 			 * this is also the global variable by which the core module (this) can be accessed.
 			 * 
@@ -446,6 +540,17 @@ function initMmir() {
 			 * @public
 			 */
 			mmirName: CORE_NAME,
+			
+			/**
+			 * The version of mmir-lib.
+			 * 
+			 * @memberOf mmir
+			 * @name version
+			 * @type String
+			 * @readonly
+			 * @public
+			 */
+			version: CORE_VERSION,
 			
 			/**
 			 * The name / ID of the RequireJS module that will
@@ -465,10 +570,30 @@ function initMmir() {
 			 * @memberOf mmir
 			 * @name startModule
 			 * @type String
-			 * @default {String} "main" will load the module specified in /main.js
+			 * @default {String} "mmirf/main" will load the module specified in /main.js
 			 * @public
 			 */
-			startModule: 'main',
+			startModule: 'mmirf/main',
+			
+			/**
+			 * The jQuery instance that will be used by the MMIR library.
+			 * 
+			 * Will be automatically set, if jQuery is loaded before the MMIR library initializes
+			 * (or can be manually set, before the MMIR library initializes).
+			 * 
+			 * If jQuery is present, the MMIR library will utilize its implementation for some
+			 * utility functions (otherwise alternative, internal utiltiy implemenations will be used).
+			 * 
+			 * NOTE: changing this field after the MMIR library has initialized will have no effect.
+			 * 
+			 * 
+			 * @memberOf mmir
+			 * @name jquery
+			 * @type jQuery
+			 * @default undefined (will be set automatically, if jQuery was loaded)
+			 * @public
+			 */
+			jquery: void(0),
 
 			/**
 			 * Name / ID / load-path (requirejs) for the module
@@ -478,10 +603,10 @@ function initMmir() {
 			 * @memberOf mmir
 			 * @name viewEngine
 			 * @type String
-			 * @default "jqmViewEngine" will load the default view-engine that uses jQuery Mobile
+			 * @default "mmirf/simpleViewEngine" will load the default view-engine that uses standard HTML document API
 			 * @public
 			 */
-			viewEngine: 'jqmViewEngine',
+			viewEngine: 'mmirf/simpleViewEngine',
 			
 			
 			/**
@@ -625,4 +750,4 @@ function initMmir() {
 	window[CORE_NAME] = mmir;
 	
 	return mmir;
-}());
+}(typeof window !== 'undefined'? window : global));

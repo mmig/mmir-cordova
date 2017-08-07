@@ -1,14 +1,12 @@
 
 
 
-define(['jquery', 'parserModule'],
+define(['mmirf/util/extend', 'mmirf/parserModule', 'require'],
 /**
  * Extends the parser-module with helper functions for
  * storing/restoring compiled templates (eHTML -> layout, view, partial etc)
  *
  * Dependencies:
- * 
- *  @requires jQuery.extend 
  *  
  *  alternatively: set <code>mmir.parser.CLASS_EXTENDER</code> with an object that 
  *  exposes a function <tt>extend(obj1,obj1)</tt>, i.e.
@@ -20,15 +18,55 @@ define(['jquery', 'parserModule'],
  * @memberOf mmir.parser
  * 
  */		
-function($, parser){
+function(extend, parser, require){
 
 /**
  * @public
  * @constant
  * @memberOf mmir.parser
  */
-var STORAGE_FILE_FORMAT_NUMBER = 2;
+var STORAGE_FILE_FORMAT_NUMBER = 3;
 parser.STORAGE_FILE_FORMAT_NUMBER = STORAGE_FILE_FORMAT_NUMBER;
+
+/**
+ * Prefix for wrapping persisted objects:
+ * 
+ * <ul>
+ *  <li> wraps code into a closure
+ *  </li><li> makes global namespace available as variable <code>global</code> (see {@link #STORAGE_CODE_WRAP_PREFIX} for setting global namespace)
+ *  </li><li> makes mmirf/core available as variable <code>mmir</code> (if mmirf/core is present in global namespace)
+ *  </li><li> makes mmirf/core's require function available as <code>require</code> (if mmirf/core is present and has require function)
+ * </ul>
+ * 
+ * @public
+ * @constant
+ * @memberOf mmir.parser
+ * 
+ * @see GrammarConverter#getCodeWrapPrefix
+ */
+var STORAGE_CODE_WRAP_PREFIX = ';(function(global){\n'
+	+ 'var mmirName = typeof MMIR_CORE_NAME === "string"? MMIR_CORE_NAME : "mmir";\n'
+  	+ 'var mmir = global? global[mmirName] : void(0);\n'
+  	+ 'var require = mmir && mmir.require? mmir.require : (typeof requirejs !== "undefined"? requirejs : (global? global.require : require));\n'
+	+ 'var require = mmir && mmir.require? mmir.require : require;\n';
+parser.STORAGE_CODE_WRAP_PREFIX = STORAGE_CODE_WRAP_PREFIX;
+
+/**
+ * Suffix for wrapping persisted objects:
+ * 
+ * <ul>
+ *  <li> sets global namespace to <code>window</code>
+ *  </li>
+ * </ul>
+ * 
+ * @public
+ * @constant
+ * @memberOf mmir.parser
+ * 
+ * @see GrammarConverter#getCodeWrapSuffix
+ */
+var STORAGE_CODE_WRAP_SUFFIX = '\n})(typeof window !== "undefined"? window : global);';
+parser.STORAGE_CODE_WRAP_SUFFIX = STORAGE_CODE_WRAP_SUFFIX;
 
 /**
  * Creates the appropriate object from a JSON-like <tt>storedObject</tt>.
@@ -38,13 +76,11 @@ parser.STORAGE_FILE_FORMAT_NUMBER = STORAGE_FILE_FORMAT_NUMBER;
  * may contain function definitions.
  * 
  * <p>
- * The storedObject must have a String property <strong>classConstructor</strong>
+ * The storedObject must have a String property <strong>classConstructor</strong> (type <code>String</code>)
  * <ul>
- * 	<li>that must correspond to a constructor function (which will be invoked with <tt>new</tt>)</li>
+ * 	<li>that must correspond to a require'able module that represents a constructor function (which will be invoked with <tt>new</tt>)</li>
+ * 	<li>the require'able module must be represents a constructor function (which will be invoked with <tt>new</tt>)</li>
  * 	<li>the constructor function must be invokable without parameters</li>
- * 	<li>the constructor function must be accessable from the global namespace
- * 		(or <tt>classConstuctor</tt> must contain the code for retrieving the constructor
- * 		 function from the global namespace)</li>
  * </ul>
  * 
  * 
@@ -89,29 +125,16 @@ function restoreObject(storedObject, isTriggerPublish, fileFormatNo){
 		
 	}
 	
-	var classExtender;
+	var classExtender = {};
 	if(parser.CLASS_EXTENDER && typeof parser.CLASS_EXTENDER.extend === 'function'){
 		classExtender = parser.CLASS_EXTENDER;
 	}
 	else {
-		classExtender = $;
+		classExtender = {extend: extend};
 	}
 	
-//	//NOTE: classConstructor contains a list of Strings:
-//	//       * the constructor-function is either in global namespace
-//	//         e.g. "View" -> then the list contains exactly one entry ["View"]
-//	//
-//	//       * if the constructor-function is in a sub-namespace (e.g. "sub-module")
-//	//         then the list contains the "path" to the constructorf-function
-//	//         starting with the module that is in the global namespace
-//	//         e.g. "mobileDS.parser.ParsingResult" -> ["mobileDS, "parser", "ParsingResult"]
-//	//
-//	var constructor = window[storedObject.classConstructor[0]];//FIXME need to convert this to require
-//	for(var i=1, size = storedObject.classConstructor.length; i < size; ++i){
-//		constructor = constructor[storedObject.classConstructor[i]];
-//	}
 	
-	//requirejs version (for this to work, all Classe (i.e. JS-files) need to already have been loaded & required!)
+	//NOTE: for require-ing to work, all Classes (i.e. JS-files) need to already have been loaded & required (i.e. "async-required" once before)
 	var constructor = require(storedObject.classConstructor);
 	
 	var obj = classExtender.extend( new constructor(), storedObject);

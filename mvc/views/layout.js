@@ -25,7 +25,7 @@
  */
 
 
-define (['commonUtils', 'viewConstants', 'yield', 'storageUtils' ],
+define (['mmirf/commonUtils','mmirf/viewConstants','mmirf/yield','mmirf/storageUtils','mmirf/contentElement' ],
 	//this comment is needed by jsdoc2 [copy of comment for: function Layout(...]
 	/**
 	 * The Layout class 
@@ -38,15 +38,15 @@ define (['commonUtils', 'viewConstants', 'yield', 'storageUtils' ],
 	 * 			May be empty: in this case the processed contents must be
 	 * 						  added manually (cf. parser.StorageUtils)
 	 * 
-	 * @requires if param definition is NOT empty: parser.RenderUtils (must be loaded beforehand via <code>require(["renderUtils"]...</code>)
+	 * @requires if param definition is NOT empty: parser.RenderUtils (must be loaded beforehand via <code>require(["mmirf/renderUtils"]...</code>)
 	 * 			
-	 * @requires if param definition is NOT empty: parser.ParseUtils (must be loaded beforehand via <code>require(["parseUtils"]...</code>)
+	 * @requires if param definition is NOT empty: parser.ParseUtils (must be loaded beforehand via <code>require(["mmirf/parseUtils"]...</code>)
 	 * 
 	 * @name Layout
 	 * @class
 	 */
 	function(
-		commonUtils, ViewConstants, YieldDeclaration, storageUtils
+		commonUtils, ViewConstants, YieldDeclaration, storageUtils, ContentElement
 ) {
 	
 /** @scope Layout.prototype *///for jsdoc2
@@ -65,9 +65,9 @@ define (['commonUtils', 'viewConstants', 'yield', 'storageUtils' ],
  * 			May be empty: in this case the processed contents must be
  * 						  added manually (cf. parser.StorageUtils)
  * 
- * @requires if param <code>definition</code> is NOT empty: parser.RenderUtils (must be loaded beforehand via <code>require(["renderUtils"]...</code>)
+ * @requires if param <code>definition</code> is NOT empty: parser.RenderUtils (must be loaded beforehand via <code>require(["mmirf/renderUtils"]...</code>)
  * 			
- * @requires if param <code>definition</code> is NOT empty: parser.ParseUtils (must be loaded beforehand via <code>require(["parseUtils"]...</code>)
+ * @requires if param <code>definition</code> is NOT empty: parser.ParseUtils (must be loaded beforehand via <code>require(["mmirf/parseUtils"]...</code>)
  * 
  */
 function Layout(name, definition, remote, ignoreMissingBody){
@@ -75,7 +75,7 @@ function Layout(name, definition, remote, ignoreMissingBody){
 
 		//FIXME MODIFICATIONS for "remote content layout object":
 		this.remoteaccess = false;
-		if ((typeof remote !== "undefined") && (remote == true)){
+		if ((typeof remote !== 'undefined') && (remote == true)){
 			this.remoteaccess = true;
 		}
 		
@@ -103,7 +103,7 @@ function Layout(name, definition, remote, ignoreMissingBody){
 	     * @public
 	     * @deprecated unused
 	     */
-	    this.headerContents = "";
+	    this.headerContents = '';
 
 	    /**
 	     * List for extracted & parsed SCRIPT, LINK and STYLE tags
@@ -138,23 +138,54 @@ function Layout(name, definition, remote, ignoreMissingBody){
 	     * @type String
 	     * @public
 	     */
-	    this.dialogsContents = "";
+	    this.dialogsContents = '';
+	    
+	    /**
+	     * The (parsed) content for the body-container.
+	     * 
+	     * @type ContentElement
+	     * @public
+	     */
+	    this.bodyContentElement = void(0);
 
 		/**
-	     * An associative array holding the contents of the different containers: header, body, footer and dialogs
+	     * A list holding the content-references (yield declarations) 
+	     * for the containers (except for body):
+	     * header, footer, and dialogs
 	     * 
 	     * @type Array
 	     * @public
 	     */
-	    this.yields = new Array();
+	    this.yields = [];
+	    
+	    /**
+	     * A JSON-like object containing the attributes of the BODY-tag as String values.
+	     * 
+	     * For example, for the following BODY-tag:
+	     * <pre>
+	     * <body onload="handleOnLoad()" class  = 'some css-classes' >
+	     * </pre>
+	     * the bodyAttributes would be
+	     * <pre>
+	     * {
+	     * 	"onload": "handleOnLoad()",
+	     * 	"class": "some css-classes"
+	     * }
+	     * </pre>
+	     * 
+	     * @type Object
+	     * @default undefined
+	     * @public
+	     */
+	    this.bodyAttributes = void(0);
 	    
 	    if(this.def){
 		    
 		    //console.debug('Layout<constructor>: start rendering layout for "'+this.name+'"'+(remote?' (REMOTE)':'')+', RAW: '+this.def);
-		    var parser = require('parseUtils');
+		    var parser = require('mmirf/parseUtils');
 	    	var parseResult = parser.parse(this.def, this);
 	    	
-	    	var renderer = require('renderUtils');
+	    	var renderer = require('mmirf/renderUtils');
 	    	var renderedLayout = renderer.renderLayout(parseResult, null/*FIXME?*/);
 
 	    	//DISABLED: parsing a string as HTML via jQuery etc. does not work (removes head, body,... tags):
@@ -179,7 +210,6 @@ function Layout(name, definition, remote, ignoreMissingBody){
 	
 		    var self = this;
 		    
-		    //TODO these should be constants (remove to constants.js?): 
 		    this.markerAttributeName = ViewConstants.REMOTE_RESOURCES_ATTR_NAME;
 		    this.markerAttributeValue = ViewConstants.REMOTE_RESOURCES_ATTR_VALUE;
 		    this.markerUseSingleQuotes = false;//<- set value enclosed in single-quotes (true) or double-quotes (false)
@@ -191,8 +221,7 @@ function Layout(name, definition, remote, ignoreMissingBody){
 		    			+ self.markerAttributeName + '='
 		    			+ (self.markerUseSingleQuotes? '\'': '"')
 		    			+ self.markerAttributeValue
-		    			+ (self.markerUseSingleQuotes? '\'': '"')
-		    			;
+		    			+ (self.markerUseSingleQuotes? '\'': '"');
 		    };
 		    
 		    //pure HTML:
@@ -397,7 +426,8 @@ function Layout(name, definition, remote, ignoreMissingBody){
 		    if(matchBodyTag && matchBodyTag[1] && matchBodyTag[1].length > '<body>'.length){
 		    	
 //		    	//NOTE: 1st case should really never occur.
-//		    	var bodyAttrEnd = matchBodyTag[1].endsWith('/>')? matchBodyTag[1].length-2 : matchBodyTag[1].length-1;
+//		    	var reTagSelfClose = /\/>$/;
+//		    	var bodyAttrEnd = reTagSelfClose.test(matchBodyTag[1])? matchBodyTag[1].length-2 : matchBodyTag[1].length-1;
 //		    	var bodyAttr = '<div ' + matchBodyTag[1].substring('<body'.length, bodyAttrEnd) + '</div>';
 //		    	bodyAttr = jQuery(bodyAttr);
 		    	
@@ -432,10 +462,23 @@ function Layout(name, definition, remote, ignoreMissingBody){
 			    self.dialogsContents += matchDialogsTag[3];
 		    }
 		    
-		    var parseBodyResult = parser.parse(this.bodyContents, this);
-		    for(var i=0, size = parseBodyResult.yields.length; i < size ; ++i){
-		    	this.yields.push(new YieldDeclaration(parseBodyResult.yields[i], ViewConstants.CONTENT_AREA_BODY));
-		    }
+		    var parseBodyResult = new ContentElement({name: this.name, content: this.bodyContents}, this, parser, renderer);// parser.parse(this.bodyContents, this);
+//		    for(var i=0, size = parseBodyResult.yields.length; i < size ; ++i){
+//		    	this.yields.push(new YieldDeclaration(parseBodyResult.yields[i], ViewConstants.CONTENT_AREA_BODY));
+//		    }
+//		    parseBodyResult.yields = void(0);
+		    var all = parseBodyResult.allContentElements.concat(parseBodyResult.yields);
+			all.sort(function(parsedElem1, parsedElem2){
+				return parsedElem1.getStart() - parsedElem2.getStart();
+			});
+			parseBodyResult.allContentElements = all;
+			parseBodyResult.getController = function(){ return {//FIXME
+				name: null,
+				getName: function(){
+					return this.name;
+				}
+			}};
+		    this.bodyContentElement = parseBodyResult;
 		    
 		    var parseDialogResult = parser.parse(this.dialogsContents, this);
 		    for(var i=0, size = parseDialogResult.yields.length; i < size ; ++i){
@@ -523,24 +566,57 @@ function Layout(name, definition, remote, ignoreMissingBody){
 	 * 		func {Boolean} isLink():   returns TRUE if tagType is LINK
 	 */
 	Layout.TagElement = function TagElement(tag, content, tagType){
-		
+		/**  the TAG type, e.g. "SCRIPT" */
 		this.tagName = tagType;
+		/** the TEXT content of the TAG (may be an empty String) */
 		this.textContent = content || '';
 		
 		var tis = this;
-		tis.attr = function(name){
-			return this[name];
-		};
-		tis.html = function(){
-			return this.textContent;
-		};
-		tis.isScript = function(){return this.tagName === 'SCRIPT';};
-		tis.isStyle  = function(){return this.tagName === 'STYLE'; };
-		tis.isLink   = function(){return this.tagName === 'LINK';  };
+//		tis.attr = function(name){
+//			return this[name];
+//		};
+//		tis.html = function(){
+//			return this.textContent;
+//		};
+//		tis.isScript = function(){return this.tagName === 'SCRIPT';};
+//		tis.isStyle  = function(){return this.tagName === 'STYLE'; };
+//		tis.isLink   = function(){return this.tagName === 'LINK';  };
 		
 		//extract attributes as properties from TAG string:
 		Layout.getTagAttr(tag, tis);
 		return tis;
+	};
+	
+	/**
+	 * Prototype for TagElement
+	 * 
+	 * 		func {String} attr(STRING name): returns the attribute-value for name (may be undefined)
+	 * 		func {String} html(): returns the TEXT content of the TAG (may be an empty String)
+	 * 
+	 * 		func {Boolean} isScript(): returns TRUE if tagType is SCRIPT
+	 * 		func {Boolean} isStyle():  returns TRUE if tagType is STYLE
+	 * 		func {Boolean} isLink():   returns TRUE if tagType is LINK
+	 * 
+	 * @augments Layout.TagElement#
+	 */
+	Layout.TagElement.prototype = {
+		/**
+		 * @param {String} name the attribute name
+		 * @returns {any} the attribute-value for name (may be undefined)
+		 */
+		attr: function(name){
+			return this[name];
+		},
+		/**  @returns {String} the TEXT content of the TAG (may be an empty String)  */
+		html: function(){
+			return this.textContent;
+		},
+		/** @returns {Boolean} returns TRUE if tagType is SCRIPT */
+		isScript: function(){return this.tagName === 'SCRIPT';},
+		/** @returns {Boolean} returns TRUE if tagType is STYLE */
+		isStyle: function(){return this.tagName === 'STYLE'; },
+		/** @returns {Boolean} returns TRUE if tagType is LINK */
+		isLink: function(){return this.tagName === 'LINK';  }
 	};
 	
 	/**
@@ -597,6 +673,26 @@ function Layout(name, definition, remote, ignoreMissingBody){
 	Layout.prototype.getName = function(){
 	    return this.name;
 	};
+	
+	/**
+	 * HELPER: add prototype functions of Layout.TagElement to the #headerElements
+	 * 
+	 * @function
+	 * @protected
+	 */
+	Layout.prototype._extHeaderElements = function(){
+		var prot = Layout.TagElement.prototype;
+		var funcs = Object.keys(prot);
+		var len = funcs.length -1;
+		var i, j, elem, fname;
+	    for(i = this.headerElements.length-1; i >= 0; --i){
+	    	elem = this.headerElements[i];
+	    	for(j = len; j >= 0; --j){
+	    		fname = funcs[j];
+	    		elem[fname] = prot[fname];
+	    	}
+	    }
+	};
 
 Layout.prototype.stringify = function(){
 
@@ -608,14 +704,19 @@ Layout.prototype.stringify = function(){
 	     'headerElements',
 	     'headerContents',
 	     'title',
-	     'bodyContents',
+//	     'bodyContents',		//DISABLED: store in this.bodyContentElement.definition now
 	     'dialogsContents',
 	     'markerAttributeName',
 	     'markerAttributeValue',
 	     'markerUseSingleQuotes',
 	     'bodyAttributes'
 	];
-
+	
+	//stringify-able properties
+	var stringifyPropList = [
+   	     'bodyContentElement' //element type: ContentElement (stringify-able)
+   	];
+	
 	//complex Array-properties
 	var arrayPropList = [
    	     'yields' //element type: YieldDeclaration (stringify-able)
@@ -626,15 +727,19 @@ Layout.prototype.stringify = function(){
 	
 	var moduleNameString = '"'+this.name+'Layout"';
 
-	//TODO use requirejs mechanism? (NOTE there may occur timing problems for loading/registering the JS file, and querying the PresentationManager for it ...)
-//	var sb = ['define('+moduleNameString+', ["storageUtils"], function(parser){ return parser.restoreObject({ classConstructor: "layout"', ','];
-	
-	var sb = ['require("storageUtils").restoreObject({ classConstructor: "layout"', ','];
+	var sb = [storageUtils.STORAGE_CODE_WRAP_PREFIX, 'require("mmirf/storageUtils").restoreObject({ classConstructor: "mmirf/layout"', ','];
 		
 	appendStringified(this, propList, sb);
 	
-	sb.push( 'initPublish: function(){ require("presentationManager").addLayout(this); }');
+	//NOTE the use of require() here, assumes that the dependency has already been loaded (i.e. has already been request by some other module!)
+	sb.push( 'initPublish: function(){ this._extHeaderElements(); this.bodyContents=this.bodyContentElement.definition; require("mmirf/presentationManager").addLayout(this); }');
 	sb.push(',');
+	
+	//non-primitives properties with stringify() function:
+	appendStringified(this, stringifyPropList, sb, null, function stringifyValueExtractor(name, obj){
+		
+		return obj.stringify();
+	});
 	
 	//non-primitives array-properties with stringify() function:
 	appendStringified(this, arrayPropList, sb, null, function arrayValueExtractor(name, arrayValue){
@@ -664,6 +769,7 @@ Layout.prototype.stringify = function(){
 //			+ moduleNameString + ']);');
 	
 	sb.push(' }, true, '+storageUtils.STORAGE_FILE_FORMAT_NUMBER+');');
+	sb.push(storageUtils.STORAGE_CODE_WRAP_SUFFIX);
 	
 	return sb.join('');
 };

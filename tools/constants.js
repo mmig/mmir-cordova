@@ -26,14 +26,14 @@
 
 
 //define(['module'], function(module){//TODO remove module-dependency? -> would need different mechanism for querying env-configuration...
-define(['env', 'module'], 
+define(['mmirf/env', 'module'], 
 /**
  * A Utility class that provides various <i>constants</i>.<br>
  * 
  * <p>
- * Note that the actual values depend on the execution environment (e.g. ANDROID
- * vs. BROWSER). As a consequence the constants object has 2 modes, that can be
- * switchted via the getInstance()-method, e.g. <code>getInstance(false)</code>
+ * Note that the actual values depend on the execution environment (e.g. ANDROID vs. BROWSER).
+ * As a consequence the constants object has 2 modes, that can be
+ * switched via the {@link #init} -method, e.g. <code>init(false)</code>.
  * 
  * 
  * @name Constants
@@ -43,7 +43,7 @@ define(['env', 'module'],
  * 
  * @requires org.apache.cordova.device: cordova plugin add org.apache.cordova.device
  * 
- * @example var appBase = mmir.Constants.getBasePath();
+ * @example var appBase = mmir.const.getBasePath();
  */
 function(
 		env, module
@@ -91,15 +91,7 @@ function(
 	 * @memberOf Constants#
 	 */
 	var workerPath = frameworkBasePath + "workers/";
-	/**
-	 * the path for plugins
-	 *  
-	 * TODO deprecated? since Cordova 3.x brings its own loading mechanism now...
-	 * 
-	 * @private
-	 * @memberOf Constants#
-	 */
-	var pluginsPath = frameworkBasePath + "plugins/";
+	
 	/**
 	 * the path for Extensions (i.e. extending JavaScript base classes)
 	 * @private
@@ -294,6 +286,11 @@ function(
 			
 			basePath = "";
 		}
+		else if (isBrowserEnvParam && isBrowserEnvParam.isNodeEnv){
+			
+			//TODO should this be the absolute path for node-env?
+			basePath = "file:";
+		}
 		else if (isBrowserEnvParam === false || typeof isBrowserEnvParam === 'undefined'){
 			//BACKWARD COMPATIBILITY: false and omitted argument are interpreted as Android env
 			//TODO remove this?
@@ -330,15 +327,6 @@ function(
 			 */
 			getBasePath: function(){
 				return basePath;
-			},
-			/**
-			 * Returns a string with the path to the plugins.
-			 * @function
-			 * @public
-			 * @returns {String} plugin path
-			 */
-			getPluginsPath: function(){
-				return basePath+pluginsPath;
 			},
 			/**
 			 * Returns a string with the path to the layouts.
@@ -555,6 +543,15 @@ function(
 				return isBrowserEnv;
 			},
 			
+			/**
+	         * @function
+	         * @returns {Boolean}
+	         * @public
+	         */
+			isCordovaEnv: function(){
+				return env.isCordovaEnv;
+			},
+			
 
 			/**
 	         * @function
@@ -574,13 +571,6 @@ function(
 	         */
 			getEnvPlatform: function(){
 				return envInfo.platform;
-			},
-			
-			/**
-			 * @deprecated instead, use Constants-object directly: mmir.Constants
-			 */
-			getInstance: function(forBrowserParameter){
-				return this.init(forBrowserParameter);
 			}
 		};//END: return{}
 		

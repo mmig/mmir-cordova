@@ -26,20 +26,20 @@
 
 
 
-define(['dictionary', 'stacktrace', 'module'], 
+define(['mmirf/dictionary', 'mmirf/stacktrace', 'module'], 
 /**
  * A Logger factory.<br>
  * 
  * @example 
  *  //use logger
- *  var Logger = require('logger');
+ *  var Logger = mmir.require('mmirf/logger');
  *  var log = Logger.create('example');
  *  
  *  if(log.isVerbose()) log.debug('test');//will write the message to debug-console)
  *  log.error(new Error());//will write the error (including its stack) to error console)
  *  
  *  //example for setting up a logger in a requirejs-module:
- *  define(['logger', 'module'], function(Logger, module){
+ *  define(['mmirf/logger', 'module'], function(Logger, module){
  *  
  *    var logger = Logger.create(module);
  *    //this would create the same logger-object:
@@ -295,6 +295,10 @@ function createErr(msg, error){
 	
 	return err+msg+errMsg;
 }
+
+//in some environments console.debug may not exits -> use console.log instead
+var DEBUG_FUNC_NAME = console.debug? 'debug' : 'log';
+
 /**
  * @private
  * @memberOf Logger.prototype
@@ -308,7 +312,7 @@ function print(loggerName, logLevel, msg){
 		break;
 	case 1:
 		prefix = '[DEBUG] ';
-		func = 'debug';
+		func = DEBUG_FUNC_NAME;
 		break;
 	case 2:
 		prefix = '[INFO] ';

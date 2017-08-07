@@ -3,10 +3,10 @@
  * loads the default grammar asynchronously using a WebWorker
  * 
  * NOTE usage of the grammar is also async:
- *      calls on getASRSemantic(text, callback) are re-directed to the WebWorker
+ *      calls on interpret(text, callback) are re-directed to the WebWorker
  * 
  */
-define(['constants', 'commonUtils', 'semanticInterpreter', 'jquery'], function(constants, utils, semanticInterpreter, $){
+define(['mmirf/constants', 'mmirf/commonUtils', 'mmirf/semanticInterpreter', 'mmirf/util/deferred'], function(constants, utils, semanticInterpreter, deferred){
 
 //
 var _pendingCmds = {};
@@ -117,7 +117,13 @@ return {
 		
 		//if grammar is already loaded & available:
 		if(_loadedGrammars[langCode] === true){
-			semanticInterpreter.getASRSemantic(phrase, langCode, listener);
+			semanticInterpreter.interpret(phrase, langCode, listener);
+			return true;//////////////////// EARLY EXIT ////////////////////////
+		}
+		
+		//if grammar is loading, but not available yet: register listener as complete-callback
+		if(_loadedGrammars[langCode] && _loadedGrammars[langCode].initDef && _loadedGrammars[langCode].initDef.then){
+			_loadedGrammars[langCode].initDef.then(listener, listener);
 			return true;//////////////////// EARLY EXIT ////////////////////////
 		}
 		
@@ -131,7 +137,7 @@ return {
 				
 				var grammarInit = {
 					id: langCode,
-					initDef: $.Deferred(),
+					initDef: deferred(),
 					isGrammar: false,
 					isStopwords: false,
 					checkInit: function(){
@@ -147,7 +153,7 @@ return {
 				var onComplete = function(){
 					
 					if(typeof phrase !== 'undefined'){
-						semanticInterpreter.getASRSemantic(phrase, langCode, listener);
+						semanticInterpreter.interpret(phrase, langCode, listener);
 					} else {//TODO use grammar's example_phrase for init instead?
 						listener({});
 					}

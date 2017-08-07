@@ -24,7 +24,7 @@
  * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-define(['languageManager', 'parserModule', 'storageUtils'],
+define(['mmirf/languageManager', 'mmirf/parserModule', 'mmirf/storageUtils'],
 	//this comment is needed by jsdoc2 [copy of comment for: function ContentElement(...]
 	/**
 	 * The ContentElement represents "content" parts of a view; it may itself contain one or more ContentElements.
@@ -273,7 +273,8 @@ function ContentElement(group, view, parser, renderer){
 	 */
 	this.comments         = parsingResult.comments;
 	
-//	this.yields           = parsingResult.yields; @see mmir.parser.element.YIELD_DECLARATION
+	//NOTE by default this field is not added to the allContentElements list (i.e. will not be stored/stringified)
+	this.yields         = parsingResult.yields;// @see mmir.parser.element.YIELD_DECLARATION
 //	this.contentFors    = parsingResult.contentFors; @see mmir.parser.element.YIELD_CONTENT
 	
 
@@ -472,7 +473,7 @@ function ContentElement(group, view, parser, renderer){
 				e.name = e.name || val;
 				e.nameType = e.nameType || 'Identifier';
 			} else {
-				val.startsWith('@')? val.substring(1) : val;//normalize var-name if necessary
+				val[0] === '@'? val.substring(1) : val;//normalize var-name if necessary
 			}
 			
 			if(dict[val]){
@@ -498,7 +499,7 @@ function ContentElement(group, view, parser, renderer){
 	 */
 	var isVarInList = function(varList, varName){
 
-		varName = varName.startsWith('@')? varName.substring(1) : varName;
+		varName = varName[0] === '@'? varName.substring(1) : varName;
 		var e, val;
 		for(var i=varList.length-1; i >= 0; --i){
 			e = varList[i];
@@ -604,7 +605,7 @@ function ContentElement(group, view, parser, renderer){
 			for(var i=0; i < size; ++i){
 				v = templateVars[i];
 				vname = v.getValue(v.name, v.nameType);
-				if(vname.startsWith('@')){
+				if(vname[0] === '@'){
 					nvname = vname.substring(1);
 				} else {
 					nvname = vname;
@@ -757,7 +758,7 @@ function ContentElement(group, view, parser, renderer){
 			forElement.forListName = this.definition.substring(forListNameRef.getStart(), forListNameRef.getEnd());
 
 			//special case FOR-statement: "implicitly declare" property-name variable, if it is not declared yet (i.e. make available for JS code within for-loop)
-			var normalizedPropName = forElement.forPropName.startsWith('@')? forElement.forPropName.substring(1) : forElement.forPropName;
+			var normalizedPropName = forElement.forPropName[0] === '@'? forElement.forPropName.substring(1) : forElement.forPropName;
 			if(!isVarInList(allVars, normalizedPropName) && !isVarInList(this._contentVars, normalizedPropName)){
 				//add name to ParsingResult, so that there is no need to extract it from raw-template anymore:
 				forPropNameRef.name = normalizedPropName;
@@ -766,10 +767,10 @@ function ContentElement(group, view, parser, renderer){
 			}
 			
 			//prepend variable-names with template-var-prefix if necessary:
-			if( ! forElement.forPropName.startsWith('@')){
+			if( ! forElement.forPropName[0] === '@'){
 				forElement.forPropName = '@' + forElement.forPropName;
 			}
-			if( ! forElement.forListName.startsWith('@')){
+			if( ! forElement.forListName[0] === '@'){
 				forElement.forListName = '@' + forElement.forListName;
 			}
 			
@@ -1182,7 +1183,7 @@ ContentElement.prototype.stringify = function(){
 	//function for iterating over the property-list and generating JSON-like entries in the string-buffer
 	var appendStringified = parser_context.appendStringified;
 	
-	var sb = ['require("storageUtils").restoreObject({ classConstructor: "contentElement"', ','];
+	var sb = ['require("mmirf/storageUtils").restoreObject({ classConstructor: "mmirf/contentElement"', ','];
 	
 	appendStringified(this, propList, sb);
 	
@@ -1220,7 +1221,7 @@ ContentElement.prototype.stringify = function(){
 		sb.push( JSON.stringify(this.getController().getName()) );
 		
 		// ... and the getter/setter code:
-		sb.push( '; this.view = require("presentationManager").get');
+		sb.push( '; this.view = require("mmirf/presentationManager").get');
 		sb.push(this['view'].constructor.name);//<- insert getter-name dependent on the view-type (e.g. View, Partial)
 		sb.push('(ctrlName, viewName); this.getView = function(){return this.view;}; return this.view; },' );
 		
@@ -1238,7 +1239,7 @@ ContentElement.prototype.stringify = function(){
 		//  (NOTE: needs to be called before view/controller can be accessed!)
 		sb.push( 'initRenderer: function(){');
 		// ... and the getter/setter code:
-		sb.push( ' this.renderer = require("renderUtils"); }' );
+		sb.push( ' this.renderer = require("mmirf/renderUtils"); }' );
 		
 		//NOTE: need to add comma in a separate entry 
 		//      (-> in order to not break the removal method of last comma, see below)
@@ -1256,8 +1257,8 @@ ContentElement.prototype.stringify = function(){
 //		if(this['view']){
 //			sb.push( ' this.initView(); ' );
 //		}
-		if(this['this.initEvalFunctions']){//MOD glob vars
-			sb.push('this.initEvalFunctions(); ');
+		if(this['initEvalFunctions']){//MOD glob vars
+			sb.push(' this.initEvalFunctions(); ');
 		}
 		sb.push( ' }' );
 		
