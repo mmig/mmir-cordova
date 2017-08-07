@@ -1,25 +1,13 @@
---- cli.js	Tue Mar 15 16:45:04 2016
-+++ cli.patched.js	Tue Mar 15 16:36:30 2016
-@@ -427,20 +427,22 @@
-         } else {
-             // correct the path to the template:
-             templatePath = path.dirname(templatePath);
-         }
- 
+--- cli.js	2017-04-26 12:40:58 +0000
++++ cli.patched.js	2017-04-26 12:53:29 +0000
+@@ -415,8 +415,10 @@
          // if we didn't find the template, keep the user-specified value so the error message is
          // useful
          return templatePath || env.opts.template;
      })();
++	
++	global.env = env;//FIX MOD russa: env seems to be local variable, but templates need access to global env!
  
-+    global.env = env;//FIX MOD russa: env seems to be local variable, but templates need access to global env!
-+    
      try {
          template = require(env.opts.template + '/publish');
      }
-     catch (e) {
-         logger.fatal('Unable to load template: ' + e.message || e);
-     }
- 
-     // templates should include a publish.js file that exports a "publish" function
-     if (template.publish && typeof template.publish === 'function') {
-         logger.info('Generating output files...');

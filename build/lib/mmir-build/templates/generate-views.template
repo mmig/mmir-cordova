@@ -24,36 +24,26 @@ var mmir;
 //  (may be different than the default value in mainConfig.js)
 var appSrcDir = '{jsSrcDirBase|s|url}';
 var reqInstance = require.config({
-	baseUrl: './' + appSrcDir,
-	paths: {'core': 'core'}
+	baseUrl: './' + appSrcDir.replace(/mmirf\/$/, '/')
 });
 
-require(['core'], function(core){
+require(['mmirf/core'], function(core){
 
-//export core module to "global" mmir variable:
-mmir = core;
-
-////define "auto-start" module for starting the template processing
-//// (gets triggered after main-config for requirejs is was applied)
-//definejs('doStartTemplateProc', ['require'], function(req){
-//	//now: do start processing the eHTML template files
-//	doStartTemplateProcessing(req);
-//});
-//core.startModule = 'doStartTemplateProc';
-
-//disable tracing in logger-module: (current library stacktrace.js does not support nodejs / TODO repl. with https://www.npmjs.com/package/stack-trace in nodejs env)
-core.logTrace = false;
-
-//set up dummy implementation for LanguageManager:
-core.LanguageManager = {};
-core.LanguageManager.getInstance = function dummyLangMang (){ return core.LanguageManager; };
-core.LanguageManager.getText = function dummyGetText (id) {return 'dummy-text-'+id;};
-core.LanguageManager.getLanguage = function dummyGetLang () {return 'NA';};
-
-core.require = reqInstance;
-//core._define = define;
-
-doLoadAppConfig(require.define);
+	//export core module to "global" mmir variable:
+	mmir = core;
+	
+	//set dummy renderer/viewEngine
+	core.viewEngine = 'mmirf/build/viewEngine';
+	
+	//set up dummy implementation for LanguageManager:
+	core.lang = {};
+	core.lang.getText = function dummyGetText (id) {return 'dummy-text-'+id;};
+	core.lang.getLanguage = function dummyGetLang () {return 'NA';};
+	
+	core.require = reqInstance;
+	//core._define = define;
+	
+	doLoadAppConfig(require.define);
 });
 
 //apply main-config for requirejs 
@@ -62,8 +52,7 @@ function doLoadAppConfig(define){
 
 	require.config({_buildConfig|s});
 	
-	require(['core', 'logger'], function(core){
-//		require([core.startModule]);
+	require(['mmirf/core', 'mmirf/logger'], function(core){
 		doStartTemplateProcessing();
 	});
 
@@ -84,13 +73,13 @@ var jsl;
 
 var jqueryDeferred = jqueryDeferred || requiren(jqueryDeferredModuleUri);
 
-require(['constants', 'checksumUtils', 'md5'], function(constants, checksumUtils, md5impl){
+require(['mmirf/constants', 'mmirf/checksumUtils', 'mmirf/md5'], function(constants, checksumUtils, md5impl){
 
 	checksumUtils.init(md5impl);
 	
 	constants.init(theBasePath);
 	
-	require(['jsonlint', 'jqueryajax', 'configurationManager'], function(jsonlint, jquery, configurationManager){
+	require(['jsonlint', 'mmirf/build/jqueryajax', 'mmirf/configurationManager'], function(jsonlint, jquery, configurationManager){
 
 		jsl = {
 			parser: require('jsonlint')
@@ -100,11 +89,11 @@ require(['constants', 'checksumUtils', 'md5'], function(constants, checksumUtils
 
 
 		//export public MMIR modules to "global" mmir variable:
-		mmir.Constants = constants;
-		mmir.ConfigurationManager = configurationManager;
+		mmir.const = constants;
+		mmir.conf = configurationManager;
 
-		require(['ES3Lexer', 'ES3Parser', 'contentLexer', 'contentParser', 'scriptLexer', 'scriptParser', 'templateLexer',
-					'commonUtils', 'controllerManager', 'presentationManager'], function(){
+		require(['mmirf/ES3Lexer', 'mmirf/ES3Parser', 'mmirf/contentLexer', 'mmirf/contentParser', 'mmirf/scriptLexer', 'mmirf/scriptParser', 'mmirf/templateLexer',
+					'mmirf/commonUtils', 'mmirf/controllerManager', 'mmirf/presentationManager'], function(){
 		
 {StandaloneTemplateParserExec|s}
 

@@ -1,15 +1,9 @@
-Mozilla Rhino (majority of code is under Mozilla Public License 2.0); version 1.7r5
-* js.jar
+
+mmir-build (MIT License)
+* mmir-build/*
 
 ANTLR
 * antlr-3.3-complete.jar
-
-Apache Ant Contrib Tasks (Apache Software License) 
-* ant-contrib-1.0b3.jar
-
-Commons SCXML JS (discontinued Apache Project; Apache Software License)
-* commons-scxml-js/*
-  (NOTE: this is not the complete source of the SCXML-JS project; only a part)
 
 Apache Batik (Apache License 2.0)
 * batik/*

@@ -22,7 +22,7 @@ function _isNeedCompile(rawContentText, targetFilePath, checksumFilePath, isAddC
 	}
 	
 	if(!_checksumUtils){
-		_checksumUtils = require('checksumUtils');
+		_checksumUtils = require('mmirf/checksumUtils');
 	}
 
 	var checksumFileUrl = checksumFilePath;

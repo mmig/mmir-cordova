@@ -42,7 +42,7 @@
 
 
 var $ = require('jquery');
-var commonUtils = require('commonUtils');
+var commonUtils = require('mmirf/commonUtils');
 
 var ctrlCtx = window;//FIXME set correct context, not just the global context
 
@@ -96,18 +96,18 @@ var context = {};//FIXME
 var parserPrintWarningImpl = function(){};//FIXME
 var parserPrintErrorImpl = function(){};//FIXME
 
-var org = require('antlr3');
+var org = require('mmirf/antlr3');
 
-var ES3Lexer = require('ES3Lexer');
-var ES3Parser = require('ES3Parser');
-var MmirTemplateLexer = require('templateLexer');
-var MmirTemplateLexer = require('templateLexer');
+var ES3Lexer = require('mmirf/ES3Lexer');
+var ES3Parser = require('mmirf/ES3Parser');
+var MmirTemplateLexer = require('mmirf/templateLexer');
+var MmirTemplateLexer = require('mmirf/templateLexer');
 
-var MmirScriptLexer = require('scriptLexer');
-var MmirScriptParser = require('scriptParser');
+var MmirScriptLexer = require('mmirf/scriptLexer');
+var MmirScriptParser = require('mmirf/scriptParser');
 
-var MmirScriptContentLexer = require('contentLexer');
-var MmirScriptContentParser = require('contentParser');
+var MmirScriptContentLexer = require('mmirf/contentLexer');
+var MmirScriptContentParser = require('mmirf/contentParser');
 		
 		print 				= function() { };//printImpl.apply(context, arguments); }
 		printInfo 			= function() { };//printInfoImpl.apply(context, arguments); }
@@ -161,22 +161,22 @@ console.info  = console.log;
 console.warn  = console.log;
 console.error = console.log;
 
-var configurationManager = require('configurationManager');
+var configurationManager = require('mmirf/configurationManager');
 
 //force view-generation (i.e. disable change-check for compiled views)
 configurationManager.set('usePrecompiledViews', 'false');
 
 console.log('------------------------------------- completed initialization, start parsing *.ehtml files... -------------------');
 
-var controllerManager = require('controllerManager');
+var controllerManager = require('mmirf/controllerManager');
 
 //modify loadImpl-function, so that stub Controllers are loaded instead of actual controllers
 //(for creating template JS code, the controllers are not really required, only the paths etc. they contain for loading
 //the templates)
-var constants = require('constants');
+var constants = require('mmirf/constants');
 
-var Helper = require('helper');
-var Controller = require('controller');
+var Helper = require('mmirf/helper');
+var Controller = require('mmirf/controller');
 Controller.prototype.__loadHelper = Controller.prototype.loadHelper;
 Controller.prototype.loadHelper = function(name, helperPath){
 	
@@ -245,7 +245,7 @@ commonUtils.loadImpl = function _loadStubCtrlImpl(librariesPath, isSerial, compl
 	
 };
 
-var checksumUtils = require('checksumUtils');
+var checksumUtils = require('mmirf/checksumUtils');
 
 
 function _generateCompiledViews(options){
@@ -302,7 +302,7 @@ function _generateCompiledViews(options){
 			};
 			
 			//do trigger loading of the template files (*.ehtml) by requesting the PresentationManager instance:
-		    var pm = require('presentationManager');
+		    var pm = require('mmirf/presentationManager');
 		    pm.init().then(function(){
 
 				if(isError){
@@ -318,9 +318,9 @@ function _generateCompiledViews(options){
 			    
 			    var storageBasePath = compiledViewGenPath;
 			    
-			    var View = require('view');
-			    var Partial = require('partial');
-			    var Layout = require('layout');
+			    var View = require('mmirf/view');
+			    var Partial = require('mmirf/partial');
+			    var Layout = require('mmirf/layout');
 			    
 //			    console.log(' \n ');
 //			    console.log(
@@ -333,14 +333,14 @@ function _generateCompiledViews(options){
 			    var wroteFileCounter = 0;
 
 				// stringify and store the views, ie. store "compiled" views
-				var utils = commonUtils;//mobileDS.CommonUtils.getInstance();
+				var utils = commonUtils;
 			    var partialPrefix = utils.getPartialsPrefix();
 			    var isPartialView = function(name){
 			    	return name.charAt(0) == partialPrefix;
 			    };
 			    var regExprFileExt = /\.ehtml$/igm;
 			    
-			    var constants = require('constants');
+			    var constants = require('mmirf/constants');
 			    
 				var viewList = utils.listDir('views');
 				

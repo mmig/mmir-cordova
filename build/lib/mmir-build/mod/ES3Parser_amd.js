@@ -1,5 +1,5 @@
 
-define(['antlr3'], function(org){
+define(['mmirf/antlr3'], function(org){
 
 // $ANTLR 3.3 Nov 30, 2010 12:50:56 ES3.g3 2016-07-04 21:14:35
 

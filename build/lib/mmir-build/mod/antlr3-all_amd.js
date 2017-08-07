@@ -1,5 +1,5 @@
 
-define(['parsingResult'], function(parsingResult){
+define(['mmirf/parsingResult'], function(parsingResult){
 
 
 	//for some reason, nodejs will fail, because these namespaces are not created in time (i.e. before accessed)

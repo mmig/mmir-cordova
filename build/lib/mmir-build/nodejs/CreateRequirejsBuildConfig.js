@@ -38,17 +38,16 @@ var buildSubDir = 'mod/';
 var _getBuildPaths = function(buildLibDir){
 	return {
 			  'jquery': buildLibDir+'jqueryDummy'
-			, 'jqueryajax': buildLibDir+'jqueryAjaxDummy'
-			, 'env': buildLibDir+'envDetectBuild'
-			, 'jqm': buildLibDir+'jqueryMobileDummy'
+			, 'mmirf/build/jqueryajax': buildLibDir+'jqueryAjaxDummy'
+			, 'mmirf/util/loadFile': buildLibDir+'jqueryLoadFileDummy'
+			, 'mmirf/env': buildLibDir+'envDetectBuild'
 			
-			, 'jqmSimpleModal': buildLibDir+'jqmSimpleModalDummy'
-			, 'loadCss': buildLibDir+'loadCssDummy'
+			, 'mmirf/build/viewEngine': buildLibDir+'viewEngineDummy'
+			, 'mmirf/loadCss': buildLibDir+'loadCssDummy'
 			
-			, 'stacktrace': buildLibDir+'stacktraceDummy'
-			
-//			, 'md5': void(0)
-			, 'logger': 'tools/logger'
+//			, 'mmirf/md5': void(0)
+			, 'mmirf/core': 'mmirf/core'
+			, 'mmirf/logger': 'mmirf/tools/logger'
 	};
 };
 
@@ -56,18 +55,20 @@ var _getBuildPaths = function(buildLibDir){
 //var paths = _getBuildPaths(buildLibDir);
 //console.log(_apply(paths, buildLibDir));
 
-module.exports = function(buildLibDir, srcDir){
+module.exports = function(buildLibDir, mmirDir, srcDir){
 
 	var paths = _getBuildPaths(buildLibDir);
-	var config = _apply(srcDir, paths, buildLibDir);
+	var config = _apply(mmirDir, paths, buildLibDir);
 
 	//adjust the baseUrl:
 	config.baseUrl = srcDir;
 	
-	config.config.logger = {
-		trace: false
+	config.config['mmirf/logger'] = {
+		//set default log-level to info:
+		logLevel: 'info',
+		//enable tracing for logger:
+		trace: true
 	};
 	
 	return config;
 };
-

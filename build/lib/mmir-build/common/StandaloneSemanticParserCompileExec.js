@@ -45,7 +45,7 @@ var theCompiledOutputFileName 	= theCompiledGrammarTargetFileName;
 //var checksumUtils = mobileDS.ChecksumUtils.init();
 checksumUtils.getFileExt();
 
-var semanticInterpreter = require('semanticInterpreter');
+var semanticInterpreter = require('mmirf/semanticInterpreter');
 
 var theGrammarGenerator 		= typeof theGrammarEngine !== 'undefined' && theGrammarEngine? theGrammarEngine : void(0);
 
@@ -55,8 +55,8 @@ function _setGrammarEngine(theGrammarEngine, theGrammarGenerator){
 	var configManager;
 	if(typeof theGrammarEngine !== 'string'){
 		if(!configManager)
-			configManager = require('configurationManager');
-		theGrammarGenerator = configManager.get('grammarCompiler', true);
+			configManager = require('mmirf/configurationManager');
+		theGrammarGenerator = configManager.get('grammarCompiler');
 	}
 	
 	if(theGrammarGenerator){
@@ -167,10 +167,8 @@ function _generateGrammar(_theJSONGrammarPath, _theJSONGrammarFileName, _theJSON
 		var compiledParser = semanticInterpreter.getGrammarParserText( theJSONGrammarLanguage );
 	
 		//normalize newlines:
-		// convert windows/mac to unix newlines
-		compiledParser = compiledParser.replaceAll('\r\n','\n').replaceAll('\r','\n');
 		// convert to windows style newlines:
-		compiledParser = compiledParser.replaceAll('\n','\r\n');
+		compiledParser = compiledParser.replace(/\r?\n/gm,'\r\n');
 		//append an empty last line:
 		compiledParser += '\r\n';
 	

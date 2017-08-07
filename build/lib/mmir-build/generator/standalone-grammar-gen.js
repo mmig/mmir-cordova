@@ -4,14 +4,12 @@ var oncomplete = require('../nodejs/oncomplete.js');
 var props = require('../nodejs/loadProperties.js');
 
 
-var _run = function(listener, isGenertateAntTarget){
+var _run = function(listener){
 	
 	var runner = new oncomplete();
 
 	var templateFile = 'generate-grammars.template';
 	var renderedTemplateFile = 'generate-grammars-script.js';
-
-	var isAntTarget = isGenertateAntTarget;
 	
 	runner.oncomplete(listener);
 	
@@ -19,29 +17,12 @@ var _run = function(listener, isGenertateAntTarget){
 		
 		templateFile = config.jsBuildDirBase + 'templates/' + templateFile;
 		renderedTemplateFile = config.buildDirTempJS + config.tempCompileGrammarParserGeneratorJSFile;
-		
-		config.isAntTarget = !!isAntTarget;
-		config.isAntTargetStr = '' + config.isAntTarget;
-		
-		if(isAntTarget){
-			
-			config.isAntTarget = true;
-			
-			renderedTemplateFile = config.antScriptGrammarsTemplate;
-	
-			var fs = require('fs');
-			var prefixFile = config.jsBuildDirBase + 'templates/ant-script-grammar-prefix.template';
-			var suffixFile = config.jsBuildDirBase + 'templates/ant-script-grammar-suffix.template';
-			config._prependAnt = fs.readFileSync(prefixFile, 'utf8');
-			config._appendAnt  = fs.readFileSync(suffixFile, 'utf8');
-			
-		}
 	
 		var includeFiles = {
 		
-			'InitNodeJsEnv.js': 						'${jsBuildDirBase}'+ (!isAntTarget? 'nodejs/InitNodeJsEnv.js' 					: 'rhino/InitRhinoEnv.js'),
-			'InitGrammarGeneratorNodeJsEnv.js': 		'${jsBuildDirBase}'+ (!isAntTarget? 'nodejs/InitGrammarGeneratorNodeJsEnv.js' 	: 'rhino/InitGrammarGeneratorRhinoEnv.js'),
-			'NodeJsFileHandler.js': 					'${jsBuildDirBase}'+ (!isAntTarget? 'nodejs/NodeJsFileHandler.js' 				: 'rhino/RhinoFileHandler.js'),
+			'InitNodeJsEnv.js': 						'${jsBuildDirBase}nodejs/InitNodeJsEnv.js',
+			'InitGrammarGeneratorNodeJsEnv.js': 		'${jsBuildDirBase}nodejs/InitGrammarGeneratorNodeJsEnv.js',
+			'NodeJsFileHandler.js': 					'${jsBuildDirBase}nodejs/NodeJsFileHandler.js',
 
 			'ChecksumHandler.js': 						'${jsBuildDirBase}common/ChecksumHandler.js',
 			
@@ -56,7 +37,8 @@ var _run = function(listener, isGenertateAntTarget){
 
 		//configure replacement / build-stub implementations:
 		var buildLibDir = config.buildDirLib+'mmir-build/';
-		var appSrcDir = config.jsSrcDirBase;
+		var appMmirfSrcDir = config.jsSrcDirBase;
+		var appSrcDir = config.appRootDir;
 
 		//...determine correct build/ sub-dir by analysing the main-app's dir:
 		var appDirParts = appSrcDir.split('/');
@@ -66,7 +48,7 @@ var _run = function(listener, isGenertateAntTarget){
 			}
 		}
 		
-		var buildConfig = require('../nodejs/CreateRequirejsBuildConfig.js')(buildLibDir,  appSrcDir);
+		var buildConfig = require('../nodejs/CreateRequirejsBuildConfig.js')(buildLibDir, appMmirfSrcDir, appSrcDir);
 		config._buildConfig = JSON.stringify(buildConfig);
 	
 		//process(templateFile, targetFile, includeFiles, context)

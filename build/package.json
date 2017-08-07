@@ -1,0 +1,27 @@
+{
+  "name": "mmir-tooling",
+  "version": "3.7.6",
+  "description": "Build tools for MMIR projects",
+  "directories": {
+    "doc": "doc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmig/mmir-tooling/"
+  },
+  "keywords": [
+    "mmir",
+    "cordova"
+  ],
+  "author": "MMIG team",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-chmod": "^2.0.0",
+    "gulp-filter": "^5.0.0",
+    "gulp-preservetime": "^1.2.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-sequence": "^0.4.6",
+    "gulp-util": "^3.0.8"
+  }
+}

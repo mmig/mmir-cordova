@@ -1,6 +1,0 @@
-
-		    </string>
-		    </concat>
-		    <echo message="&quot;${exec.js.compile.template.parser}&quot; built." />
-		</target>
-</project>

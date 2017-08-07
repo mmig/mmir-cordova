@@ -1,6 +1,0 @@
-
-	    </string>
-	    </concat>
-		<echo message="${base.js.compile.grammar.parser.generator} built." />
-	</target>
-</project>
