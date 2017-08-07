@@ -26,7 +26,7 @@
 
 
 
-define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module' ],
+define( [ 'mmirf/dictionary', 'mmirf/constants', 'mmirf/commonUtils', 'mmirf/logger', 'mmirf/util/deferred', 'module' ],
 	/**
 	 * 
 	 * A class for managing the models of the application (MVC-Component). <br>
@@ -42,11 +42,9 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 	 * @memberOf mmir
 	 * @static
 	 * 
-	 * @requires jQuery.Deferred
-	 * 
 	 */
 	function( 
-    		Dictionary,  constants, commonUtils, Logger, $, module
+    		Dictionary,  constants, commonUtils, Logger, deferred, module
 ){
 	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.ModelManager.prototype */
@@ -92,7 +90,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
      * 
 	 * @memberOf mmir.ModelManager#
      */
-	var GLOBAL_NAMESPACE = window;
+	var GLOBAL_NAMESPACE = typeof window !== 'undefined'? window : global;
 
 	/**
 	 * 
@@ -142,7 +140,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 	 * @param {Object} [ctx] OPTIONAL
 	 * 				the context for the model implementations (DEFAULT: the global context, i.e. window)
 	 * @returns {Promise} 
-	 * 					a Deferred.promise that gets fulfilled when models are loaded.
+	 * 					a deferred promise that gets fulfilled when models are loaded.
 	 * @private
 	 * @memberOf mmir.ModelManager#
 	 */
@@ -154,17 +152,8 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 		//shift arguments if necessary:
 		if(!ctx && typeof initCallbackFunction !== 'function'){
 			ctx = initCallbackFunction;
-			callback = void(0);
+			initCallbackFunction = void(0);
 		}
-		
-		/**
-		 * <code>init</code> as alias for #getInstance
-		 * @private
-		 * @function
-		 * @name init
-		 * @memberOf mmir.ModelManager#
-		 */
-		_instance.init = _instance.getInstance;
 
 		/**
 		 * 
@@ -275,7 +264,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
         	
         }
 
-		var _defer = $.Deferred();
+		var _defer = deferred();
 		if(initCallbackFunction){
 			_defer.then(initCallbackFunction, initCallbackFunction);
 		}
@@ -346,7 +335,7 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 		);
 
 
-		return _defer.promise(_instance);
+		return _defer;
 	};
 
 	/**
@@ -359,18 +348,6 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 	var _instance = {
 			/** @scope mmir.ModelManager.prototype */
 
-			/**
-			 * @deprecated use ModelManager object directly, e.g. instead of: mmir.ModelManager.getInstance().getModel()
-			 * 				use: mmir.ModelManager.getModel()
-			 * 
-			 * NOTE: ModelManager must be initialized before it can be used.
-			 * 
-			 * @memberOf mmir.ModelManager.prototype
-			 */
-			getInstance : function () {
-				return this;
-			},
-
 			// public members
 			/**
 			 * This function gets the model by name.
@@ -380,8 +357,9 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 			 *            modelName Name of the model which should be returned
 			 * @returns {Object} The model if found, null else
 			 * @public
+			 * @memberOf mmir.ModelManager.prototype
 			 */
-			getModel : function(modelName) {
+			get: function(modelName) {
 				var retModel = null;
 
 				// TODO implement mechanism for multiple/configurable model namespaces
@@ -398,14 +376,14 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 
 
 			/**
-			 * This function returns all loaded models.
+			 * This function returns all loaded model names.
 			 * 
 			 * @function
-			 * @returns {Array} All loaded models
+			 * @returns {Array<string>} All loaded model names
 			 * @public
 			 */
-			getModels : function() {
-				return models;
+			getNames: function() {
+				return models.getKeys();
 			},
 
 			/**
@@ -431,13 +409,13 @@ define( [ 'dictionary', 'constants', 'commonUtils', 'logger', 'jquery', 'module'
 			 * @param {Object} [ctx] OPTIONAL
 			 * 				the context for the model implementations (DEFAULT: the global context, i.e. window)
 			 * @returns {Promise} 
-			 * 					a Deferred.promise that gets fulfilled when models are loaded.
+			 * 					a deferred promise that gets fulfilled when models are loaded.
 			 * @example
 			 * 	function afterLoadingModels(modelManagerInstance){
-			 * 		var userModel = modelManagerInstance.getModel('User');
+			 * 		var userModel = modelManagerInstance.get('User');
 			 * 		//do something...
 			 * 	} 
-			 * 	mmir.ModelManager.create(afterLoadingModels);
+			 * 	mmir.model.create(afterLoadingModels);
 			 * @public
 			 */
 			init: _init

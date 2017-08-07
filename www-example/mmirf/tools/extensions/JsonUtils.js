@@ -1,4 +1,4 @@
-define(['stringExtension'], function(){
+define(['mmirf/stringUtils'], function(stringUtils){
 
 return {
     /**
@@ -18,7 +18,7 @@ return {
 	 * @memberOf mmir.extensions.JsonUtils.prototype
 	 * 
      * @example
-     *  var JsonUtils = mmir.require('jsonUtils');
+     *  var JsonUtils = mmir.require('mmirf/jsonUtils');
      *  var jsonValue = JsonUtils.toJSONStringValue(someValue);
      *  var data = JSON.parse('"theValue":"' + jsonValue + '"');
      */
@@ -27,7 +27,7 @@ return {
 			if (typeof theObjectValue !== 'string') {
 				theObjectValue = theObjectValue.toString();
 			}
-			theObjectValue = theObjectValue.escapeDoubleQuotes();
+			theObjectValue = stringUtils.escapeDoubleQuotes(theObjectValue);
 		}
 		else {
 			theObjectValue = '';
@@ -53,7 +53,7 @@ return {
 	 * @memberOf mmir.extensions.JsonUtils.prototype
 	 * 
      * @example 
-     *  var JsonUtils = mmir.require('jsonUtils');
+     *  var JsonUtils = mmir.require('mmirf/jsonUtils');
      *  var jsonValue = JsonUtils.convertJSONStringValueToHTML(someValue);
      *  var data = JSON.parse('"theValue":"' + jsonValue + '"');
      *  ...
@@ -66,9 +66,9 @@ return {
 			}
 			// escape double-quotes, if necessary
 			// replace (all variants of) newlines with HTML-newlines
-			str = str.escapeDoubleQuotes().replaceAll('\r\n', '<br/>')
-					.replaceAll('\n', '<br/>')
-					.replaceAll('\r', '<br/>');
+			str = theObjectValue.escapeDoubleQuotes(str).replace(/\r\n/g, '<br/>')
+					.replace(/\n/g, '<br/>')
+					.replace(/\r/g, '<br/>');
 		} else {
 			str = '';
 		}

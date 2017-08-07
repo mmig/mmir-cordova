@@ -26,7 +26,7 @@
 
 
 
-define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionary', 'logger', 'module'],
+define(['mmirf/util/deferred', 'mmirf/util/extend', 'mmirf/constants', 'mmirf/commonUtils', 'mmirf/configurationManager', 'mmirf/dictionary', 'mmirf/logger', 'module'],
 	/**
 	 * The MediaManager gives access to audio in- and output functionality.
 	 * 
@@ -42,13 +42,10 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	 * @memberOf mmir
 	 * @static
 	 * 
-	 * @requires jQuery.extend
-	 * @requires jQuery.Deferred
-	 * 
 	 * TODO remove / change dependency on forBrowser: constants.isBrowserEnv()!!!
 	 */
 	function(
-		jQuery, constants, commonUtils, configurationManager, Dictionary, Logger, module
+		deferred, extend, constants, commonUtils, configurationManager, Dictionary, Logger, module
 ){
 	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.MediaManager.prototype */
@@ -125,6 +122,46 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     };
     
     /**
+     * Reference to the core mmir-lib object.
+     * 
+     * Do not use directly, or call {@link #_getMmir} at least once, in order to initialize this field.
+     * 
+     * NOTE: the reference may be undefined, if the core is not visible in the global namespace.
+     * 
+     * 
+     * @private
+     * @type mmir
+     * 
+	 * @memberOf MediaManager#
+	 * 
+	 * @see _getVersion
+     */
+    var _mmirLib;
+    
+    /**
+     * Get the core mmir-lib from the global namespace.
+     * 
+     * NOTE: may be undefined, if the core is not visible in the global namespace.
+     * 
+     * @returns {mmir} the core mmir-lib 
+     *                 (or undefined, if the mmir-lib is not available in the global namespace)
+     * 
+     * @private
+	 * @memberOf MediaManager#
+     */
+    var _getMmir = function(){
+    	
+    	if(!_mmirLib){
+    		var mmirName = typeof MMIR_CORE_NAME === 'string'? MMIR_CORE_NAME : 'mmir';
+    		_mmirLib = typeof window !== 'undefined'? window[mmirName] : global[mmirName];
+    	}
+    	
+    	return _mmirLib;
+    };
+    
+    
+    
+    /**
      * Load an media-module implementation from plugin file.
      * 
      * @param {String} fileName
@@ -183,18 +220,32 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 		    								//need to "re-map" the execution context for the functions,
 		    								// so that "they think" they are actually executed within the MediaManager instance
 			    							
-		    								(function(mediaManagerInstance, originalFunc, name, context){
+		    								(function(mediaManagerInstance, originalFunc, name, context, ttsFieldExists){
 		    									//NOTE need closure to "preserve" values of for-iteration
 		    									mediaManagerInstance.ctx[context][name] = function(){
 //					    								console.log('executing '+context+'.'+name+', in context '+mediaManagerInstance,mediaManagerInstance);//DEBUG
 				    								return originalFunc.apply(mediaManagerInstance, arguments);
 				    							};
-		    								})(instance, func, p, execId);
+				    							
+				    							//add alias 'tts' for 'textToSpeech'
+				    							if(!ttsFieldExists && name === 'textToSpeech'){
+				    								console.error('outdated TTS plugin '+filePath+': plugin implementation should replace textToSpeech() with tts()!');
+				    								mediaManagerInstance.ctx[context]['tts'] = mediaManagerInstance.ctx[context]['textToSpeech'];
+				    							}
+				    							
+		    								})(instance, func, p, execId, exportedFunctions['tts']);
 		    								
 		    							}
 		    							else {
+		    								
 		    								//for non-functions: just attach to the new "sub-context"
 			    							instance.ctx[execId][p] = func;
+			    							
+			    							//add alias 'tts' for 'textToSpeech'
+			    							if(p === 'textToSpeech' && !exportedFunctions['tts']){
+			    								console.error('outdated TTS plugin '+filePath+': plugin implementation should replace textToSpeech() with tts()!');
+			    								mediaManagerInstance.ctx[execId]['tts'] = func;
+			    							}
 		    							}
 		    							
 	    							} else {
@@ -218,7 +269,12 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	    					
 	    				}//END if(execId)
 	    				else {
-	    					jQuery.extend(true,instance,exportedFunctions);
+	    					extend(instance,exportedFunctions);
+	    					//add alias 'tts' for 'textToSpeech'
+							if(typeof exportedFunctions['textToSpeech'] === 'function' && !exportedFunctions['tts']){
+								console.error('outdated TTS plugin '+filePath+': plugin implementation should replace textToSpeech() with tts()!');
+								instance['tts'] = exportedFunctions['textToSpeech'];
+							}
 	    					newMediaPlugin = null;
 	    				}
 	    				
@@ -246,7 +302,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 //    		//  * uses code-naming feature for eval'ed code: //@ sourceURL=...
 //    		//i.e. eval(..) is used ...
 //    		var targetPath = constants.getMediaPluginPath()+filePath;
-//    		$.ajax({
+//    		ajax({
 //                async: true,
 //                dataType: "text",
 //                url: targetPath,
@@ -270,7 +326,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 //                	
 //                	if (typeof newMediaPlugin !== 'undefined' && newMediaPlugin){
 //    	    			newMediaPlugin.initialize(function(exportedFunctions){
-//    	    					jQuery.extend(true,instance,exportedFunctions);
+//    	    					extend(instance,exportedFunctions);
 //    	    					newMediaPlugin = null;
 //    							if (successCallback) successCallback();
 //    	    			}, instance);
@@ -477,6 +533,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * @see #_preparing
     			 * @see #_ready
     			 * 
+				 * @memberOf mmir.MediaManager#
+				 * 
     			 * @example
     			 * //define custom wait/ready implementation:
     			 * var impl = {
@@ -502,28 +560,74 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	    		/**
 	    		 * Start speech recognition with <em>end-of-speech</em> detection:
 	    		 * 
-	    		 * the recognizer automatically tries to detect when speech has finished and then
-	    		 * triggers the callback with the result.
+	    		 * the recognizer automatically tries to detect when speech has finished and
+	    		 * triggers the status-callback accordingly with results.
 	    		 * 
 	    		 * @async
 	    		 * 
-	    		 * @param {Function} [successCallBack] OPTIONAL
-	    		 * 			callback function that is triggered when a text result is available.
+	    		 * @param {PlainObject} [options] OPTIONAL
+    			 * 		options for Automatic Speech Recognition:
+    			 * 		<pre>{
+    			 * 			  success: OPTIONAL Function, the status-callback (see arg statusCallback)
+    			 * 			, error: OPTIONAL Function, the error callback (see arg failureCallback)
+    			 * 			, language: OPTIONAL String, the language for recognition (if omitted, the current language setting is used)
+    			 * 			, intermediate: OTPIONAL Boolean, set true for receiving intermediate results (NOTE not all ASR engines may support intermediate results)
+    			 * 			, results: OTPIONAL Number, set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
+    			 * 			, mode: OTPIONAL "search" | "dictation", set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
+    			 * 			, eosPause: OTPIONAL "short" | "long", length of pause after speech for end-of-speech detection (NOTE not all ASR engines may support this option)
+    			 * 			, disableImprovedFeedback: OTPIONAL Boolean, disable improved feedback when using intermediate results (NOTE not all ASR engines may support this option)
+    			 * 		}</pre>
+    			 * 
+	    		 * @param {Function} [statusCallback] OPTIONAL
+	    		 * 			callback function that is triggered when, recognition starts, text results become available, and recognition ends.
 	    		 * 			The callback signature is:
-	    		 * 				<code>callback(textResult)</code>
-	    		 * @param {Function} [failureCallBack] OPTIONAL
+	    		 * 				<pre>
+	    		 * 				callback(
+	    		 * 					text: String | "",
+	    		 * 					confidence: Number | Void,
+	    		 * 					status: "FINAL"|"INTERIM"|"INTERMEDIATE"|"RECORDING_BEGIN"|"RECORDING_DONE",
+	    		 * 					alternatives: Array<{result: String, score: Number}> | Void,
+	    		 * 					unstable: String | Void
+	    		 * 				)
+	    		 * 				</pre>
+	    		 * 			
+	    		 * 			Usually, for status <code>"FINAL" | "INTERIM" | "INTERMEDIATE"</code> text results are returned, where
+	    		 * 			<pre>
+	    		 * 			  "INTERIM": an interim result, that might still change
+	    		 * 			  "INTERMEDIATE": a stable, intermediate result
+	    		 * 			  "FINAL": a (stable) final result, before the recognition stops
+	    		 * 			</pre>
+	    		 * 			If present, the <code>unstable</code> argument provides a preview for the currently processed / recognized text.
+	    		 * 
+	    		 * 			<br>NOTE that when using <code>intermediate</code> mode, status-calls with <code>"INTERMEDIATE"</code> may
+	    		 * 			     contain "final intermediate" results, too.
+	    		 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.success</code>, this argument will supersede the options
+    			 * 
+	    		 * @param {Function} [failureCallback] OPTIONAL
 	    		 * 			callback function that is triggered when an error occurred.
 	    		 * 			The callback signature is:
-	    		 * 				<code>callback(error)</code> 
+	    		 * 				<code>callback(error)</code>
+	    		 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.error</code>, this argument will supersede the options
+    			 * 
+	    		 * 
+				 * @memberOf mmir.MediaManager# 
 	    		 */
-    			recognize: function(successCallBack, failureCallBack){
+    			recognize: function(options, statusCallback, failureCallback){
+    				
+    				if(typeof options === 'function'){
+    					failureCallback = statusCallback;
+    					statusCallback = options;
+    					options = void(0);
+    				}
     				
     				var funcName = 'recognize';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Input: Speech Recognition is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Input: Speech Recognition is not supported.");
     				}
     				else {
     					console.error("Audio Input: Speech Recognition is not supported.");
@@ -534,38 +638,72 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	    		 * 
 	    		 * The recognizer continues until {@link #stopRecord} is called.
 	    		 * 
-	    		 * <p>
-	    		 * If <code>isWithIntermediateResults</code> is used, the recognizer may
-	    		 * invoke the callback with intermediate recognition results.
-	    		 * 
-	    		 * TODO specify whether stopRecord should return the "gathered" intermediate results, or just the last one
-	    		 * 
-	    		 * NOTE that not all implementation may support this feature.
-	    		 * 
 	    		 * @async
 	    		 * 
-	    		 * @param {Function} [successCallBack] OPTIONAL
-	    		 * 			callback function that is triggered when a text result is available.
+    			 * @param {PlainObject} [options] OPTIONAL
+    			 * 		options for Automatic Speech Recognition:
+    			 * 		<pre>{
+    			 * 			  success: OPTIONAL Function, the status-callback (see arg statusCallback)
+    			 * 			, error: OPTIONAL Function, the error callback (see arg failureCallback)
+    			 * 			, language: OPTIONAL String, the language for recognition (if omitted, the current language setting is used)
+    			 * 			, intermediate: OTPIONAL Boolean, set true for receiving intermediate results (NOTE not all ASR engines may support intermediate results)
+    			 * 			, results: OTPIONAL Number, set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
+    			 * 			, mode: OTPIONAL "search" | "dictation", set how many recognition alternatives should be returned at most (NOTE not all ASR engines may support this option)
+    			 * 			, eosPause: OTPIONAL "short" | "long", length of pause after speech for end-of-speech detection (NOTE not all ASR engines may support this option)
+    			 * 			, disableImprovedFeedback: OTPIONAL Boolean, disable improved feedback when using intermediate results (NOTE not all ASR engines may support this option)
+    			 * 		}</pre>
+    			 * 
+	    		 * @param {Function} [statusCallback] OPTIONAL
+	    		 * 			callback function that is triggered when, recognition starts, text results become available, and recognition ends.
 	    		 * 			The callback signature is:
-	    		 * 				<code>callback(textResult)</code>
-	    		 * @param {Function} [failureCallBack] OPTIONAL
+	    		 * 				<pre>
+	    		 * 				callback(
+	    		 * 					text: String | "",
+	    		 * 					confidence: Number | Void,
+	    		 * 					status: "FINAL"|"INTERIM"|"INTERMEDIATE"|"RECORDING_BEGIN"|"RECORDING_DONE",
+	    		 * 					alternatives: Array<{result: String, score: Number}> | Void,
+	    		 * 					unstable: String | Void
+	    		 * 				)
+	    		 * 				</pre>
+	    		 * 			
+	    		 * 			Usually, for status <code>"FINAL" | "INTERIM" | "INTERMEDIATE"</code> text results are returned, where
+	    		 * 			<pre>
+	    		 * 			  "INTERIM": an interim result, that might still change
+	    		 * 			  "INTERMEDIATE": a stable, intermediate result
+	    		 * 			  "FINAL": a (stable) final result, before the recognition stops
+	    		 * 			</pre>
+	    		 * 			If present, the <code>unstable</code> argument provides a preview for the currently processed / recognized text.
+	    		 * 
+	    		 * 			<br>NOTE that when using <code>intermediate</code> mode, status-calls with <code>"INTERMEDIATE"</code> may
+	    		 * 			     contain "final intermediate" results, too.
+	    		 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.success</code>, this argument will supersede the options
+    			 * 
+	    		 * @param {Function} [failureCallback] OPTIONAL
 	    		 * 			callback function that is triggered when an error occurred.
 	    		 * 			The callback signature is:
 	    		 * 				<code>callback(error)</code>
-	    		 * @param {Boolean} [isWithIntermediateResults] OPTIONAL
-	    		 * 			if <code>true</code>, the recognizer will return intermediate results
-	    		 * 			by invoking the successCallback
 	    		 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.error</code>, this argument will supersede the options
+    			 * 
 	    		 * @see #stopRecord
+				 * @memberOf mmir.MediaManager#
 	    		 */
-    			startRecord: function(successCallBack,failureCallBack, isWithIntermediateResults){
+    			startRecord: function(options, statusCallback, failureCallback, isWithIntermediateResults){//TODO remove arg isWithIntermediateResults -> deprecated: use options instead
+    				
+    				if(typeof options === 'function'){
+    					isWithIntermediateResults = failureCallback;
+    					failureCallback = statusCallback;
+    					statusCallback = options;
+    					options = void(0);
+    				}
     				
     				var funcName = 'startRecord';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Input: Speech Recognition (recording) is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Input: Speech Recognition (recording) is not supported.");
     				}
     				else {
     					console.error("Audio Input: Speech Recognition (recording) is not supported.");
@@ -577,29 +715,66 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
 	    		 * After {@link #startRecord} was called, invoking this function will stop the recognition
 	    		 * process and return the result by invoking the <code>succesCallback</code>.
 	    		 * 
-	    		 * TODO specify whether stopRecord should return the "gathered" intermediate results, or just the last one
+	    		 * Note, that the <code>statusCallback</code> may not return an actual text result (i.e. the last
+	    		 * text result may have been return in the <code>statusCallback</code> of the <code>startRecord()</code> call)
 	    		 * 
 	    		 * @async
 	    		 * 
-	    		 * @param {Function} [successCallBack] OPTIONAL
-	    		 * 			callback function that is triggered when a text result is available.
+	    		 * @param {PlainObject} [options] OPTIONAL
+    			 * 		options for stopping the Automatic Speech Recognition:
+    			 * 		<pre>{
+    			 * 			  success: OPTIONAL Function, the status-callback (see arg statusCallback)
+    			 * 			, error: OPTIONAL Function, the error callback (see arg failureCallback)
+    			 * 		}</pre>
+    			 * 
+	    		 * 
+	    		 * @param {Function} [statusCallback] OPTIONAL
+	    		 * 			callback function that is triggered when, recognition starts, text results become available, and recognition ends.
 	    		 * 			The callback signature is:
-	    		 * 				<code>callback(textResult)</code>
-	    		 * @param {Function} [failureCallBack] OPTIONAL
+	    		 * 				<pre>
+	    		 * 				callback(
+	    		 * 					text: String | "",
+	    		 * 					confidence: Number | Void,
+	    		 * 					status: "FINAL"|"INTERIM"|"INTERMEDIATE"|"RECORDING_BEGIN"|"RECORDING_DONE",
+	    		 * 					alternatives: Array<{result: String, score: Number}> | Void,
+	    		 * 					unstable: String | Void
+	    		 * 				)
+	    		 * 				</pre>
+	    		 * 			
+	    		 * 			Usually, for status <code>"FINAL" | "INTERIM" | "INTERMEDIATE"</code> text results are returned, where
+	    		 * 			<pre>
+	    		 * 			  "INTERIM": an interim result, that might still change
+	    		 * 			  "INTERMEDIATE": a stable, intermediate result
+	    		 * 			  "FINAL": a (stable) final result, before the recognition stops
+	    		 * 			</pre>
+	    		 * 			If present, the <code>unstable</code> argument provides a preview for the currently processed / recognized text.
+	    		 * 
+	    		 * 			<br>NOTE that when using <code>intermediate</code> mode (as option in <code>startRecord()</code>),
+	    		 * 				 status-calls with <code>"INTERMEDIATE"</code> may contain "final intermediate" results, too.
+    			 * 
+	    		 * @param {Function} [failureCallback] OPTIONAL
 	    		 * 			callback function that is triggered when an error occurred.
 	    		 * 			The callback signature is:
 	    		 * 				<code>callback(error)</code>
+    			 * 
 	    		 * 
 	    		 * @see #startRecord
+				 * @memberOf mmir.MediaManager#
 	    		 */
-    			stopRecord: function(successCallBack,failureCallBack){
+    			stopRecord: function(options, successCallback, failureCallback){
+    				
+    				if(typeof options === 'function'){
+    					failureCallback = statusCallback;
+    					statusCallback = options;
+    					options = void(0);
+    				}
     				
     				var funcName = 'stopRecord';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Input: Speech Recognition (recording) is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Input: Speech Recognition (recording) is not supported.");
     				}
     				else {
     					console.error("Audio Input: Speech Recognition (recording) is not supported.");
@@ -610,15 +785,17 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	   		 * Cancel currently active speech recognition.
     	   		 * 
     	   		 * Has no effect, if no recognition is active.
+    	   		 * 
+				 * @memberOf mmir.MediaManager#
     	   		 */
-    			cancelRecognition: function(successCallBack,failureCallBack){
+    			cancelRecognition: function(successCallback,failureCallback){
     				
     				var funcName = 'cancelRecognition';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: canceling Recognize Speech is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: canceling Recognize Speech is not supported.");
     				}
     				else {
     					console.error("Audio Output: canceling Recognize Speech is not supported.");
@@ -628,15 +805,17 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	   		
     			/**
     			 * Play PCM audio data.
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    	   		playWAV: function(blob, onPlayedCallback, failureCallBack){
+    	   		playWAV: function(blob, onPlayedCallback, failureCallback){
     	   			
     	   			var funcName = 'playWAV';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: play WAV audio is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: play WAV audio is not supported.");
     				}
     				else {
     					console.error("Audio Output: play WAV audio is not supported.");
@@ -644,15 +823,17 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			},
     			/**
     			 * Play audio file from the specified URL.
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			playURL: function(url, onPlayedCallback, failureCallBack){
+    			playURL: function(url, onPlayedCallback, failureCallback){
     				
     				var funcName = 'playURL';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: play audio from URL is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: play audio from URL is not supported.");
     				}
     				else {
     					console.error("Audio Output: play audio from URL is not supported.");
@@ -663,9 +844,11 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     			 * Convenience function for {@link #playWAV} and {@link #playURL}:
     			 * if first argument is a String, then <code>playURL</code> will be invoked,
-    			 * otherwise <code>playWAV</code>
+    			 * otherwise <code>playWAV</code>.
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			play: function(urlOrData, onPlayedCallback, failureCallBack){
+    			play: function(urlOrData, onPlayedCallback, failureCallback){
     				if(typeof urlOrData === 'string'){
     					return this.playURL.apply(this, arguments);
     				} else {
@@ -694,21 +877,23 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     			 * @param {String} url
     			 * @param {Function} [onPlayedCallback] OPTIONAL
-    			 * @param {Function} [failureCallBack] OPTIONAL
-    			 * @param {Function} [onLoadedCallBack] OPTIONAL
+    			 * @param {Function} [failureCallback] OPTIONAL
+    			 * @param {Function} [onLoadedCallback] OPTIONAL
     			 * 
     			 * @returns {mmir.env.media.IAudio} the audio
     			 * 
     			 * @see {mmir.env.media.IAudio#_constructor}
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			getURLAsAudio: function(url, onPlayedCallback, failureCallBack, onLoadedCallBack){
+    			getURLAsAudio: function(url, onPlayedCallback, failureCallback, onLoadedCallback){
     				
     				var funcName = 'getURLAsAudio';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: create audio from URL is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: create audio from URL is not supported.");
     				}
     				else {
     					console.error("Audio Output: create audio from URL is not supported.");
@@ -722,8 +907,10 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * Convenience function for {@link #getURLAsAudio} and {@link #getWAVAsAudio}:
     			 * if first argument is a String, then <code>getURLAsAudio</code> will be invoked,
     			 * otherwise <code>getWAVAsAudio</code> (if the module supports this function).
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			getAudio: function(urlOrData, onPlayedCallback, failureCallBack, onLoadedCallBack){
+    			getAudio: function(urlOrData, onPlayedCallback, failureCallback, onLoadedCallback){
     				if(typeof urlOrData === 'string'){
     					return this.getURLAsAudio.apply(this, arguments);
     				} else {
@@ -765,14 +952,15 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * @returns {mmir.env.media.IAudio} the audio
     			 * 
     			 * @see {mmir.env.media.IAudio#_constructor}
+				 * @memberOf mmir.MediaManager#
 				 */
 				createEmptyAudio: function(){
 					return {
 						_enabled: true,
 						_play: false,
 						_volume: 1,
-						play: function(){ this._play = true; },
-						stop: function(){ this._play = true; },
+						play: function(){ this._play = true; return false;},
+						stop: function(){ this._play = false; return true;},
 						enable: function(){ this._enabled = true; },
 						disable: function(){ this._enabled = false; },
 						release: function(){ this._enabled = false; },
@@ -787,28 +975,79 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			/**
     			 * Synthesizes ("read out loud") text.
     			 * 
-    			 * @param {String|Array<String>|PlainObject} parameter
+    			 * @param {String|Array<String>|PlainObject} [options] OPTIONAL
     			 * 		if <code>String</code> or <code>Array</code> of <code>String</code>s
-    			 * 			  synthesizes the text of the String, for an Array: each entry is interpreted as "sentence";
+    			 * 			  synthesizes the text of the String(s).
+    			 * 			  <br>For an Array: each entry is interpreted as "sentence";
     			 * 				after each sentence, a short pause is inserted before synthesizing the
     			 * 				the next sentence<br>
     			 * 		for a <code>PlainObject</code>, the following properties should be used:
     			 * 		<pre>{
-    			 * 			  text: string OR string Array, text that should be read aloud
-    			 * 			, pauseLength: OPTIONAL Length of the pauses between sentences in milliseconds
-    			 * 			, forceSingleSentence: OPTIONAL boolean, if true, a string Array will be turned into a single string
-    			 * 			, split: OPTIONAL boolean, if true and the text is a single string, it will be split using a splitter function
-    			 * 			, splitter: OPTIONAL function, replaces the default splitter-function. It takes a simple string as input and gives a string Array as output
+    			 * 			  text: String | String[], text that should be read aloud
+    			 * 			, pauseDuration: OPTIONAL Number, the length of the pauses between sentences (i.e. for String Arrays) in milliseconds
+    			 * 			, language: OPTIONAL String, the language for synthesis (if omitted, the current language setting is used)
+    			 * 			, voice: OPTIONAL String, the voice (language specific) for synthesis; NOTE that the specific available voices depend on the TTS engine
+    			 * 			, success: OPTIONAL Function, the on-playing-completed callback (see arg onPlayedCallback)
+    			 * 			, error: OPTIONAL Function, the error callback (see arg failureCallback)
+    			 * 			, ready: OPTIONAL Function, the audio-ready callback (see arg onReadyCallback)
     			 * 		}</pre>
+    			 * 
+    			 * @param {Function} [onPlayedCallback] OPTIONAL
+    			 * 			callback that is invoked when the audio of the speech synthesis finished playing:
+    			 * 			<pre>onPlayedCallback()</pre>
+    			 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.success</code>, this argument will supersede the options
+    			 * 
+    			 * @param {Function} [failureCallback] OPTIONAL
+    			 * 			callback that is invoked in case an error occurred:
+    			 * 			<pre>failureCallback(error: String | Error)</pre>
+    			 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.error</code>, this argument will supersede the options
+    			 * 
+    			 * @param {Function} [onReadyCallback] OPTIONAL
+    			 * 			callback that is invoked when audio becomes ready / is starting to play.
+    			 * 			If, after the first invocation, audio is paused due to preparing the next audio,
+    			 * 			then the callback will be invoked with <code>false</code>, and then with <code>true</code>
+    			 * 			(as first argument), when the audio becomes ready again, i.e. the callback signature is:
+    			 * 			<pre>onReadyCallback(isReady: Boolean, audio: IAudio)</pre>
+    			 * 
+    			 * 			<br>NOTE: if used in combination with <code>options.ready</code>, this argument will supersede the options
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			textToSpeech: function(parameter, onPlayedCallback, failureCallBack){
+    			tts: function(options, onPlayedCallback, failureCallback, onReadyCallback){
+    				
+    				if(typeof options === 'function'){
+    					onInitCallback = failureCallback;
+    					failureCallback = onPlayedCallback;
+    					onPlayedCallback = options;
+    					options = void(0);
+    				}
+    				
+    				var funcName = 'tts';
+    				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
+						return this.ctx[defaultExecId][funcName].apply(this, arguments);
+					}
+    				else if(failureCallback){
+    					failureCallback("Audio Output: Text To Speech is not supported.");
+    				}
+    				else {
+    					console.error("Audio Output: Text To Speech is not supported.");
+    				}
+    			},
+    			
+    			/**
+    			 * @deprecated use {@link #tts} instead
+				 * @memberOf mmir.MediaManager#
+    			 */
+    			textToSpeech: function(parameter, onPlayedCallback, failureCallback){
     				
     				var funcName = 'textToSpeech';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: Text To Speech is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: Text To Speech is not supported.");
     				}
     				else {
     					console.error("Audio Output: Text To Speech is not supported.");
@@ -816,15 +1055,17 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			},
     			/**
     			 * Cancel current synthesis.
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
-    			cancelSpeech: function(successCallBack,failureCallBack){
+    			cancelSpeech: function(successCallback,failureCallback){
     				
     				var funcName = 'cancelSpeech';
     				if(defaultExecId && typeof this.ctx[defaultExecId][funcName] !== 'undefined'){
 						return this.ctx[defaultExecId][funcName].apply(this, arguments);
 					}
-    				else if(failureCallBack){
-    					failureCallBack("Audio Output: canceling Text To Speech is not supported.");
+    				else if(failureCallback){
+    					failureCallback("Audio Output: canceling Text To Speech is not supported.");
     				}
     				else {
     					console.error("Audio Output: canceling Text To Speech is not supported.");
@@ -837,6 +1078,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     			 * @param {Number} newValue
     			 * 				TODO specify format / range
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
     			setTextToSpeechVolume: function(newValue){
     				
@@ -878,6 +1121,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * @param {Function} eventHandler
     	    	 * 
     	    	 * @function
+				 * @memberOf mmir.MediaManager#
     	    	 */
     			, addListener: addListenerImpl
     			/**
@@ -895,16 +1139,34 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * 		removed, and <code>false</code> otherwise.
     	    	 * 
     	    	 * @function
+				 * @memberOf mmir.MediaManager#
     	    	 */
     			, removeListener: removeListenerImpl
     			/** 
+    			 * Add an event listener.
+    			 * 
+    			 * @param {String} eventName
+    			 * 				the name of the event
+    			 * @param {Function} eventHandler
+    			 * 				the event handler / callback function
+    			 * 
+    			 * 
     			 * @function
-    			 * @see #addListener
+				 * @memberOf mmir.MediaManager#
+    			 * @see #off
     			 */
-    			, on:addListenerImpl
+    			, on: addListenerImpl
     			/** 
+    			 * Add an event listener.
+    			 * 
+    			 * @param {String} eventName
+    			 * 				the name of the event
+    			 * @param {Function} eventHandler
+    			 * 				the event handler / callback function
+    			 * 
     			 * @function
-    			 * @see #removeListener
+				 * @memberOf mmir.MediaManager#
+    			 * @see #on
     			 */
     			, off: removeListenerImpl
     			/**
@@ -912,6 +1174,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     			 * @returns {Array<Function>} of event-handlers. 
     			 * 				Empty, if there are no event handlers for eventName
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
     			, getListeners: function(eventName){
     				var list = listener.get(eventName);
@@ -926,6 +1190,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     			 * @returns {Boolean} <code>true</code> if at least 1 handler is registered 
     			 * 					  for eventName; otherwise <code>false</code>.
+    			 * 
+				 * @memberOf mmir.MediaManager#
     			 */
     			, hasListeners: function(eventName){
     				var list = listener.get(eventName);
@@ -940,6 +1206,8 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * 					the list of arguments with which the event-handlers
     	    	 * 					will be called.
     	    	 * @protected
+				 * @memberOf mmir.MediaManager#
+				 * @see #on
     			 */
     			, _fireEvent: function(eventName, argsArray){
     				var list = listener.get(eventName);
@@ -961,6 +1229,9 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * 					the event-handler function that has changed.
     	    	 * 
     			 * @protected
+				 * @memberOf mmir.MediaManager#
+				 * @see #on
+				 * @see #off
     			 */
     			, _notifyObservers: function(eventName, actionType, eventHandler){//actionType: one of "added" | "removed"
     				var list = listenerObserver.get(eventName);
@@ -990,6 +1261,10 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 
     	    	 * @param {String} eventName
     	    	 * @param {Function} observerCallback
+    	    	 * 
+    	    	 * @protected
+    	    	 * @see #_removeListenerObserver
+				 * @memberOf mmir.MediaManager#
     			 */
     			, _addListenerObserver: function(eventName, observerCallback){
     				var list = listenerObserver.get(eventName);
@@ -1001,7 +1276,13 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     					list.push(observerCallback);
     				}
     			}
-    			
+    			/**
+    			 * Remove an observer that gets notified on registration / removal of event-handler.
+    			 * 
+    	    	 * @protected
+    	    	 * @see #_addListenerObserver
+				 * @memberOf mmir.MediaManager#
+    			 */
     			, _removeListenerObserver: function(eventName, observerCallback){
     				var isRemoved = false;
     				var list = listenerObserver.get(eventName);
@@ -1046,6 +1327,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 			Or if <code>ctx</code> is not <code>falsy</code> but there is no valid execution
     			 * 			context <code>ctx</code> in MediaManager.
     			 * 
+				 * @memberOf mmir.MediaManager#
     			 * @example
     			 * 
     			 *  //same as mmir.MediaManager.ctx.android.textToSpeech("...", function...):
@@ -1119,6 +1401,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * 			Or if <code>ctx</code> is not <code>falsy</code> but there is no valid execution
     			 * 			context <code>ctx</code> in MediaManager.
     			 * 
+				 * @memberOf mmir.MediaManager#
     			 * @example
     			 * 
     			 *  //same as mmir.MediaManager.ctx.android.textToSpeech("...", function...):
@@ -1188,6 +1471,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     			 * @throws {ReferenceError}
     			 * 			if <code>ctxId</code> is no valid context
     			 * 
+				 * @memberOf mmir.MediaManager#
     			 * @example
     			 * 
     			 * //if context "nuance" exists:
@@ -1225,6 +1509,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * 
     	    	 * @function
     	    	 * @protected
+				 * @memberOf mmir.MediaManager#
     	    	 * 
     	    	 * @see #waitReadyImpl
     	    	 * @see #_ready
@@ -1248,6 +1533,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	    	 * 
     	    	 * @function
     	    	 * @protected
+				 * @memberOf mmir.MediaManager#
     	    	 * 
     	    	 * @see #waitReadyImpl
     	    	 * @see #_ready
@@ -1321,7 +1607,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     	var env = configurationName;
     	var pluginArray = [];
 
-    	var dataFromConfig = configurationManager.get('mediaManager.plugins', true);
+    	var dataFromConfig = configurationManager.get('mediaManager.plugins');
     	
     	if(!env){
     		
@@ -1350,7 +1636,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     		//if there is no env value yet, use default criteria browser vs. cordova env:
     		if(!env){
     			
-	    		var isCordovaEnvironment = ! constants.isBrowserEnv();
+	    		var isCordovaEnvironment = constants.isCordovaEnv();
 	        	if (isCordovaEnvironment) {
 	        		env = 'cordova';
 	        	} else {
@@ -1452,7 +1738,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
          * 					}
          * 				 </pre>
          * @return {Object}
-         * 				an Deferred object that gets resolved, after the {@link mmir.MediaManager}
+         * 				a Deferred object that gets resolved, after the {@link mmir.MediaManager}
          * 				has been initialized.
          * @public
          * 
@@ -1461,7 +1747,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
          */
         init: function(successCallback, failureCallback, listenerList){
         	
-        	var defer = jQuery.Deferred();
+        	var defer = deferred();
         	var deferredSuccess = function(){
     			defer.resolve();
     		};
@@ -1474,7 +1760,7 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
         	}
         	
             if (instance === null) {
-            	jQuery.extend(true,this,constructor());
+            	extend(this,constructor());
                 instance = this;
                 
                 if(listenerList){
@@ -1493,31 +1779,20 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
             	}
             }
             
-            return defer.promise(this);
-        },
-        /**
-         * Same as {@link #init}.
-         * 
-         * @deprecated access MediaManger directly via <code>mmir.MediaManager.someFunction</code> - <em>&tl;internal: for initialization use <code>init()</code> instead&gt;</em>
-         * 
-         * @function
-         * @public
-         * @memberOf mmir.MediaManager.prototype
-         */
-        getInstance: function(){
-            return this.init(null, null);
+            return defer;
         },
         /**
          * loads a file. If the file implements a function initialize(f)
          * where the function f is called with a set of functions e, then those functions in e 
          * are added to the visibility of audioInput, and will from now on be applicable by calling
          * mmir.MediaManager.<function name>().
-         * 
-         * NOTE should only be used by plugin implementations for loading (dependent/sub-) plugins.
-         * 
+         *          * 
          * @function
          * @protected
          * @memberOf mmir.MediaManager.prototype
+         * 
+         * @example
+         * NOTE should only be used by plugin implementations for loading (dependent/sub-) plugins.
          * 
          */
     	loadFile: function(filePath,successCallback, failureCallback, execId){
@@ -1527,7 +1802,18 @@ define(['jquery', 'constants', 'commonUtils', 'configurationManager', 'dictionar
     		
     		loadPlugin(filePath,successCallback, failureCallback, execId);
 			
-    	}
+    	},
+    	
+    	/**
+         * @copydoc MediaManager#_getMmir
+         * @function
+         * @protected
+         * @memberOf mmir.MediaManager.prototype
+         * 
+         * @example
+         * NOTE should only be used by plugin implementations.
+         */
+    	_get_mmir: _getMmir
     };
     
     return _stub;

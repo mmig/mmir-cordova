@@ -25,7 +25,7 @@
  */
 
 
-define(['module', 'constants', 'mediaManager', 'dictionary'], 
+define(['module', 'mmirf/constants', 'mmirf/mediaManager', 'mmirf/dictionary'], 
 	/**
 	 * 
 	 * @name NotificationManager
@@ -47,12 +47,11 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 	
 	
 	/**
-	 * TODO replace by "real" ENV mechanism ... instead of !forBrowser / ! constants.isBrowserEnv()
 	 * 
 	 * @private
 	 * @memberOf NotificationManager#
 	 */
-	var isCordovaEnv = ! constants.isBrowserEnv();
+	var isCordovaEnv = constants.isCordovaEnv();
 	
 	/**
 	 * @private
@@ -134,6 +133,9 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     	 * @function
     	 */
     	var _init = function(){
+    		
+    		var isNavigator = typeof navigator !== 'undefined';
+    		
 	    	if(isCordovaEnv){
 	    		
 	    		if(navigator.notification && navigator.notification.vibrate){
@@ -142,25 +144,25 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
 		    		doVibrate = function vibrate(n){ navigator.notification.vibrate(n); };
 	    		}
 	    		else {
-	    			console.warn('mmir.NotificationManager.INIT: could not detect navigator.notification.vibrate, using NOOP dummy instead.');
+	    			console.warn('NotificationManager.INIT: could not detect navigator.notification.vibrate, using NOOP dummy instead.');
 	    			/** @ignore */
-	        		doVibrate = function dummyVibrate(n){ console.error('mmir.NotificationManager.vibrate('+n+') triggered in CORDOVA environment, but no VIBRATE functionality available.'); };// DEBUG
+	        		doVibrate = function dummyVibrate(n){ console.error('NotificationManager.vibrate('+n+') triggered in CORDOVA environment, but no VIBRATE functionality available.'); };// DEBUG
 	    		}
 	    		
 	    	}
-	    	else if (navigator.vibrate){
+	    	else if (isNavigator && navigator.vibrate){
 //	    		console.debug('Vibrate API');
 	    		/** @ignore */
 	    		doVibrate = function vibrate(n){ navigator.vibrate(n); };
 	    	}
-	    	else if (navigator.webkitVibrate){
+	    	else if (isNavigator && navigator.webkitVibrate){
 //	    		console.debug('Vibrate: webkit');
 	    		/** @ignore */
 	    		doVibrate = function vibrate(n){ navigator.webkitVibrate(n); };
 	    	}
 	    	
 	    	//set confirm-implementation
-	    	if(navigator.notification && navigator.notification.confirm){
+	    	if(isNavigator && navigator.notification && navigator.notification.confirm){
 //	    		console.debug('Confirm: navigator.notification');
     			/** @ignore */
 	    		doConfirm = function confirm(message, confirmCallback, title, buttonLabels){
@@ -192,7 +194,7 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     		}
 	    	
 	    	//set alert-implementation
-	    	if(navigator.notification && navigator.notification.alert){
+	    	if(isNavigator && navigator.notification && navigator.notification.alert){
 //	    		console.debug('Alert: navigator.notification');
     			/** @ignore */
 	    		doAlert = function confirm(message, alertCallback, title, buttonLabels){
@@ -421,7 +423,7 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     			}
     			
     			if(!soundEntry){
-    				var errMsg = 'mmir.NotificationManager: no sound "'+name+'" initialized!';
+    				var errMsg = 'NotificationManager: no sound "'+name+'" initialized!';
     				if(onErrorCallback){
     					onErrorCallback(errMsg);
     				}
@@ -917,17 +919,6 @@ define(['module', 'constants', 'mediaManager', 'dictionary'],
     }
     
     instance = new constructor();
-    	    
-	/**
-	 * @deprecated instead: use mmir.NotificationManager directly
-	 * 
-	 * @function
-	 * @name getInstance
-	 * @memberOf mmir.NotificationManager#
-	 */
-	instance.getInstance = function(){
-		return instance;
-	};
     		
     return instance;
     

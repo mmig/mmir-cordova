@@ -25,7 +25,7 @@
  */
 
 
-define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter', 'logger', 'module'],
+define(['mmirf/constants', 'mmirf/configurationManager', 'mmirf/commonUtils', 'mmirf/semanticInterpreter', 'mmirf/util/deferred', 'mmirf/util/loadFile', 'mmirf/logger', 'module'],
 		
 	/**
 	 * A class for managing the language of the application. <br>
@@ -43,13 +43,9 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 	 * @requires mmir.CommonUtils
 	 * @requires mmir.SemanticInterpreter
 	 * 
-	 * 
-     * @requires jQuery.Deferred
-     * @requires jQuery.ajax
-     * 
 	 */
 	function( 
-			constants, configurationManager, commonUtils, semanticInterpreter, Logger, module
+			constants, configurationManager, commonUtils, semanticInterpreter, deferred, loadFile, Logger, module
 ){
 			//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 			/** @scope mmir.LanguageManager.prototype */
@@ -233,7 +229,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		                semanticInterpreter.setCurrentGrammar(grammarLang);
 		            }
 					else {
-		                logger.warn('Could not find any grammar for one of [' + languages.join(', ') + '], disabling SemanticInterpret.');
+		                logger.info('Could not find any grammar for one of [' + languages.join(', ') + '], disabling SemanticInterpret.');
 		                semanticInterpreter.setEnabled(false);
 		            }
 		        }
@@ -259,7 +255,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		            currentLanguage = lang;
 		        }
 		        var path = constants.getLanguagePath() + lang + "/" + constants.getSpeechConfigFileName();
-		        $.ajax({
+		        loadFile({
 		            async : false,
 		            dataType : "json",
 		            url : path,
@@ -267,7 +263,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		                
 		            	if(logger.isVerbose()) logger.v("[LanguageManager] Success. " + data);
 		                
-		            	currentSpeechConfig = data;// jQuery.parseJSON(data);
+		            	currentSpeechConfig = data;
 		                
 		                if(logger.isVerbose()) logger.v("[LanguageManager] " + JSON.stringify(dictionary));
 		            },
@@ -297,7 +293,7 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		            currentLanguage = lang;
 		        }
 		        var path = constants.getLanguagePath() + lang + "/" + constants.getDictionaryFileName();
-		        $.ajax({
+		        loadFile({
 		            async : false,
 		            dataType : "json",
 		            url : path,
@@ -358,6 +354,9 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		        	 * 				a language code for setting the current language and
 		        	 * 				selecting the corresponding language resources
 		        	 * 
+		        	 * @returns {Promise}
+		        	 * 				a deferred promise that gets resolved when the language manager is initialized
+		        	 * 
 		        	 * @memberOf LanguageManager.prototype
 		        	 */
 		        	init: function(lang){
@@ -410,38 +409,16 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 
 				        if (logger.isDebug()) logger.debug("[LanguageManager] Found dictionaries for: " + JSON.stringify(languages));// debug
 
+				        var defer = deferred();
+				        
 				        loadDictionary(lang);   
 				        loadSpeechConfig(lang);
 				        requestGrammar(lang, true);//2nd argument TRUE: if no grammar is available for lang, try to find/set any available grammar
 				        
 				        _isInitialized = true;
+				        defer.resolve(this);
 				        
-				        return this;
-		        	},
-		        	/**
-		        	 * Initializes the LanguageManager instance if necessary, and sets the Language to lang.
-		        	 * 
-				     * If no language is supplied as parameter, then the property *language*
-				     * from {@link mmir.Configuration} is used or the first language found
-				     * in the language directory.
-				     * 
-				     * @deprecated instead use LanguageManager directly (NOTE: before starting to use LanguageManager, init() has to be invoked once)
-				     * 
-				     * @param {String} [lang] OPTIONAL
-				     *            The language which should be used throughout the
-				     *            application.
-		        	 */
-		        	getInstance: function(lang){
-		        		
-		        		if(_isInitialized === false){
-		        			_isInitialized = true;
-		        			this.init(lang);
-		        		}
-		        		else if(lang) {
-		        			setLanguage(lang);
-		        		}
-		        		
-		        		return this;
+				        return defer;
 		        	},
 		        	
 		            /**
@@ -788,55 +765,6 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 		            	return langCode;
 		            }
 		            
-		            /**
-		             * Set to "backwards compatibility mode" (for pre version 2.0).
-		             * 
-		             * This function re-adds deprecated and removed functions and
-		             * properties to the CommonUtils instance.
-		             * 
-		             * NOTE that once set to compatibility mode, it cannot be reset to
-		             * non-compatibility mode.
-		             * 
-		             * @deprecated use only for backward compatability
-		             * 
-		             * @public
-		             * @async
-				     * @requires jQuery.Deferred
-				     * @requires mmir.LanguageManager.setToCompatibilityModeExtension
-				     * 
-				     * @param {Function} [success]
-				     * 				a callback function that is invoked, after compatibility mode
-				     * 				was set (alternatively the returned promise can be used).
-				     * @param {Function} [requireFunction]
-				     * 				the require-function that is configured for loading the compatibility module/file.
-				     * 				Normally, this would be the function <code>mmir.require</code>.
-				     * 				If omitted, the global <code>require</code> function will be used.
-				     * 				NOTE: this argument is positional, i.e. argument <code>success</code> must be present, if
-				     * 				      you want to specify this argument
-				     * @returns {Promise}
-				     * 				a Deffered.promise that is resolved, after compatibility mode
-				     * 				was set
-				     * 
-				     * @see mmir.LanguageManager.setToCompatibilityModeExtension
-		             */
-		            , setToCompatibilityMode : function(success, requireFunction) {
-		            	
-		            	var defer = $.Deferred();
-				    	if(success){
-				    		defer.then(success, success);
-				    	}
-				    	requireFunction = requireFunction || require;
-				    	requireFunction(['languageManagerCompatibility'],function(setCompatibility){
-				    		
-				    		setCompatibility(instance);
-				    		
-				    		defer.resolve();
-				    	});
-				    	
-				    	return defer.promise();
-		                
-		            }//END: setToCompatibilityMode()
-		            
 		        };//END: return{}
 		        
 		        
@@ -844,8 +772,8 @@ define(['constants', 'configurationManager', 'commonUtils', 'semanticInterpreter
 
 		    		    
 		    //FIXME as of now, the LanguageManager needs to be initialized,
-		    //		either by calling getInstance() or init()
-		    //		-> should this be done explicitly (async-loading for dictionary and grammar? with returned Deferred.promise?)
+		    //		by calling init()
+		    //		-> should this be done explicitly (async-loading for dictionary and grammar? with returned Deferred?)
 		    instance = new constructor();
 		    		    
 		    return instance;

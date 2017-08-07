@@ -1,37 +1,5 @@
-﻿/*
- * 	Copyright (C) 2012-2013 DFKI GmbH
- * 	Deutsches Forschungszentrum fuer Kuenstliche Intelligenz
- * 	German Research Center for Artificial Intelligence
- * 	http://www.dfki.de
- * 
- * 	Permission is hereby granted, free of charge, to any person obtaining a 
- * 	copy of this software and associated documentation files (the 
- * 	"Software"), to deal in the Software without restriction, including 
- * 	without limitation the rights to use, copy, modify, merge, publish, 
- * 	distribute, sublicense, and/or sell copies of the Software, and to 
- * 	permit persons to whom the Software is furnished to do so, subject to 
- * 	the following conditions:
- * 
- * 	The above copyright notice and this permission notice shall be included 
- * 	in all copies or substantial portions of the Software.
- * 
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
- * 	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
- * 	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * 	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY 
- * 	CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
- * 	TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
- * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-	
-
-//TODO additional dependency on LanguageManager for 
-//		* getLanguage() -> languageManager.getLanguage()
-//		* setLanguage(lang) -> languageManager.setLanguage(lang)
-//
-// should the dependency on LanguageManager be made OPTIONAL?
-//
-define(['constants', 'jquery'],
+﻿
+define(['mmirf/constants', 'mmirf/util/loadFile', 'mmirf/util/isArray'],
 	/**
 	 * A class for managing the configuration. <br>
 	 * It's purpose is to load the configuration and settings automatically.
@@ -43,14 +11,11 @@ define(['constants', 'jquery'],
 	 * @static
 	 * @class
 	 * 
-	 * @requires jQuery.ajax
-	 * @requires jQuery.isArray
-	 * 
 	 * @requires mmir.require for getting/setting language code (e.g. see {@link mmir.ConfigurationManager.getLanguage}
 	 * 
 	 */
 	function (
-		constants, $
+		constants, loadFile, isArray
 ){
 	
 	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
@@ -86,41 +51,41 @@ define(['constants', 'jquery'],
     	 */
     	var configData = null;
     	
-    	/**
-         * Reference to the {@link mmir.LanguageManager} instance.
-         * 
-         * Will be initialized lazily
-         * 
-         * @type LanguageManager
-         * @private
-         * 
-         * @see #getLanguage
-         * @see #setLanguage
-         * 
-    	 * @memberOf LanguageManager#
-         */
-        var languageManager = null;
-        /**
-         * HELPER returns (and sets if necessary) {@link #languageManager}
-         * 
-         * @returns {mmir.LanguageManager} the LanguageManager instance
-         * @private
-         * 
-    	 * @memberOf LanguageManager#
-         */
-        var getLanguageManager = function(){
-        	if(!languageManager){
-            	var req;
-            	if(typeof mmir === 'undefined'){
-            		//fallback if global mmir is undefined, try to use global require-function
-            		req = require;
-            	} else {
-            		req = mmir.require;
-            	}
-        		languageManager = req('languageManager');
-        	}
-        	return languageManager;
-        };
+//    	/**
+//         * Reference to the {@link mmir.LanguageManager} instance.
+//         * 
+//         * Will be initialized lazily
+//         * 
+//         * @type LanguageManager
+//         * @private
+//         * 
+//         * @see #getLanguage
+//         * @see #setLanguage
+//         * 
+//    	 * @memberOf LanguageManager#
+//         */
+//        var languageManager = null;
+//        /**
+//         * HELPER returns (and sets if necessary) {@link #languageManager}
+//         * 
+//         * @returns {mmir.LanguageManager} the LanguageManager instance
+//         * @private
+//         * 
+//    	 * @memberOf LanguageManager#
+//         */
+//        var getLanguageManager = function(){
+//        	if(!languageManager){
+//            	var req;
+//            	if(typeof mmir === 'undefined'){
+//            		//fallback if global mmir is undefined, try to use global require-function
+//            		req = require;
+//            	} else {
+//            		req = mmir.require;
+//            	}
+//        		languageManager = req('mmirf/languageManager');
+//        	}
+//        	return languageManager;
+//        };
     	
     	/**
     	 * Helper that loads configuration file synchronously.
@@ -129,9 +94,9 @@ define(['constants', 'jquery'],
 		 * @memberOf ConfigurationManager#
     	 */
     	//FIXME change implementation to async-loading?
-    	//		-> would need to add init()-function, with callback and/or return Deferred.promise
+    	//		-> would need to add init()-function, with callback and/or return Deferred
     	function _loadConfigFile(){
-	        $.ajax({
+	        loadFile({
 	    		async: false,
 	    		dataType: "json",
 	    		url: constants.getConfigurationFileUrl(),
@@ -144,7 +109,13 @@ define(['constants', 'jquery'],
 	    			}
 	    		},
 	    		error: function(data){
-	    			console.error("ConfigurationManager.constructor: failed to load configuration from '"+constants.getConfigurationFileUrl()+"'! ERROR: "+ JSON.stringify(data));
+	    			var errStr = "ConfigurationManager.constructor: failed to load configuration from '"+constants.getConfigurationFileUrl()+"'! ERROR: ";
+	    			try{
+	    				errStr += JSON.stringify(data);
+		    			console.error(errStr);
+	    			}catch(e){
+		    			console.error(errStr, errStr);
+	    			}
 	    		}
 	    	});
     	}
@@ -174,7 +145,7 @@ define(['constants', 'jquery'],
         function _getAsPath(propertyName){
         	
         	var path = propertyName;
-        	if( ! $.isArray(path)){
+        	if( ! isArray(path)){
         		path = propertyName.split('.');
         	}
         	else {
@@ -227,7 +198,7 @@ define(['constants', 'jquery'],
         			entry = pathList[i];
     				
         			//flatten sub-paths into the new array:
-    				if( $.isArray(entry) ){
+    				if( isArray(entry) ){
     					
     	        		for(var j=0, len=entry.length; j < len; ++j){
     	        			newPath[index++] = entry[j];
@@ -249,45 +220,6 @@ define(['constants', 'jquery'],
         return {
         	
         	// public members
-        	
-			/**
-			 * Returns the currently used language. 
-			 * 
-			 * <p>This does not return the language of the configuration, but is a
-			 * shortcut for {@link mmir.LanguageManager#getLanguage}.
-			 * 
-			 * 
-			 * @deprecated use {@link mmir.LanguageManager#getLanguage}() instead!
-			 * 
-			 * @requires mmir.LanguageManager
-			 * 
-			 * @function
-			 * @returns {String} The currently used language
-			 * @public
-			 * 
-			 * @memberOf ConfigurationManager.prototype
-			 */
-            getLanguage: function(){
-                return getLanguageManager().getLanguage();
-            },
-			/**
-			 * Sets the currently used language.
-			 * 
-			 * <p>This does not set the language of the configuration, but is a
-			 * shortcut for {@link mmir.LanguageManager#setLanguage}.
-			 * 
-			 * 
-			 * @deprecated use {@link mmir.LanguageManager#setLanguage}(lang) instead!
-			 * 
-			 * @requires mmir.LanguageManager
-			 * 
-			 * @function
-			 * @param {String} lang The language which is to be used
-			 * @public
-			 */
-            setLanguage: function(lang){
-            	getLanguageManager().setLanguage(lang);
-            },
 			/**
 			 * Returns the value of a property.
 			 *  
@@ -301,23 +233,25 @@ define(['constants', 'jquery'],
 			 * 						  so that the <code>value</code> at:
 			 * 						  <code>some: {property: &lt;value&gt;}</code>
 			 * 						  will be returned
+			 * @param {any} [defaultValue] OPTIONAL
+			 * 					a default value that will be returned, in case there is no property
+			 * 					<code>propertyName</code>.
 			 * @param {Boolean} [useSafeAccess] OPTIONAL
 			 * 					if <code>true</code>, resolution of dot-separated paths
 			 * 					will be done "safely", i.e. if a path-element does not
 			 * 					exists, no <code>error</code> will be thrown, but instead
 			 * 					the function will return the <code>defaultValue</code>
 			 * 					(which will be <code>undefined</code> if the argument is not given).
-			 * @param {any} [defaultValue] OPTIONAL
-			 * 					a default value that will be returned, in case there is no property
-			 * 					<code>propertyName</code>.
 			 * 
-             * 					NOTE: if this argument is used, <code>useSafeAccess</code> must also be given!
+			 * 					<br>DEFAULT: <code>true</code>
+             * 					<br>NOTE: if this argument is used, param <code>defaultValue</code> must also be given!
 			 * 
 			 * @returns {any} 
 			 * 					The value of the property
 			 * @public
+			 * @memberOf ConfigurationManager.prototype
 			 */
-            get: function(propertyName, useSafeAccess, defaultValue){
+            get: function(propertyName, defaultValue, useSafeAccess){
             	
             	if(configData){
             		
@@ -330,6 +264,10 @@ define(['constants', 'jquery'],
             		//ASSERT path.length == 1: already handled by if(configData[propertyName]...
             		
             		if(path.length > 1){
+            			
+            			if(typeof useSafeAccess === 'undefined'){
+            				useSafeAccess = true;
+            			}
             			
             			if(useSafeAccess && typeof configData[ path[0] ] === 'undefined'){
             				return defaultValue;///////////// EARLY EXIT /////////////////////////
@@ -384,6 +322,7 @@ define(['constants', 'jquery'],
 			 * 					already exists AND its type is not 'object' 
 			 * 
 			 * @public
+			 * @memberOf ConfigurationManager.prototype
 			 */
             set: function(propertyName, value){
             	if(!configData){
@@ -441,15 +380,12 @@ define(['constants', 'jquery'],
              * 				  to a Boolean value, if necessary. 
              * 
              * @see {@link #get}
+			 * @memberOf ConfigurationManager.prototype
              */
-            getBoolean: function(propertyName, useSafeAccess, defaultValue){
+            getBoolean: function(propertyName, defaultValue, useSafeAccess){
             	
-            	var val = this.get(propertyName, useSafeAccess);
-            	
-            	if(typeof val === 'undefined' && typeof defaultValue !== 'undefined' ){
-            		val = defaultValue;
-            	}
-            	
+            	var val = this.get(propertyName, defaultValue, useSafeAccess);
+            	            	
             	if(typeof val !== 'undefined'){
             		
             		if( val === 'false'){
@@ -483,15 +419,12 @@ define(['constants', 'jquery'],
              * 				  to a String value, if necessary. 
              * 
              * @see {@link #get}
+			 * @memberOf ConfigurationManager.prototype
              */
-            getString: function(propertyName, useSafeAccess, defaultValue){
+            getString: function(propertyName, defaultValue, useSafeAccess){
             	
-            	var val = this.get(propertyName, useSafeAccess);
-            	
-            	if(typeof val === 'undefined' && typeof defaultValue !== 'undefined' ){
-            		val = defaultValue;
-            	}
-            	
+            	var val = this.get(propertyName, defaultValue, useSafeAccess);
+            	            	
             	if(typeof val !== 'undefined'){
             		
             		if(typeof val === 'string'){
@@ -506,22 +439,10 @@ define(['constants', 'jquery'],
             
         };//END: return {...
         
-    }//END: construcor = function(){...
+    }//END: constructor = function(){...
 
 		    	
 	instance = new constructor();
-	
-	/**
-	 * @deprecated instead: use mmir.ConfigurationManager directly
-	 * 
-	 * @function
-	 * @name getInstance
-	 * @public
-	 * @memberOf ConfigurationManager#
-	 */
-	instance.getInstance = function(){
-		return instance;
-	};
 	
 	return instance;
 });

@@ -1,5 +1,5 @@
 
-define(['jscc', 'constants', 'configurationManager', 'grammarConverter', 'jquery', 'logger', 'module'],
+define(['mmirf/jscc','mmirf/constants','mmirf/configurationManager','mmirf/grammarConverter','mmirf/util/deferred','mmirf/util/extend','mmirf/util/toArray','mmirf/util/loadFile','mmirf/logger', 'module'],
 /**
  * Generator for executable language-grammars (i.e. converted JSON grammars).
  * 
@@ -35,12 +35,8 @@ define(['jscc', 'constants', 'configurationManager', 'grammarConverter', 'jquery
  * @memberOf mmir.env.grammar
  * 
  * @requires JS/CC
- * @requires jQuery.Deferred
- * @requires jQuery.extend
- * @requires jQuery.ajax
- * @requires jQuery.makeArray
  */		
-function(jscc, constants, configManager, GrammarConverter, $, Logger, module){
+function(jscc, constants, configManager, GrammarConverter, deferred, extend, toArray, loadFile, Logger, module){
 
 //////////////////////////////////////  template loading / setup for JS/CC generator ////////////////////////////////
 
@@ -54,7 +50,7 @@ function(jscc, constants, configManager, GrammarConverter, $, Logger, module){
  * 
  * @see #_loadTemplate
  */
-var deferred = $.Deferred();
+var deferred = deferred();
 
 /**
  * The Logger for the JS/CC generator.
@@ -78,9 +74,9 @@ var logger = Logger.create(module);
  * 
  * @see mmir.Logging
  */
-function _createCompileLogFunc(log /*Logger*/, level /*String: log-function-name*/, libMakeArray/*helper-lib: provides function makeArray(obj); e.g. jquery*/){
+function _createCompileLogFunc(log /*Logger*/, level /*String: log-function-name*/, toArray/*helper-lib: provides function makeArray(obj); e.g. jquery*/){
 	return function(){
-		var args = libMakeArray.makeArray(arguments);
+		var args = toArray(arguments);
 		//prepend "location-information" to logger-call:
 		args.unshift('JS/CC', 'compile');
 		//output log-message:
@@ -205,7 +201,7 @@ var jsccGen = {
 	compileGrammar: function(theConverterInstance, instanceId, fileFormatVersion, callback){
         
 		//attach functions for JS/CC conversion/generation to the converter-instance: 
-		$.extend(theConverterInstance, JsccGrammarConverterExt);
+		extend(theConverterInstance, JsccGrammarConverterExt);
 		//attach the JS/CC template to the converter instance
 		theConverterInstance.TEMPLATE = this.template;
 		
@@ -216,36 +212,15 @@ var jsccGen = {
         var grammarDefinition = theConverterInstance.getGrammarDef();
 
         //load options from configuration:
-        var config = configManager.get(pluginName, true, {});
+        var config = configManager.get(pluginName, {});
         //combine with default default options:
-        var options = $.extend({id: instanceId}, DEFAULT_OPTIONS, config);
+        var options = extend({id: instanceId}, DEFAULT_OPTIONS, config);
         
         var compileParserModule = function(grammarParserStr, hasError){
         	
-	        var addGrammarParserExec = 
-	    	  '(function(){\n  var semanticInterpreter = require("semanticInterpreter");\n'//FIXME
-	        	+ 'var options = {fileFormat:'+fileFormatVersion+',execMode:'+JSON.stringify(options.execMode)+'};\n'
-	        	+ 'var grammarFunc = function('+INPUT_FIELD_NAME+'){'
-	    			//TODO active/use safe_acc (instead of try-catch construct in semantic-result extraction
-	//        			+ "var safe_acc = function(obj){\n  \tvar len = arguments.length;\n  \tif(len === 1){\n  \t    return null;\n  \t}\n  \tvar curr = obj, prop = arguments[1], i = 2;\n  \tfor(; i < len; ++i){\n  \tif(obj[prop] != null){\n  \t    obj = obj[prop];\n  \t}\n  \tprop = arguments[i];\n  \t}\n  \tvar res = obj[prop];\n  \treturn typeof res !== 'undefined'? res : null;\n  \t};"
-	    			+ grammarParserStr
-	        	+ '\n};\n'
-	        	
-	        	//add "self registering" for the grammar-function
-	        	//  i.e. register the grammar-function for the ID with the SemanticInterpreter
-	        	+ 'semanticInterpreter.addGrammar("'
-	        		+instanceId
-	        		+'", grammarFunc, options);\n\n'
-	        	+ 'semanticInterpreter.setStopwords("'
-	        		+instanceId+'",'
-	        		//store stopwords with their Unicode representation (only for non-ASCII chars)
-	        		+JSON.stringify(
-	        				theConverterInstance.getEncodedStopwords()
-	        		).replace(/\\\\u/gm,'\\u')//<- revert JSON.stringify encoding for the Unicodes
-	        	+ ');\n'
-	        	+ 'return grammarFunc;\n'
-	        	+ '})();'
-	        ;
+	        var addGrammarParserExec = theConverterInstance.getCodeWrapPrefix(fileFormatVersion, JSON.stringify(options.execMode))
+	        	+ 'var grammarFunc = function('+INPUT_FIELD_NAME+'){' + grammarParserStr + '\n};\n'
+            	+ theConverterInstance.getCodeWrapSuffix(theConverterInstance.getEncodedStopwords(), 'grammarFunc', instanceId);
 
 	        if(options.genSourceUrl){
             	
@@ -329,7 +304,7 @@ var jsccGen = {
         	var msg = 'Error while compiling grammar: ' + (err.stack?err.stack:err);
         	isParsingFailed = msg;
         	
-        	msg = '[INVALID GRAMMAR] ' + msg;
+        	msg = '[INVALID GRAMMAR] ' + msg + (error && error.stack? error.stack : '');
         	grammarParserStr = 'var msg = '+JSON.stringify(msg)+'; console.error(msg); throw msg;';//FIXME
         }
       
@@ -386,7 +361,7 @@ var jsccGen = {
 			 * @function
 			 * @memberOf JsccGenerator.jscc#
 			 */
-			jscc.set_printError(	_createCompileLogFunc(logger, 'error', $));
+			jscc.set_printError(	_createCompileLogFunc(logger, 'error', toArray));
 		}
 		if(jscc.is_printWarning_default()){
 			/**
@@ -396,7 +371,7 @@ var jsccGen = {
 			 * @function
 			 * @memberOf JsccGenerator.jscc#
 			 */
-			jscc.set_printWarning(	_createCompileLogFunc(logger, 'warn', $));
+			jscc.set_printWarning(	_createCompileLogFunc(logger, 'warn', toArray));
 		}
 		if(jscc.is_printInfo_default()){
 			/**
@@ -406,7 +381,7 @@ var jsccGen = {
 			 * @function
 			 * @memberOf JsccGenerator.jscc#
 			 */
-			jscc.set_printInfo(		_createCompileLogFunc(logger, 'info', $));
+			jscc.set_printInfo(		_createCompileLogFunc(logger, 'info', toArray));
 		}
 	},
 	/**
@@ -421,7 +396,7 @@ var jsccGen = {
 		if(errorFunc){
 			errorFunc.apply(jscc, arguments);
 		} else {
-			var args = $.makeArray(arguments);
+			var args = toArray(arguments);
 			//prepend "location-information" to logger-call:
 			args.unshift('JS/CC', 'compile');
 			//output log-message:
@@ -490,7 +465,10 @@ var jsccGen = {
         grammarParserStr = grammarParserStr.replace(/##TERMINAL_ACTIONS##/g, genData.terminals);
         grammarParserStr = grammarParserStr.replace(/##LABELS##/g, genData.labels);
         grammarParserStr = grammarParserStr.replace(/##ACTIONS##/g, genData.actions);
-        grammarParserStr = grammarParserStr.replace(/##FOOTER##/g, "\nvar _semanticAnnotationResult = { result: {}};\n__parse( "+INPUT_FIELD_NAME+", new Array(), new Array(), _semanticAnnotationResult);\nreturn _semanticAnnotationResult.result;");
+        grammarParserStr = grammarParserStr.replace(/##FOOTER##/g, "\nvar _semanticAnnotationResult = { result: {}};\n"
+        				+"__parse( "+INPUT_FIELD_NAME+", new Array(), new Array(), _semanticAnnotationResult);\n"
+        				+"return _semanticAnnotationResult.result;"
+        );
         grammarParserStr = grammarParserStr.replace(/##ERROR##/g, genData.error);
         grammarParserStr = grammarParserStr.replace(/##EOF##/g, genData.eof);
         grammarParserStr = grammarParserStr.replace(/##WHITESPACE##/g, genData.whitespace);
@@ -518,7 +496,7 @@ var jsccGen = {
  * @memberOf JsccGenerator#
  */
 function _loadTemplate(url, jsccGenerator, promise){
-	$.ajax({
+	loadFile({//$.ajax({
 		url: url,
 		dataType: 'text',
 		async: true,
@@ -553,11 +531,19 @@ var JsccGrammarConverterExt = {
 	init: function(){
 
 		this.THE_INTERNAL_GRAMMAR_CONVERTER_INSTANCE_NAME = "theGrammarConverterInstance";
+		this._PARTIAL_MATCH_PREFIX = "%";
+		this._PARTIAL_LOCATION_PREFIX = '@';
+		
 		this.grammar_tokens = "/~ --- Token definitions --- ~/\n\n/~ Characters to be ignored ~/\n!   ' |\\t' ;\n\n/~ Non-associative tokens ~/\n";
 		this.grammar_utterances = "";
 		this.grammar_phrases = "phrases:";
-		this.token_variables = "[*\n  var " + this.variable_prefix
-				+ "result = '';\n";
+		this.token_variables = "[*\n"
+				//some helper functions
+				+ "  var _tokenList = function(match, list) {if(!list){list = [];}var size = match.length, t;for (var i = 0; i < size; ++i) {t = match[i];if (!t) {continue;}if (t."+this.entry_token_field+".join) {_tokenList(t."+this.entry_token_field+", list);} else {list.push(t."+this.entry_token_field+");}}return list;};\n"
+				+ "  var _getTok = function(phrases, type, index) {var count = 0, p;for(var i=0, size = phrases.length; i < size; ++i){p = phrases[i];if(p."+this.entry_type_field+" === type){if(index === count++){return typeof p."+this.entry_token_field+" === 'string'? p."+this.entry_token_field+" : p;}}}};\n"
+				//global variable for storing the result:
+				+ "  var " + this.variable_prefix + "result = '';\n"
+		;
 		this.tokens_array = [];
 	},
 	convertJSONGrammar: function(){
@@ -588,12 +574,12 @@ var JsccGrammarConverterExt = {
 		var json_tokens =  this.json_grammar_definition.tokens;
 		var pref = self.variable_prefix;
 		
-		for(token_name in json_tokens){
+		for(var token_name in json_tokens){
 			
 			var words = json_tokens[token_name];
 			
 			self.token_variables += "  var " + pref
-					+ token_name.toLowerCase() + " = {};\n";
+					+ token_name.toLowerCase() + " = [];\n";
 			
 			var grammar_token ="    '";
 			
@@ -604,8 +590,13 @@ var JsccGrammarConverterExt = {
 				grammar_token += words[i];
 			}
 			
-			grammar_token += "'    " + token_name + " [* " + pref
-					+ token_name.toLowerCase() + "[%match] = %match; *];\n";
+			grammar_token += "'    " + token_name + " [* " + 
+					pref + token_name.toLowerCase() + ".push(%match);"
+					+ "%match = {"
+						+ this.entry_index_field + ": %offset,"
+						+ this.entry_type_field + ": '" + token_name.toLowerCase() + "',"
+						+ this.entry_token_field + ": %match"
+					+ "}; *];\n";
 			
 			self.grammar_tokens += grammar_token;
 		}
@@ -628,8 +619,7 @@ var JsccGrammarConverterExt = {
 		var grammar_utterance = utterance_name + ":";
 		var self = this; 
 		self.token_variables += "  var " + self.variable_prefix
-				+ utterance_name.toLowerCase() + " = {};\n";
-		//self.grammar_phrases += utterance_name + "  " +  self.doCreateSemanticInterpretationForUtterance(utterance_name, utterance_def);
+				+ utterance_name.toLowerCase() + " = [];\n";
 		self.grammar_phrases += utterance_name + "  " ;
 		var phrases = utterance_def.phrases;
 		var semantic  = self.doCreateSemanticInterpretationForUtterance(utterance_name, utterance_def);
@@ -648,7 +638,7 @@ var JsccGrammarConverterExt = {
 	},
 	doCreateSemanticInterpretationForUtterance: function(utterance_name, utterance_def){
 		var semantic = utterance_def.semantic,
-		variable_index, variable_name;
+			variable_index, variable_name;
 		
 		if(logger.isDebug()) logger.debug('doCreateSemanticInterpretationForUtterance: '+semantic);//debug
 		
@@ -658,7 +648,7 @@ var JsccGrammarConverterExt = {
 		var variables = this.variable_regexp.exec(semantic_as_string);
 		while (variables != null) {
 			var variable = variables[1],
-			remapped_variable_name = "";
+				remapped_variable_name = "";
 			
 			if(logger.isDebug()) logger.debug("variables " + variable, semantic_as_string);//debug
 			
@@ -668,15 +658,8 @@ var JsccGrammarConverterExt = {
 //			variableObj = /_\$([a-zA-Z_][a-zA-Z0-9_\-]*)(\[(\d+)\])?((\[(("(.*?[^\\])")|('(.*?[^\\])'))\])|(\.(\w+)))?/.exec(variable);
 	//"_$NAME[INDEX]['FIELD']":  _$NAME                  [ INDEX ]        [" FIELD "]  | [' FIELD ']      |   .FIELD
 			if (variable_index == null) {
-				remapped_variable_name = variable;
+				remapped_variable_name = "return " + variable;
 			} else {
-					remapped_variable_name = variable.replace(
-							  '[' + variable_index[1] + ']'
-							, "["
-								+ utterance_name.toLowerCase() + "_temp['phrases']['"
-								+ variable_name.toLowerCase() + "']["
-								+ variable_index[1]
-							+ "]."+this.entry_token_field+"]");
 					//TODO replace try/catch with safe_acc function
 					//     PROBLEM: currently, the format for variable-access is not well defined
 					//              -> in case of accessing the "semantic" field for a variable reference of another Utterance
@@ -695,12 +678,16 @@ var JsccGrammarConverterExt = {
 //								+ variable_index[1] 
 //								+ ")]"
 //							);
+					remapped_variable_name = "var res = _getTok("+utterance_name.toLowerCase() + "_temp['phrases'],'"
+									+ variable_name.toLowerCase() + "', "
+									+ variable_index[1]+");"
+									+ " return typeof res === 'string'? res : (typeof res === 'object' && res? "+variable+" : void(0))";
 			}
 			semantic_as_string = semantic_as_string.replace(
 					variables[0],
-					" function(){try{return " + remapped_variable_name
-						+ ";} catch(e){return void(0);}}() "
-//					"' + " + remapped_variable_name + " + '"//TODO replace try/catch with safe_acc function
+					//TODO replace try/catch with safe_acc function
+					" function(){try{ " + remapped_variable_name
+					+ ";} catch(e){return void(0);}}() "
 			);
 			variables =  this.variable_regexp.exec(semantic_as_string);
 		}
@@ -708,43 +695,43 @@ var JsccGrammarConverterExt = {
 		return semantic_as_string;
 	},
 	doCreateSemanticInterpretationForPhrase: function(utterance_name, utterance_def, phrase, semantic_as_string){
-		var phraseList = phrase.split(/\s+/),
-		length = phraseList.length,
-		duplicate_helper = {};
 		
-		var result = " [* %% = ";
+		var phraseList = phrase.split(/\s+/),
+			length = phraseList.length,
+			phrase_name;
+		
+
+//		var phraseStr = "";
 		var i = 0;
-		while (i < length){
-			i++;
-			result += "%"+i;
-			if(i < length){
-				result += " + ' ' + ";
-			}
+
+		
+		var pharseMatchResult = "%% = {"
+				+ this.entry_index_field + ": "+ this._PARTIAL_MATCH_PREFIX +"1." + this.entry_index_field + ","
+				+ this.entry_type_field + ": '" + utterance_name + "',"
+				+ this.entry_token_field + ": null";
+		
+		var semanticProcResult = "var "+utterance_name+"_temp = {}, tempMatch; "+utterance_name+"_temp['phrases'] = [];";
+		var num;
+		for (i = 0; i < length; ++i) {
+			
+			num = i + 1;
+			
+			//create STR for semantic processing of phrase
+			semanticProcResult += "tempMatch = " + this._PARTIAL_MATCH_PREFIX + num + ";"
+									+ utterance_name + "_temp['phrases'].push(tempMatch);\n\t\t";
 		}
-		result += "; var "+utterance_name+"_temp = {}; "+utterance_name+"_temp['phrases'] = {};";
-		for (i = 0; i < length; i += 1) {
-			if (typeof(duplicate_helper[phraseList[i]]) == "undefined") {
-				duplicate_helper[phraseList[i]] = 0;
-				result += utterance_name+"_temp['phrases']['"+phraseList[i].toLowerCase()+"'] = [];";
-			} else {
-				duplicate_helper[phraseList[i]] += 1;
-			}
-			result += utterance_name + "_temp['phrases']['"
-						+ phraseList[i].toLowerCase() + "']["
-						+ duplicate_helper[phraseList[i]] + "] = {"
-							+ this.entry_token_field + ": %" + (i + 1) + ","
-							+ this.entry_index_field + ": " + i
-						+"};\n\t\t";
-		}
-		result += "var " + this.variable_prefix + "phrase = %%; " 
-				+ utterance_name + "_temp['phrase']=" + this.variable_prefix + "phrase; "
+		
+		pharseMatchResult += "}";
+		
+		semanticProcResult += "%%.tok = " + utterance_name + "_temp['phrases'];"
+				+ utterance_name + "_temp['phrase']=_tokenList("+utterance_name + "_temp['phrases']).join(' ');\n "
 				+ utterance_name + "_temp['utterance']='" + utterance_name + "'; "
-				+ utterance_name + "_temp['engine']='jscc'; "//FIXME debug
+				+ utterance_name + "_temp['engine']='jscc'; "
 				+ utterance_name + "_temp['semantic'] = " + semantic_as_string
-				+ "; " + this.variable_prefix + utterance_name + "["
-				+ this.variable_prefix + "phrase] = " + utterance_name + "_temp; "
-				+ this.variable_prefix + "result = " + utterance_name + "_temp; *]";
-		return result;
+				+ "; " + this.variable_prefix + utterance_name + ".push(" + utterance_name + "_temp); "
+				+ this.variable_prefix + "result = " + utterance_name + "_temp;";
+		
+		return " [* " + pharseMatchResult + "; " + semanticProcResult + " *]";
 	}
 };
 

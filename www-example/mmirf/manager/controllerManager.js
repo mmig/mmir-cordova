@@ -28,7 +28,7 @@
 
 
 
-define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
+define(['mmirf/dictionary', 'mmirf/controller', 'mmirf/constants', 'mmirf/commonUtils', 'mmirf/util/deferred' ],
 
 	/**
 	 * A class for managing the controllers of the application. <br>
@@ -42,10 +42,9 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	 * @name mmir.ControllerManager
 	 * @static
 	 * 
-	 * @requires jQuery.Deferred
 	 */
 	function( 
-		Dictionary, Controller, constants, commonUtils, $
+		Dictionary, Controller, constants, commonUtils, deferred
 ){
 	//the next comment enables JSDoc2 to map all functions etc. to the correct class description
 	/** @scope mmir.ControllerManager.prototype */
@@ -73,15 +72,12 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	 * @param {Object} [ctx] OPTIONAL
 	 * 				the context for the controller & helper implementations (DEFAULT: the global context, i.e. window)
 	 * @returns {Promise}
-	 * 				a Deferred.promise that will get fulfilled when controllers are loaded
+	 * 				a Deferred promise that will get fulfilled when controllers are loaded
 	 * @private
 	 * 
 	 * @memberOf mmir.ControllerManager#
 	 */
 	function _init(callback, ctx) {
-
-		//replace create-method with instance-getter:
-		_instance.create = _instance.getInstance;
 		
 		//shift arguments if necessary:
 		if(!ctx && typeof callback !== 'function'){
@@ -90,12 +86,12 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 		}
 		
 		//set ctx to global/window, if not already set:
-		ctx = ctx || window;
+		ctx = ctx || (typeof window !== 'undefined'? window : global);
 		
 		//create return value
-		var deferred = $.Deferred();
+		var defer = deferred();
 		if(callback){
-			deferred.then(callback, callback);
+			defer.then(callback, callback);
 		}
 		
 		
@@ -225,6 +221,9 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	    	var rawControllerName= removeFileExt(controllerName);
 	    	controllerName = rawControllerName;
 	    	
+	    	//helper: check if string starts with the controller's name (ignoring case)
+	    	var reStartsWithCtrl = new RegExp('^'+controllerName, 'i');
+	    	
 	    	
 	    	var viewsPath = constants.getViewPath() + controllerName;
 	    	var genViewsPath = constants.getCompiledViewPath() + controllerName;
@@ -269,10 +268,11 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 
 	    	var helperSuffix = constants.getHelperSuffix();
 	    	var helperInfo = null;
+	    	var reHelpersEnd = new RegExp(helperSuffix+'\.js$', 'i');
 	    	if(helpersFileList != null){
 	    		
 	    		for(i=0, size = helpersFileList.length; i < size; ++i){
-		    		if(helpersFileList[i].startsWith(controllerName, true) && helpersFileList[i].endsWith(helperSuffix+'.js', true)){
+		    		if(reStartsWithCtrl.test(helpersFileList[i]) && reHelpersEnd.test(helpersFileList)){
 		    	    	
 		    			var name = removeFileExt(helpersFileList[i]);
 		    			helperInfo = {
@@ -294,7 +294,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	    	if(layoutsFileList != null){
 		    	for(i=0, size = layoutsFileList.length; i < size; ++i){
 		    		
-		    		if( layoutsFileList[i].startsWith(controllerName, true) ){
+		    		if( reStartsWithCtrl.test(layoutsFileList[i]) ){
 		    			
 		    			var layoutName = removeFileExt(layoutsFileList[i]);
 		    	    	layoutInfo = {
@@ -346,11 +346,11 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 					
 					console.info( '[loadControllers] done' );
 					
-					deferred.resolve(_instance);
+					defer.resolve(_instance);
 				},
 
 				function isAlreadyLoaded (name) {
-					return false; //(_instance && _instance.getController(name));
+					return false;
 				},
 
 				function callbackStatus(status, fileName, msg) {
@@ -383,7 +383,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 
 		);		
 
-		return deferred.promise(_instance);
+		return defer;
 
 	};
 
@@ -398,20 +398,6 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 	var _instance = {
 			/** @scope mmir.ControllerManager.prototype *///for jsdoc2
 
-			/**
-			 * Get instance of ControllerManager.
-			 * 
-			 * @deprecated use directly: instead of <code>mmir.ControllerManager.getInstance()</code> use <code>mmir.ControllerManager</code>
-			 * 
-			 * NOTE: The ControllerManager must be initialized, before it can be used! (see {@link ControllerManager#init})
-			 * 
-			 * @memberOf mmir.ControllerManager.prototype
-			 */
-			getInstance : function () {
-
-				return this;
-			},	
-
 			// public members           
 
 			/**
@@ -421,8 +407,9 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * @param {String} ctrlName Name of the controller which should be returned
 			 * @returns {Object} controller if found, null else
 			 * @public
+			 * @memberOf mmir.ControllerManager.prototype
 			 */
-			getController: function(ctrlName){
+			get: function(ctrlName){
 				var ctrl = controllers.get(ctrlName);
 				if(!ctrl){
 					return null;
@@ -438,7 +425,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * @returns {Array<String>} Names of all loaded controllers
 			 * @public
 			 */
-			getControllerNames: function(){
+			getNames: function(){
 
 				return controllers.getKeys();
 			},
@@ -455,7 +442,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * @public
 			 */
 			perform: function(ctrlName, actionName, data){
-				var ctrl = this.getController(ctrlName);
+				var ctrl = this.get(ctrlName);
 				if (ctrl != null) {
 					return ctrl.perform(actionName, data);
 				}
@@ -477,7 +464,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 */
 			performHelper: function(ctrlName, actionName, data) {
 
-				var ctrl = this.getController(ctrlName);
+				var ctrl = this.get(ctrlName);
 				if (ctrl != null) {
 					if(arguments.length > 3){
 						return ctrl.performHelper(actionName, data, arguments[3]);
@@ -494,7 +481,7 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * This function must be called before using the {@link mmir.ControllerManager}. The Initialization process is asynchronous, 
 			 * because javascript-files must be loaded (the controllers).
 			 * To ensure that the ControllerManager is initialized, a callback can be used, or the returned
-			 * <em>Promise</em> (e.g. see documentation of jQuery.Deferred) for code, that relies
+			 * <em>Promise</em> (i.e. a "then-able" object) for code, that relies
 			 * on the presence of the loaded controllers.<br>   
 			 * 
 			 * 
@@ -513,10 +500,10 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 * @param {Object} [ctx] OPTIONAL
 			 * 				the context for the controller & helper implementations (DEFAULT: the global context, i.e. window)
 			 * @returns {Promise}
-			 * 				a Deferred.promise that will get fulfilled when controllers are loaded
+			 * 				a deferred promise that will get fulfilled when controllers are loaded
 			 * @example
 			 *  //recommended style:
-			 *  require(['controllerManager', ...], function(controllerManager, ...) {
+			 *  mmir.require(['mmirf/controllerManager', ...], function(controllerManager, ...) {
 			 *  	controllerManager.init().then(function(theInitializedControllerInstance){
 			 *  		...
 			 *  	});
@@ -524,10 +511,10 @@ define(['dictionary', 'controller', 'constants', 'commonUtils', 'jquery' ],
 			 *  
 			 *  //old style:
 			 * 	function afterLoadingControllers(controllerManagerInstance){
-			 * 		var appCtrl = controllerManagerInstance.getController('Application');
+			 * 		var appCtrl = controllerManagerInstance.get('Application');
 			 * 		//do something...
 			 * 	} 
-			 * 	mmir.ControllerManager.init(afterLoadingControllers);
+			 * 	mmir.ctrl.init(afterLoadingControllers);
 			 * @public
 			 */
 			init: _init
