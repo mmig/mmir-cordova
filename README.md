@@ -1,6 +1,22 @@
 [mmir-cordova][0]
 ============
 
+----
+----
+
+<h1 style="color: red;">
+DEPRECATED this example <code>cordova</code> integration that targets <code>MMIR</code> version 4.x is outdated - for instructions on how to inegrate current versions of <code>MMIR</code> (version >= 5.x) with <code>cordova</code> see <a href="https://github.com/mmig/mmir-tooling#cordova-build-integration">mmir-tooling#cordova-build-integration</a>
+</h1>
+
+```diff
+- DEPRECATED this example integration for <code>cordova</code> is an outdated (targeted at old <code>mmir</code> version 4.x)  
+- for current instructions on integrating <code>mmir</code> with `cordova` go to https://github.com/mmig/mmir-tooling#cordova-build-integration
+```
+
+----
+----
+
+
 A skeleton / boilerplate project for the MMIR framework.
 
 This repository contains resources that should be added to newly
